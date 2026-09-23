@@ -1,14 +1,14 @@
 import {
-  BadgeIndianRupee,
   CalendarCheck2,
   Leaf,
   MessageCircle,
   ReceiptText,
   ShieldCheck,
   Smartphone,
+  Tag,
   Truck,
 } from "lucide-react";
-import { platformStats } from "@/lib/data/reviews";
+import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
 /**
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 const DIFFERENTIATORS = [
   {
-    icon: BadgeIndianRupee,
+    icon: Tag,
     title: "The price you see is the price you pay",
     body: "Taxes and booking fees are already inside every number on this site. If anything is ever added at checkout, that's a defect and we treat it as one.",
   },
@@ -43,9 +43,9 @@ const DIFFERENTIATORS = [
   },
 ];
 
-export function WhyOutly({ className }: { className?: string }) {
+export function WhyOutlyy({ className }: { className?: string }) {
   return (
-    <section className={cn("", className)} aria-labelledby="why-outly">
+    <section className={cn("", className)} aria-labelledby="why-outlyy">
       <div className="grid gap-4 sm:grid-cols-2">
         {DIFFERENTIATORS.map((d) => (
           <div
@@ -70,12 +70,12 @@ export function WhyOutly({ className }: { className?: string }) {
 }
 
 const MARQUEE_ITEMS = [
-  { icon: BadgeIndianRupee, label: "All-in ₹ pricing" },
+  { icon: Tag, label: "All-in pricing" },
   { icon: Smartphone, label: "UPI · GPay · PhonePe · Paytm" },
   { icon: MessageCircle, label: "Human reply in 30 minutes" },
   { icon: Leaf, label: "Jain & pure-veg filters" },
   { icon: Truck, label: "Hotel pickup with driver details" },
-  { icon: ShieldCheck, label: "Verified suppliers, scored monthly" },
+  { icon: ShieldCheck, label: "Operator confirms before you pay" },
   { icon: CalendarCheck2, label: "Free cancellation where available" },
   { icon: ReceiptText, label: "GST invoice on every booking" },
 ];
@@ -85,7 +85,7 @@ const MARQUEE_ITEMS = [
  * pattern (21st.dev/@componentry/components/testimonial-marquee) — reimplemented
  * as a CSS keyframe translation with the track duplicated once, which avoids a
  * JS animation loop entirely. It is `aria-hidden` and duplicated content is
- * hidden from assistive tech; the same claims appear as real text in WhyOutly.
+ * hidden from assistive tech; the same claims appear as real text in WhyOutlyy.
  */
 export function TrustMarquee({ className }: { className?: string }) {
   const track = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
@@ -113,12 +113,20 @@ export function TrustMarquee({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Facts about how OUTLYY works, not invented performance numbers.
+ *
+ * This used to render "18,400+ Indian travellers booked" and "4.7/5 from
+ * 6,120 verified reviews" for a company that had never taken a booking.
+ * Everything here is either structural (how the model works) or a promise we
+ * publish and can be held to — nothing claims a track record we do not have.
+ */
 export function SocialProofStrip({ className }: { className?: string }) {
   const items = [
-    { value: platformStats.travellersServed.toLocaleString("en-IN") + "+", label: "Indian travellers booked" },
-    { value: `${platformStats.averageRating}/5`, label: `${platformStats.reviewCount.toLocaleString("en-IN")} verified reviews` },
-    { value: "30 min", label: "Reply promise, 9am–11pm IST" },
-    { value: `${platformStats.medianWhatsAppResponseMinutes} min`, label: "Median WhatsApp reply" },
+    { value: "Nothing", label: "Charged before a human confirms your booking" },
+    { value: "30 min", label: `Reply promise, ${siteConfig.supportHours}` },
+    { value: "All-in", label: "One price, in your currency, with nothing added at checkout" },
+    { value: "Jain · veg", label: "Filters and meal requests confirmed in writing" },
   ];
   return (
     <div
@@ -140,8 +148,8 @@ export function SocialProofStrip({ className }: { className?: string }) {
 /** Compact trust row for the ADP sidebar and checkout. */
 export function TrustSummary({ className }: { className?: string }) {
   const items = [
-    { icon: ShieldCheck, label: "Verified supplier, contracted directly" },
-    { icon: BadgeIndianRupee, label: "All-in price — nothing added at checkout" },
+    { icon: ShieldCheck, label: "Operator confirms availability before you pay" },
+    { icon: Tag, label: "All-in price — nothing added at checkout" },
     { icon: MessageCircle, label: "Confirmed with the operator before you pay" },
     { icon: Smartphone, label: "Named specialist replies in ~30 min" },
   ];

@@ -10,11 +10,25 @@
  */
 
 import { track } from "./analytics";
+import { PLACEHOLDER_WHATSAPP, siteConfig } from "./site-config";
 import type { PaxCount } from "./types";
 import { paxLabel } from "./utils";
 
-export const WHATSAPP_NUMBER = "919000000000"; // MOCK — replace with the BSP number
-export const SUPPORT_HOURS = "9am – 11pm IST, every day";
+/**
+ * Business WhatsApp number (digits only, with country code). Read from
+ * `siteConfig.whatsappNumber` (NEXT_PUBLIC_WHATSAPP_NUMBER; audit X03) so the
+ * whole site agrees on one value. The placeholder is kept only so development
+ * never ships a broken `wa.me` link; it is flagged loudly outside production
+ * builds, and display surfaces (footer, support, voucher) check
+ * `WHATSAPP_NUMBER_IS_PLACEHOLDER` and render nothing rather than a fake number.
+ */
+export const WHATSAPP_NUMBER = siteConfig.whatsappNumber ?? PLACEHOLDER_WHATSAPP;
+export const WHATSAPP_NUMBER_IS_PLACEHOLDER = siteConfig.whatsappNumber === undefined;
+if (WHATSAPP_NUMBER_IS_PLACEHOLDER && process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
+  // eslint-disable-next-line no-console
+  console.warn("[outlyy] NEXT_PUBLIC_WHATSAPP_NUMBER is not set — WhatsApp CTAs point at the placeholder number.");
+}
+export const SUPPORT_HOURS = siteConfig.supportHours;
 export const RESPONSE_SLA = "Replies in about 30 minutes";
 
 export type WhatsAppIntent =
@@ -73,25 +87,25 @@ function contextLines(ctx: WhatsAppContext): string[] {
 }
 
 const OPENERS: Record<WhatsAppIntent, string> = {
-  general: "Hi OUTLY! I'm planning a Dubai trip and could use some help.",
-  activity: "Hi OUTLY! I have a question about this activity before I book.",
-  combo: "Hi OUTLY! I'd like to know more about this package.",
-  availability: "Hi OUTLY! Is this available on my dates?",
-  group: "Hi OUTLY! I'm booking for a group and need help picking the right option.",
+  general: "Hi OUTLYY! I'm planning a Dubai trip and could use some help.",
+  activity: "Hi OUTLYY! I have a question about this activity before I book.",
+  combo: "Hi OUTLYY! I'd like to know more about this package.",
+  availability: "Hi OUTLYY! Is this available on my dates?",
+  group: "Hi OUTLYY! I'm booking for a group and need help picking the right option.",
   dietary:
-    "Hi OUTLY! I need to check the food options (veg / Jain / halal) for this activity.",
-  checkout_help: "Hi OUTLY! I'm at checkout and need a hand finishing my booking.",
-  payment_help: "Hi OUTLY! My payment didn't go through — can you help?",
-  abandoned_checkout: "Hi OUTLY! I'd like to finish the booking I started.",
-  booking_support: "Hi OUTLY! I need help with an existing booking.",
-  cancellation: "Hi OUTLY! I'd like to cancel a booking and check my refund.",
-  modification: "Hi OUTLY! I'd like to change the date or guests on my booking.",
-  voucher: "Hi OUTLY! Please resend my voucher on WhatsApp.",
+    "Hi OUTLYY! I need to check the food options (veg / Jain / halal) for this activity.",
+  checkout_help: "Hi OUTLYY! I'm at checkout and need a hand finishing my booking.",
+  payment_help: "Hi OUTLYY! My payment didn't go through — can you help?",
+  abandoned_checkout: "Hi OUTLYY! I'd like to finish the booking I started.",
+  booking_support: "Hi OUTLYY! I need help with an existing booking.",
+  cancellation: "Hi OUTLYY! I'd like to cancel a booking and check my refund.",
+  modification: "Hi OUTLYY! I'd like to change the date or guests on my booking.",
+  voucher: "Hi OUTLYY! Please resend my voucher on WhatsApp.",
   concierge:
-    "Hi OUTLY! I'd like a private, fully-arranged Dubai itinerary. Please have someone call me.",
-  quote: "Hi OUTLY! Please send me a quote for this experience.",
-  inquiry: "Hi OUTLY! Please check availability and price for my trip.",
-  inquiry_followup: "Hi OUTLY! Following up on my inquiry.",
+    "Hi OUTLYY! I'd like a private, fully-arranged Dubai itinerary. Please have someone call me.",
+  quote: "Hi OUTLYY! Please send me a quote for this experience.",
+  inquiry: "Hi OUTLYY! Please check availability and price for my trip.",
+  inquiry_followup: "Hi OUTLYY! Following up on my inquiry.",
 };
 
 export function buildWhatsAppMessage(ctx: WhatsAppContext): string {

@@ -116,7 +116,7 @@ export const ConfirmFirstBadge = ({ size }: { size?: "sm" | "md" }) => (
 
 export const EditorPickBadge = ({ size }: { size?: "sm" | "md" }) => (
   <Badge tone="premium" size={size} icon={<Sparkles className={ICON} />}>
-    OUTLY pick
+    OUTLYY pick
   </Badge>
 );
 

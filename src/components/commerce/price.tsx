@@ -1,10 +1,8 @@
-"use client";
-
 import { Info } from "lucide-react";
-import { useApp } from "@/components/providers/app-provider";
 import { SavingsBadge } from "@/components/ui/badge";
+import { allDisplays, type DisplayCurrency } from "@/lib/currency";
 import type { Money, PriceBand } from "@/lib/types";
-import { cn, priceIn, savingsPercent } from "@/lib/utils";
+import { cn, savingsPercent } from "@/lib/utils";
 
 /**
  * Price presentation.
@@ -15,10 +13,45 @@ import { cn, priceIn, savingsPercent } from "@/lib/utils";
  * all-in, and the "includes all taxes and fees" line is not optional garnish —
  * it is the differentiator against both the local agent and the global OTA.
  *
+ * ## Why every price renders three times
+ *
+ * These pages are statically prerendered (`revalidate = 60`), so the server
+ * has no visitor to render for. Reading the currency from React state instead
+ * would mean the HTML ships one currency and JavaScript swaps it after
+ * hydration — a visible flash and a layout shift on the single most important
+ * number on the page.
+ *
+ * So `Money` is rendered in all three currencies and CSS shows one, keyed off
+ * `data-ccy` on `<html>` which is set before the first paint. That makes these
+ * plain Server Components: no `useApp()`, no client bundle, no hydration cost,
+ * and the price is correct in the very first byte. The extra markup is about
+ * 30 bytes per price before compression.
+ *
  * A struck-through comparison price renders only when `compareAt` exists on the
  * SKU, which the catalogue only sets where the higher price is genuinely
  * verifiable (a published gate or walk-up rate). No invented anchors.
  */
+
+const CLASS_FOR: Record<DisplayCurrency, string> = {
+  INR: "ccy-v ccy-inr",
+  AED: "ccy-v ccy-aed",
+  USD: "ccy-v ccy-usd",
+};
+
+/**
+ * One amount, in every currency, with CSS deciding which is visible.
+ * `tnum` keeps the digits monospaced so swapping currency cannot reflow a row.
+ */
+export function Amount({ money, className }: { money: Money; className?: string }) {
+  const shown = allDisplays(money);
+  return (
+    <span className={cn("ccy tnum", className)}>
+      <span className={CLASS_FOR.INR}>{shown.INR}</span>
+      <span className={CLASS_FOR.AED}>{shown.AED}</span>
+      <span className={CLASS_FOR.USD}>{shown.USD}</span>
+    </span>
+  );
+}
 
 export function Price({
   money,
@@ -29,18 +62,13 @@ export function Price({
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
 }) {
-  const { currency } = useApp();
   const sizes = {
     sm: "text-base",
     md: "text-lg",
     lg: "text-2xl",
     xl: "text-[2rem] leading-none",
   }[size];
-  return (
-    <span className={cn("font-display font-bold tnum text-ink-900", sizes, className)}>
-      {priceIn(money, currency)}
-    </span>
-  );
+  return <Amount money={money} className={cn("font-display font-bold text-ink-900", sizes, className)} />;
 }
 
 export function PriceBlock({
@@ -58,7 +86,6 @@ export function PriceBlock({
   compact?: boolean;
   className?: string;
 }) {
-  const { currency } = useApp();
   const percent = savingsPercent(band.adult, band.compareAt);
 
   return (
@@ -69,9 +96,7 @@ export function PriceBlock({
         {perPerson && <span className="text-sm font-medium text-ink-500">per adult</span>}
         {band.compareAt && percent && (
           <>
-            <span className="text-sm text-ink-400 line-through tnum">
-              {priceIn(band.compareAt, currency)}
-            </span>
+            <Amount money={band.compareAt} className="text-sm text-ink-400 line-through" />
             <SavingsBadge percent={percent} size="sm" />
           </>
         )}
@@ -87,13 +112,13 @@ export function PriceBlock({
       {!compact && (band.child || band.senior || band.infant) && (
         <ul className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1 text-xs text-ink-600">
           {band.child && (
-            <li className="tnum">
-              Child (3–11): <strong className="font-bold">{priceIn(band.child, currency)}</strong>
+            <li>
+              Child (3–11): <Amount money={band.child} className="font-bold" />
             </li>
           )}
           {band.senior && band.senior.inr !== band.adult.inr && (
-            <li className="tnum">
-              Senior (60+): <strong className="font-bold">{priceIn(band.senior, currency)}</strong>
+            <li>
+              Senior (60+): <Amount money={band.senior} className="font-bold" />
             </li>
           )}
           {band.infant && band.infant.inr === 0 && (
@@ -109,19 +134,12 @@ export function PriceBlock({
 
 /** Card-sized price: no tax line, no pax table — used inside activity cards. */
 export function CardPrice({ band }: { band: PriceBand }) {
-  const { currency } = useApp();
   const percent = savingsPercent(band.adult, band.compareAt);
   return (
     <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
       <span className="text-2xs font-semibold uppercase tracking-wide text-ink-500">from</span>
-      <span className="font-display text-xl font-bold tnum text-ink-900">
-        {priceIn(band.adult, currency)}
-      </span>
-      {band.compareAt && percent && (
-        <span className="text-xs text-ink-400 line-through tnum">
-          {priceIn(band.compareAt, currency)}
-        </span>
-      )}
+      <Amount money={band.adult} className="font-display text-xl font-bold text-ink-900" />
+      {band.compareAt && percent && <Amount money={band.compareAt} className="text-xs text-ink-400 line-through" />}
       <span className="w-full text-2xs font-medium text-ink-500">
         per adult · all-in{percent ? ` · save ${percent}%` : ""}
       </span>
@@ -131,14 +149,11 @@ export function CardPrice({ band }: { band: PriceBand }) {
 
 /** "From ₹X — Request a quote" treatment for Tier D SKUs (AC-ADP-06). */
 export function QuotePrice({ from }: { from: Money }) {
-  const { currency } = useApp();
   return (
     <div>
       <p className="flex flex-wrap items-baseline gap-x-2">
         <span className="text-xs font-semibold text-ink-500">from</span>
-        <span className="font-display text-2xl font-bold tnum text-ink-900">
-          {priceIn(from, currency)}
-        </span>
+        <Amount money={from} className="font-display text-2xl font-bold text-ink-900" />
       </p>
       <p className="mt-1 max-w-sm text-xs leading-relaxed text-ink-600">
         Priced per booking, so the honest figure depends on your date, group and route. We send a
@@ -148,28 +163,4 @@ export function QuotePrice({ from }: { from: Money }) {
   );
 }
 
-export function CurrencyToggle({ className }: { className?: string }) {
-  const { currency, setCurrency } = useApp();
-  return (
-    <div
-      className={cn("inline-flex rounded-full border border-ink-200 bg-paper p-0.5", className)}
-      role="group"
-      aria-label="Display currency"
-    >
-      {(["INR", "AED"] as const).map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => setCurrency(c)}
-          aria-pressed={currency === c}
-          className={cn(
-            "rounded-full px-2.5 py-1 text-xs font-bold transition-colors",
-            currency === c ? "bg-ink-900 text-white" : "text-ink-600 hover:text-ink-900",
-          )}
-        >
-          {c === "INR" ? "₹ INR" : "AED"}
-        </button>
-      ))}
-    </div>
-  );
-}
+export { CurrencyToggle } from "./currency-toggle";

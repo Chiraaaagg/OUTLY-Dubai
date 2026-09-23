@@ -200,7 +200,7 @@ Zero egress. Vouchers are fetched repeatedly (customer, agent, gate scan, resend
 ### Payments — Razorpay first
 Razorpay for India: UPI, cards, netbanking, wallets, EMI, payment links (needed for the agent console), and a mature refunds API. **Published standard pricing is 2% + GST across modes, with custom pricing available above ₹5,00,000/month** — your business model assumes 2.2%, so the standard rate (~2.36% effective) is worse than modelled. Negotiate before launch (Blocker B3).
 
-Cashfree is a genuine alternative and often quotes lower; get both quotes. Stripe is not the India answer (UPI and EMI support are weaker) but is a candidate for the **UAE/AED** leg at V1 alongside Telr and Network International — that choice depends on the OUTLY entity (Blocker B5).
+Cashfree is a genuine alternative and often quotes lower; get both quotes. Stripe is not the India answer (UPI and EMI support are weaker) but is a candidate for the **UAE/AED** leg at V1 alongside Telr and Network International — that choice depends on the OUTLYY entity (Blocker B5).
 
 **Design so this is swappable:** a `PaymentGateway` port mirroring the supplier port, with `createOrder`, `createPaymentLink`, `verifyWebhook`, `refund`, `fetchPayment`. You *will* add a second gateway for AED.
 

@@ -28,7 +28,7 @@ under 15.
 | 12 | Couple + luxury rails | Personas B and C | Card → ADP | Collection | Swipe |
 | 13 | Seasonal + four value tiles | Timely relevance | Tile → landing page | — | Stacks |
 | 14 | Social proof | Verified reviews + platform stats | — | — | Swipe |
-| 15 | Why OUTLY | Four checkable promises | — | — | 1 column |
+| 15 | Why OUTLYY | Four checkable promises | — | — | 1 column |
 | 16 | FAQ + WhatsApp | Objection handling | Chat with a Dubai expert | — | Card moves below |
 
 **Merchandising rule enforced:** no Tier A SKU appears in positions 1–8 of any

@@ -41,13 +41,13 @@ That conflicts directly with two PRD requirements:
 - §15 — LCP < 2.5s at p75 on **mobile 4G**
 - §6 — "Designed for a mid-range Android on hotel wifi", not merely "responsive"
 
-So the patterns were adopted and reimplemented on OUTLY's own tokens with
+So the patterns were adopted and reimplemented on OUTLYY's own tokens with
 **CSS-only motion and zero new dependencies**. Total runtime dependencies:
 `lucide-react`, `clsx`, `tailwind-merge`. Shared first-load JS: ~102KB.
 
 ## 3. What was adapted, and how
 
-| 21st.dev source | Pattern taken | OUTLY implementation | Deliberate change |
+| 21st.dev source | Pattern taken | OUTLYY implementation | Deliberate change |
 |---|---|---|---|
 | Product Card (`@educalvolpz`) | Card anatomy: full-bleed image, badge top-left, wishlist top-right, rating row, price with strike-through and a discount chip, action button pinned to the bottom | `components/commerce/activity-card.tsx` | **Wishlist is never hover-gated.** The source reveals it on hover; on 80%+ mobile traffic hover does not exist, so ours is always visible at 44px. Motion is CSS `transition` + `@media (hover:hover)` rather than `motion/react`. Trust attributes (instant confirmation, free cancellation, dietary, pickup) outrank aesthetics on the card because they decide the click for this audience |
 | Product Card | `useReducedMotion` gating every animation | Global `@media (prefers-reduced-motion: reduce)` in `globals.css` | Applies to every component at once, including third-party markup, rather than per-component |
@@ -57,7 +57,7 @@ So the patterns were adopted and reimplemented on OUTLY's own tokens with
 | Booking Calendar / Appointment Calendar (`@cnippet-dev`) | Month grid with unavailable and fully-booked days greyed out, chosen slot highlighted | `DatePickerSheet` + `DateStrip` | Adds a **date strip** as the fast path — seven tappable days ahead of the calendar, because most bookings are within a week. Availability dots mark limited dates |
 | Smooth Drawer (`@kokonutd`) | Bottom drawer with staggered content and a pricing block | `components/ui/sheet.tsx` | One primitive serves bottom sheet, centred dialog and right drawer. Adds focus trap, focus restore, Escape and scroll lock — the source is presentational only |
 | Glass Checkout Card (`@moumensoliman`) | Payment-method selector layout | Checkout step 3 | No card fields anywhere — gateway-hosted only (AC-CO-07). Methods reordered for this audience: UPI first with the largest target |
-| Testimonial Marquee (`@componentry`) | Infinite horizontal marquee with edge fade masks | `TrustMarquee` | CSS keyframes with a duplicated track instead of a JS animation loop; duplicated items `aria-hidden`; the same claims appear as real text in `WhyOutly` |
+| Testimonial Marquee (`@componentry`) | Infinite horizontal marquee with edge fade masks | `TrustMarquee` | CSS keyframes with a duplicated track instead of a JS animation loop; duplicated items `aria-hidden`; the same claims appear as real text in `WhyOutlyy` |
 | Searchable FAQ Accordion (`@cnippet-dev`) | Expandable Q&A list | `components/ui/accordion.tsx` | Panels stay in the DOM when collapsed so FAQ content is crawlable for FAQPage structured data |
 | Not Found 06 (`@shadcnui-blocks`) | 404 as a grid of real destination cards rather than a single Home button | `app/not-found.tsx` | Adds bestseller activity cards, every category, and a WhatsApp route — a dead end is a lost booking |
 | Ticket Confirmation Card (`@ravikatiyar162`) + Admit One Ticket (`@larsen66`) | Receipt-style confirmation, perforated stub, barcode block | `/voucher/[reference]`, `ticket-edge` utility | Dashed perforation between sections, notch mask utility, print stylesheet targeting A4 (AC-VOU-04) |
@@ -69,7 +69,7 @@ So the patterns were adopted and reimplemented on OUTLY's own tokens with
 
 | Surface | Components used |
 |---|---|
-| Homepage | HeroSearch, QuickChips, ActivityCard (rail), ComboCard, CategoryCard, CollectionCard, ReviewCard, TrustMarquee, SocialProofStrip, WhyOutly, Accordion, WhatsAppCard, FloatingWhatsApp |
+| Homepage | HeroSearch, QuickChips, ActivityCard (rail), ComboCard, CategoryCard, CollectionCard, ReviewCard, TrustMarquee, SocialProofStrip, WhyOutlyy, Accordion, WhatsAppCard, FloatingWhatsApp |
 | SEO landing | LandingPageView, BenefitCard, ComparisonTable, ComboCard, StickyLandingCTA, Accordion |
 | Category / attraction / collection | FilterSidebar, FilterToolbar, ActiveFilterPills, ActivityCard, Accordion, Scene hero with scrim |
 | Search | loading.tsx skeleton, near-match Alert, EmptyState, CompareTray, pagination |
@@ -84,7 +84,7 @@ So the patterns were adopted and reimplemented on OUTLY's own tokens with
 
 ## 4b. Inquiry Mode additions (12 Sep 2026)
 
-| 21st.dev source | Pattern taken | OUTLY implementation | Deliberate change |
+| 21st.dev source | Pattern taken | OUTLYY implementation | Deliberate change |
 |---|---|---|---|
 | Contact 01 — Project Inquiry Form (`@shadcnspace/contact-01`) | 12-col grid: form beside contact details and trust signals | `/inquiry` | Split inverted to 7/5 — the form is the primary object |
 | Support Ticket Form (`@cnippet-dev/v-textarea-10`) | Category chips, textarea with live count, loading submit, in-place submitted state | `InquiryForm` (dietary + budget chips, notes counter) | Submitted state routed to `/inquiry/confirmation` so it survives refresh and carries the reference |

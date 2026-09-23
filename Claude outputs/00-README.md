@@ -1,7 +1,7 @@
-# OUTLY — Backend Architecture & Implementation Blueprint
+# OUTLYY — Backend Architecture & Implementation Blueprint
 
 **Version:** 1.0 · **Date:** 9 September 2026 · **Status:** For approval — do not begin implementation until §Approval Gate is signed off
-**Inputs:** Feasibility Report (3 Sep 2026) · PRD v1.0 (4 Sep 2026) · Business Model & Unit Economics (4 Sep 2026) · `Rathin API Flow 2.pdf` · the frontend codebase at `D:\Programs\OUTLY`
+**Inputs:** Feasibility Report (3 Sep 2026) · PRD v1.0 (4 Sep 2026) · Business Model & Unit Economics (4 Sep 2026) · `Rathin API Flow 2.pdf` · the frontend codebase at `D:\Programs\OUTLYY`
 
 ---
 

@@ -1,4 +1,4 @@
-# OUTLY — Dubai activities marketplace for Indian travellers
+# OUTLYY — Dubai activities marketplace for Indian travellers
 
 A production-shaped Next.js frontend for the product described in
 `dubai-activities-marketplace-prd.md`. Every page, flow and state in the PRD's
@@ -9,6 +9,12 @@ so backend work can start without touching the UI.
 
 > **Inquiry Mode (12 Sep 2026).** The storefront now terminates in
 > `POST /inquiries`, not `POST /orders`, per `docs/backend/17-inquiry-mode-pivot.md`.
+>
+> **Backend implemented (14 Sep 2026):** see `docs/backend/20-backend-implementation.md` and `docs/backend/impl/`. Admin console at `/admin`; bootstrap with `npm run db:migrate && npm run db:seed`.
+>
+> **UI/UX audit fixes + customer sign-in (19 Sep 2026):** see `docs/ui-audit-fixes.md` and `docs/backend/impl/customer-auth.md`.
+>
+> **Photography (19 Sep 2026):** real Pexels photography replaces the illustrated scenes — see `docs/images.md`.
 > Frontend implementation notes: `docs/inquiry-mode-implementation.md`. The
 > booking/checkout/voucher code is gated behind `Activity.fulfilmentMode`, not
 > deleted.
@@ -136,19 +142,18 @@ Everything that will one day be a network call already goes through
 | Leads | `requestQuote` | CRM / agent console |
 | Analytics transport | `lib/analytics.ts` → `deliver()` | Server-side collector + Meta CAPI |
 | Auth | `lib/data/bookings.ts` → `demoUser` | Session read + a guard in `app/account/layout.tsx` |
-| Content | `lib/data/*.ts` | CMS or admin-managed product model |
+| Content | `products.content` + `categories` in Postgres via `lib/catalog/server.ts`; `lib/data/*.ts` is the seed and fallback | Combos/collections/attractions/landing pages still fixtures |
 
 ### Deliberately mocked
 
-- **Auth.** `/login` and `/signup` render the OTP flow and its states; there is
-  no session. `/account` uses `demoUser`.
+- **Customer auth.** Real phone-OTP sessions; the SMS adapter logs the code
+  until `SMS_PROVIDER=msg91` is configured.
 - **Payments.** No gateway. `submitOrder` simulates latency and failure modes.
   No card fields exist anywhere in the codebase by design (AC-CO-07).
 - **Availability.** Deterministic from a hash of `(slug, date)` so server and
   client always agree and no fake scarcity can drift between two views.
-- **Images.** Every activity image is a generated SVG scene (`components/ui/scene.tsx`).
-  Passing an `http(s)` URL instead of a scene key switches to real photography
-  with no other change.
+- **Images.** Real Pexels photography per entity (`lib/images/manifest.ts`,
+  `/api/images`); the SVG scene is only the last-resort fallback.
 - **QR codes.** Visually representative, not scannable. One component
   (`components/commerce/voucher.tsx`) to swap.
 
@@ -158,6 +163,10 @@ Everything that will one day be a network call already goes through
 
 | Document | Contents |
 |---|---|
+| `api.md` | Every HTTP route, permission, body and error envelope |
+| `environment.md` | Every environment variable, where it is used, required now vs later |
+| `admin/README.md`, `admin/activities.md`, `admin/imports.md` | Operator guide: console pages, roles, activity management, imports |
+| `backend/impl/catalogue.md`, `backend/impl/security-round2.md` | Catalogue read/write model and the second security round |
 | `ux-strategy.md` | Positioning, competitor analysis, conversion rationale |
 | `information-architecture.md` | Sitemap, route table, user flows |
 | `design-system.md` | Tokens, component inventory, motion, responsive rules |

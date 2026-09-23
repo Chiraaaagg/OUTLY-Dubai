@@ -9,7 +9,7 @@ import { HeaderSearch } from "@/components/commerce/search-box";
 import { CurrencyToggle } from "@/components/commerce/price";
 import { WhatsAppButton } from "@/components/commerce/whatsapp";
 import { useApp } from "@/components/providers/app-provider";
-import { categories } from "@/lib/data/categories";
+import { useSlimCatalog } from "@/lib/catalog/client";
 import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
@@ -30,15 +30,39 @@ const SECONDARY_NAV = [
   { label: "Abu Dhabi", href: "/abu-dhabi-day-tours-from-dubai" },
 ];
 
+/**
+ * Signed-in hint (customer-auth contract §1): the backend sets a non-httpOnly
+ * `outlyy_customer=1` cookie beside the real session cookie. It carries no
+ * data — it only lets the header choose "Account" over "Sign in" without an
+ * API call. Read after mount so server and first client render agree.
+ */
+function useCustomerHint(pathname: string | null): boolean {
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    try {
+      setSignedIn(/(?:^|;\s*)outlyy_customer=1(?:;|$)/.test(document.cookie));
+    } catch {
+      setSignedIn(false);
+    }
+  }, [pathname]);
+  return signedIn;
+}
+
 export function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const { cart, wishlist, hydrated } = useApp();
+  const signedIn = useCustomerHint(pathname);
+  const accountHref = signedIn ? "/account" : "/login";
+  const accountLabel = signedIn ? "Your account" : "Sign in";
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
   const cartCount = hydrated ? cart.length : 0;
   const savedCount = hydrated ? wishlist.length : 0;
+
+  // The admin console renders its own shell (src/app/admin/layout.tsx).
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <>
@@ -55,14 +79,17 @@ export function Header() {
           {/* Short form on small screens: a truncated trust claim reads worse
               than a complete shorter one. */}
           <p className="truncate font-semibold">
-            <span className="sm:hidden">All-in ₹ pricing · Human reply in 30 min</span>
+            <span className="sm:hidden">All-in pricing · Human reply in 30 min</span>
             <span className="hidden sm:inline">
-              All-in ₹ pricing · No hidden fees · Human reply in 30 minutes
+              All-in pricing · No hidden fees · Human reply in 30 minutes
             </span>
           </p>
           <div className="hidden shrink-0 items-center gap-4 sm:flex">
             <Link href="/support" className="hover:underline">
               Help
+            </Link>
+            <Link href="/inquiry/track" className="hover:underline">
+              Track an inquiry
             </Link>
             <Link href="/manage-booking" className="hover:underline">
               Manage booking
@@ -112,9 +139,9 @@ export function Header() {
               </Link>
 
               <Link
-                href="/account"
+                href={accountHref}
                 className="hidden h-11 w-11 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100 sm:flex"
-                aria-label="Your account"
+                aria-label={accountLabel}
               >
                 <User className="h-5 w-5" />
               </Link>
@@ -166,7 +193,7 @@ export function Header() {
         </div>
       </header>
 
-      {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} />}
+      {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} signedIn={signedIn} />}
     </>
   );
 }
@@ -179,7 +206,8 @@ function Dot({ children }: { children: React.ReactNode }) {
   );
 }
 
-function MobileMenu({ onClose }: { onClose: () => void }) {
+function MobileMenu({ onClose, signedIn }: { onClose: () => void; signedIn: boolean }) {
+  const { categories } = useSlimCatalog();
   return (
     <div className="fixed inset-0 z-[75] lg:hidden">
       <button
@@ -238,13 +266,16 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
           </ul>
 
           <p className="mb-2 text-2xs font-extrabold uppercase tracking-[0.12em] text-ink-400">
-            Your bookings
+            Your inquiries
           </p>
           <ul className="space-y-0.5">
             {[
-              { label: "My trips", href: "/account/bookings" },
+              signedIn
+                ? { label: "Your account", href: "/account" }
+                : { label: "Sign in", href: "/login" },
+              { label: "My inquiries", href: signedIn ? "/account/inquiries" : "/login?next=%2Faccount%2Finquiries" },
+              { label: "Track an inquiry", href: "/inquiry/track" },
               { label: "Saved activities", href: "/account/saved" },
-              { label: "Find a booking", href: "/manage-booking" },
               { label: "Help & support", href: "/support" },
             ].map((item) => (
               <li key={item.href}>

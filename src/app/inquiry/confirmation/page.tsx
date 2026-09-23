@@ -12,8 +12,9 @@ import { ButtonLink } from "@/components/ui/button";
 import { Alert, Card, Skeleton } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
 import { track } from "@/lib/analytics";
-import { activities } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
 import { agents, formatDeadline } from "@/lib/inquiry";
+import { emergencyDisplay, emergencyHref } from "@/lib/site-config";
 import type { Agent, CartItem, PaxCount } from "@/lib/types";
 import { formatDateKey, paxLabel, priceIn } from "@/lib/utils";
 
@@ -59,13 +60,16 @@ export default function InquiryConfirmationPage() {
 
 function Inner() {
   const params = useSearchParams();
+  const { activities } = useCatalog();
+  const emergency = emergencyDisplay();
+  const emergencyTel = emergencyHref();
   const { currency, toast } = useApp();
   const [stored, setStored] = useState<StoredInquiry | null>(null);
   const reference = params.get("ref") ?? "INQ-000000";
 
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("outly.lastInquiry");
+      const raw = sessionStorage.getItem("outlyy.lastInquiry");
       if (raw) setStored(JSON.parse(raw) as StoredInquiry);
     } catch {
       /* page still works from the reference alone */
@@ -193,12 +197,14 @@ function Inner() {
             Travelling in the next 48 hours?
           </h2>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-            Message us on WhatsApp rather than waiting — it&apos;s faster, and for anything urgent the
-            phone line is answered by a person.
+            Message us on WhatsApp rather than waiting — it&apos;s faster
+            {emergency ? ", and for anything urgent the phone line is answered by a person." : "."}
           </p>
-          <a href="tel:+97140000000" className="mt-2 inline-block text-sm font-bold text-ink-900 underline">
-            +971 4 000 0000
-          </a>
+          {emergency && emergencyTel && (
+            <a href={emergencyTel} className="mt-2 inline-block text-sm font-bold text-ink-900 underline">
+              {emergency}
+            </a>
+          )}
         </Card>
 
         {outOfHours && (

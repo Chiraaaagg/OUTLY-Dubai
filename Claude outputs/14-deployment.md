@@ -7,7 +7,7 @@
 | | Development | Staging | Production |
 |---|---|---|---|
 | App | local `next dev` | Vercel preview (per PR) | Vercel production |
-| Domain | localhost:3000 | `staging.outly.in` | `outly.in` |
+| Domain | localhost:3000 | `staging.outlyy.com` | `outlyy.com` |
 | Database | Neon dev branch | Neon staging branch, **anonymised** prod copy | Neon production |
 | Redis | Upstash dev | Upstash staging | Upstash prod |
 | QStash | dev topic (or local no-op) | staging topic | prod topic |

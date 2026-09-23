@@ -2,10 +2,13 @@
 const nextConfig = {
   // Do not emit AGENTS.md / CLAUDE.md into the repo on dev start.
   agentRules: false,
+  // No framework fingerprint in responses (§13.8).
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "plus.unsplash.com" },
+      { protocol: "https", hostname: "images.pexels.com" },
     ],
     formats: ["image/avif", "image/webp"],
   },

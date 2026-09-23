@@ -3,8 +3,9 @@ import { ArrowRight, BadgeCheck, CheckCircle2, Quote, Users } from "lucide-react
 import { Badge } from "@/components/ui/badge";
 import { Card, Rating } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
-import type { Category, Collection, Combo, Review } from "@/lib/types";
+import type { Category, Collection, Combo } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Amount } from "@/components/commerce/price";
 
 /* ---------------------------------------------------------------------------
  * Category card — grid entry point. Emoji + scene keeps the grid scannable at
@@ -64,7 +65,12 @@ export function ComboCard({
   className?: string;
   layout?: "grid" | "rail";
 }) {
-  const saving = combo.separatePrice.inr - combo.bundlePrice.inr;
+  // The saving is a difference of two stored prices, so it carries both
+  // currencies and converts to USD like any other amount.
+  const savingMoney = {
+    inr: combo.separatePrice.inr - combo.bundlePrice.inr,
+    aed: combo.separatePrice.aed - combo.bundlePrice.aed,
+  };
   return (
     <Card
       as="article"
@@ -77,7 +83,9 @@ export function ComboCard({
       <div className="relative aspect-[16/9] overflow-hidden">
         <Scene src={combo.heroImage} alt="" scrim />
         <div className="absolute left-3 top-3">
-          <Badge tone="deal">Save ₹{saving.toLocaleString("en-IN")} per adult</Badge>
+          <Badge tone="deal">
+            Save <Amount money={savingMoney} /> per adult
+          </Badge>
         </div>
         <div className="absolute inset-x-3 bottom-3 text-white">
           <p className="text-2xs font-extrabold uppercase tracking-[0.12em] text-dune-200">
@@ -104,12 +112,8 @@ export function ComboCard({
         <div className="mt-auto flex items-end justify-between gap-3 border-t border-ink-200 pt-3">
           <div>
             <p className="flex items-baseline gap-2">
-              <span className="font-display text-xl font-bold tnum text-ink-900">
-                ₹{combo.bundlePrice.inr.toLocaleString("en-IN")}
-              </span>
-              <span className="text-sm text-ink-400 line-through tnum">
-                ₹{combo.separatePrice.inr.toLocaleString("en-IN")}
-              </span>
+              <Amount money={combo.bundlePrice} className="font-display text-xl font-bold text-ink-900" />
+              <Amount money={combo.separatePrice} className="text-sm text-ink-400 line-through" />
             </p>
             <p className="text-2xs text-ink-500">per adult, all-in · {combo.durationLabel}</p>
           </div>
@@ -155,74 +159,6 @@ export function CollectionCard({ collection }: { collection: Collection }) {
         </span>
       </div>
     </Link>
-  );
-}
-
-/* ---------------------------------------------------------------------------
- * Review card — verified bookings only
- * ------------------------------------------------------------------------ */
-
-export function ReviewCard({
-  review,
-  layout = "grid",
-  showActivity,
-}: {
-  review: Review;
-  layout?: "grid" | "rail";
-  showActivity?: boolean;
-}) {
-  return (
-    <Card
-      as="article"
-      className={cn(
-        "flex h-full flex-col gap-3 p-5",
-        layout === "rail" && "w-[19rem] sm:w-[21rem]",
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sun-100 font-display font-bold text-sun-700"
-          >
-            {review.author.charAt(0)}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-ink-900">{review.author}</p>
-            <p className="truncate text-xs text-ink-500">
-              {review.city} · {review.travellerType}
-            </p>
-          </div>
-        </div>
-        <Rating value={review.rating} showCount={false} size="sm" />
-      </div>
-
-      <div>
-        <h3 className="text-[0.95rem] leading-snug text-ink-900">{review.title}</h3>
-        <p className="mt-1.5 line-clamp-5 text-sm leading-relaxed text-ink-600">
-          <Quote className="mr-1 inline h-3.5 w-3.5 -translate-y-0.5 text-ink-300" aria-hidden="true" />
-          {review.body}
-        </p>
-      </div>
-
-      <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
-        <span className="inline-flex items-center gap-1 text-2xs font-bold text-[var(--color-success)]">
-          <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          Verified booking
-        </span>
-        {review.dietaryMet && (
-          <span className="text-2xs font-semibold text-ink-500">· Dietary request met</span>
-        )}
-        {showActivity && (
-          <Link
-            href={`/activities/${review.activitySlug}`}
-            className="w-full text-xs font-bold text-sun-700 underline underline-offset-2"
-          >
-            {review.activitySlug.replace(/-/g, " ")}
-          </Link>
-        )}
-      </div>
-    </Card>
   );
 }
 

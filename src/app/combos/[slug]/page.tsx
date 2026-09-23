@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { ComboCard } from "@/components/commerce/cards";
 import { ComboBooking } from "@/components/commerce/combo-booking";
 import { TrustSummary } from "@/components/commerce/trust";
@@ -12,8 +13,9 @@ import { Accordion } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs, Card, SectionHeading } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
-import { activitiesBySlugs } from "@/lib/data/activities";
+import { getActivitiesBySlugs } from "@/lib/catalog/server";
 import { combos, comboBySlug } from "@/lib/data/combos";
+import { Amount } from "@/components/commerce/price";
 
 export function generateStaticParams() {
   return combos.map((c) => ({ slug: c.slug }));
@@ -48,8 +50,9 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
   const combo = comboBySlug(slug);
   if (!combo) notFound();
 
-  const included = activitiesBySlugs(combo.includedSlugs);
-  const saving = combo.separatePrice.inr - combo.bundlePrice.inr;
+  const included = await getActivitiesBySlugs(combo.includedSlugs);
+  // Both stored currencies carry through, so the saving converts like any price.
+  const savingMoney = { inr: combo.separatePrice.inr - combo.bundlePrice.inr, aed: combo.separatePrice.aed - combo.bundlePrice.aed };
   const others = combos.filter((c) => c.slug !== combo.slug).slice(0, 3);
 
   return (
@@ -74,7 +77,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
             className="mb-4 [&_a]:text-white/70 [&_span]:text-white"
           />
           <Badge tone="deal" className="mb-3">
-            Save ₹{saving.toLocaleString("en-IN")} per adult
+            Save <Amount money={savingMoney} /> per adult
           </Badge>
           <h1 className="max-w-3xl text-[2rem] leading-tight text-white sm:text-4xl">
             {combo.name}
@@ -83,7 +86,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
         </div>
       </section>
 
-      <div className="container-page grid gap-8 py-10 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+      <div className="container-page grid grid-safe gap-8 py-10 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <div className="min-w-0">
           {/* The savings proof */}
           <Card className="p-5">
@@ -105,14 +108,14 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
                     <span className="min-w-0 text-sm font-semibold text-ink-900">{a.title}</span>
                   </Link>
                   <span className="shrink-0 text-sm font-bold tnum text-ink-700">
-                    ₹{a.price.adult.inr.toLocaleString("en-IN")}
+                    <Amount money={a.price.adult} />
                   </span>
                 </li>
               ))}
               <li className="flex items-center justify-between gap-4 py-3 text-sm">
                 <span className="font-bold text-ink-700">Bought separately</span>
                 <span className="font-bold tnum text-ink-500 line-through">
-                  ₹{combo.separatePrice.inr.toLocaleString("en-IN")}
+                  <Amount money={combo.separatePrice} />
                 </span>
               </li>
               <li className="flex items-center justify-between gap-4 py-3">
@@ -120,12 +123,12 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
                   As a package
                 </span>
                 <span className="font-display text-xl font-bold tnum text-ink-900">
-                  ₹{combo.bundlePrice.inr.toLocaleString("en-IN")}
+                  <Amount money={combo.bundlePrice} />
                 </span>
               </li>
             </ul>
             <p className="mt-2 rounded-[var(--radius-control)] bg-sunset-50 p-3 text-sm font-bold text-sunset-600">
-              You save ₹{saving.toLocaleString("en-IN")} per adult
+              You save <Amount money={savingMoney} /> per adult
             </p>
           </Card>
 
@@ -154,7 +157,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
               {included.map((a, i) => (
                 <ActivityCard
                   key={a.slug}
-                  activity={a}
+                  activity={toCard(a)}
                   layout="compact"
                   position={i + 1}
                   source={`combo_${combo.slug}`}
@@ -201,7 +204,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
             context={{
               intent: "combo",
               comboName: combo.name,
-              activityUrl: `https://outly.in/combos/${combo.slug}`,
+              activityUrl: `https://outlyy.com/combos/${combo.slug}`,
               placement: "combo_body",
             }}
             title="Want to swap something out?"
@@ -212,7 +215,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
         <aside className="lg:sticky lg:top-28">
           <ComboBooking combo={combo} />
           <Card className="mt-4 p-5">
-            <h2 className="mb-3 text-[0.95rem]">Why book this with OUTLY</h2>
+            <h2 className="mb-3 text-[0.95rem]">Why book this with OUTLYY</h2>
             <TrustSummary />
           </Card>
         </aside>

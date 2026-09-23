@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Compass, Search } from "lucide-react";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { WhatsAppCard } from "@/components/commerce/whatsapp";
 import { ButtonLink } from "@/components/ui/button";
 import { Scene } from "@/components/ui/scene";
-import { activities } from "@/lib/data/activities";
-import { categories } from "@/lib/data/categories";
+import { getActivities, getCategories } from "@/lib/catalog/server";
 
 /**
  * 404
@@ -16,7 +16,8 @@ import { categories } from "@/lib/data/categories";
  * pattern (21st.dev/@shadcnui-blocks/components/not-found-06), which pairs the
  * message with a grid of real destinations instead of a single Home button.
  */
-export default function NotFound() {
+export default async function NotFound() {
+  const [activities, categories] = await Promise.all([getActivities(), getCategories()]);
   const popular = activities
     .filter((a) => a.badges.bestseller)
     .slice(0, 4);
@@ -24,9 +25,15 @@ export default function NotFound() {
   return (
     <div className="container-page py-12 pb-20">
       <div className="mx-auto max-w-3xl text-center">
-        <div className="mx-auto mb-6 h-40 w-full max-w-sm overflow-hidden rounded-[var(--radius-tile)]">
-          <Scene src="dune-calm" alt="" />
-        </div>
+        {/* Brand 404 illustration, not a stock desert photo. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/outlyy-404.svg"
+          alt=""
+          width={480}
+          height={220}
+          className="mx-auto mb-6 h-auto w-full max-w-[480px]"
+        />
         <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-sun-600">
           Error 404
         </p>
@@ -56,7 +63,7 @@ export default function NotFound() {
           {popular.map((a, i) => (
             <ActivityCard
               key={a.slug}
-              activity={a}
+              activity={toCard(a)}
               layout="compact"
               position={i + 1}
               source="404"

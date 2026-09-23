@@ -21,13 +21,13 @@ Two rules govern every placement:
 already knowing what the customer is looking at:
 
 ```
-Hi OUTLY! I have a question about this activity before I book.
+Hi OUTLYY! I have a question about this activity before I book.
 
 Activity: Evening Desert Safari with Pure Veg & Jain Dinner — Private 4x4
 Date: Sat, 14 Sept · 15:00 pickup
 Guests: 2 adults, 2 children, 3 seniors
 Price shown: ₹20,930
-Link: https://outly.in/activities/evening-desert-safari-veg-jain
+Link: https://outlyy.com/activities/evening-desert-safari-veg-jain
 ```
 
 Passed where known: activity or package name and URL, selected variant, date,

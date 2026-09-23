@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { Currency, Money, PaxCount } from "./types";
+import { amountIn, formatIn, priceInDisplay } from "./currency";
+import type { Money, PaxCount } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -10,20 +11,16 @@ export function cn(...inputs: ClassValue[]) {
  * Money
  * ------------------------------------------------------------------------- */
 
-export function formatMoney(value: number, currency: Currency): string {
-  if (currency === "AED") {
-    return `AED ${value.toLocaleString("en-AE", { maximumFractionDigits: 0 })}`;
-  }
-  return `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-}
-
-export function pick(money: Money, currency: Currency): number {
-  return currency === "AED" ? money.aed : money.inr;
-}
-
-export function priceIn(money: Money, currency: Currency): string {
-  return formatMoney(pick(money, currency), currency);
-}
+/**
+ * Money formatting delegates to `src/lib/currency.ts`, which owns the display
+ * rules for all three currencies — INR and AED are stored, USD is derived from
+ * AED at the central-bank peg. These names stay because most of the codebase
+ * imports them, and they now take a `DisplayCurrency`, so a USD visitor sees
+ * dollars everywhere and not only where `<Amount>` renders.
+ */
+export const formatMoney = formatIn;
+export const pick = amountIn;
+export const priceIn = priceInDisplay;
 
 export function addMoney(a: Money, b: Money): Money {
   return { inr: a.inr + b.inr, aed: a.aed + b.aed };
@@ -51,7 +48,7 @@ export function paxTotal(pax: PaxCount): number {
 }
 
 export function paxBillable(pax: PaxCount): number {
-  // Infants are free on every OUTLY SKU; they still occupy a seat count.
+  // Infants are free on every OUTLYY SKU; they still occupy a seat count.
   return pax.adult + pax.child + pax.senior;
 }
 
@@ -69,6 +66,7 @@ export function paxLabel(pax: PaxCount): string {
  * ------------------------------------------------------------------------- */
 
 export function formatDuration(minutes: number): string {
+  if (!minutes || minutes <= 0) return "Duration on request";
   if (minutes >= 1440) {
     const days = Math.round(minutes / 1440);
     return `${days} day${days > 1 ? "s" : ""}`;

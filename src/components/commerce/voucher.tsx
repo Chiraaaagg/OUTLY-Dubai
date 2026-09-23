@@ -68,7 +68,7 @@ export function VoucherActions({ reference }: { reference: string }) {
         variant="ghost"
         onClick={() => {
           if (navigator.share) {
-            void navigator.share({ title: `OUTLY booking ${reference}`, url: window.location.href });
+            void navigator.share({ title: `OUTLYY booking ${reference}`, url: window.location.href });
           } else {
             void navigator.clipboard?.writeText(window.location.href);
             toast({ tone: "success", title: "Link copied" });

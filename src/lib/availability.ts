@@ -1,6 +1,9 @@
 import type { Activity, ActivityStatus } from "./types";
 import { addDays, hash, seeded, toDateKey } from "./utils";
 
+/** Fields the deterministic availability model reads. */
+export type AvailabilityActivity = Pick<Activity, "slug" | "timeSlots" | "quoteOnly" | "confirmation" | "pickupIncluded" | "bookedThisMonth">;
+
 /**
  * Availability model (MOCK).
  *
@@ -29,7 +32,7 @@ export function tomorrow(): string {
   return addDays(today(), 1);
 }
 
-export function getAvailability(activity: Activity, date: string): Availability {
+export function getAvailability(activity: AvailabilityActivity, date: string): Availability {
   if (activity.quoteOnly) {
     return { date, status: "quote_only", slots: [] };
   }
@@ -65,7 +68,7 @@ export function getAvailability(activity: Activity, date: string): Availability 
 }
 
 /** AC-ADP-02: never show an error for an unavailable date — offer the next three. */
-export function nextAvailableDates(activity: Activity, from: string, count = 3): string[] {
+export function nextAvailableDates(activity: AvailabilityActivity, from: string, count = 3): string[] {
   const out: string[] = [];
   let cursor = from;
   for (let i = 1; i <= 45 && out.length < count; i++) {
@@ -75,7 +78,7 @@ export function nextAvailableDates(activity: Activity, from: string, count = 3):
   return out;
 }
 
-export function isAvailableOn(activity: Activity, date: string): boolean {
+export function isAvailableOn(activity: AvailabilityActivity, date: string): boolean {
   return getAvailability(activity, date).status !== "sold_out";
 }
 
@@ -84,13 +87,13 @@ export function isAvailableOn(activity: Activity, date: string): boolean {
  * this is derived from the supplier's real operating cutoff, not a countdown
  * invented to pressure the customer.
  */
-export function sameDayCutoff(activity: Activity): string | null {
+export function sameDayCutoff(activity: AvailabilityActivity): string | null {
   if (activity.pickupIncluded) return "11:00";
   if (activity.confirmation === "manual") return null;
   return "2 hours before your slot";
 }
 
 /** Deterministic "booked in the last 24h" figure — derived, never random. */
-export function recentBookings(activity: Activity): number {
+export function recentBookings(activity: AvailabilityActivity): number {
   return 3 + seeded(`${activity.slug}:recent`, 22);
 }

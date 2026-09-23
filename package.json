@@ -1,31 +1,55 @@
 {
-  "name": "outly",
+  "name": "outlyy",
   "version": "0.1.0",
   "private": true,
-  "description": "OUTLY - Dubai activities marketplace for Indian travellers",
+  "description": "OUTLYY - Dubai activities marketplace for Indian travellers",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "node --env-file=.env.local node_modules/prisma/build/index.js migrate deploy",
+    "db:migrate:dev": "node --env-file=.env.local node_modules/prisma/build/index.js migrate dev",
+    "db:status": "node --env-file=.env.local node_modules/prisma/build/index.js migrate status",
+    "db:seed": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs prisma/seed.ts",
+    "db:studio": "node --env-file=.env.local node_modules/prisma/build/index.js studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@neon/config": "^1.4.2",
     "@neon/env": "^1.3.2",
+    "@prisma/client": "^6.19.3",
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
+    "jose": "^6.2.12",
     "lucide-react": "^0.468.0",
     "next": "^16.3.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-merge": "^2.5.5"
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^2.5.5",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
+    "prisma": "^6.19.3",
     "tailwindcss": "^4.1.13",
-    "typescript": "^5.7.2"
+    "tsx": "^4.23.13",
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true
   }
 }

@@ -46,6 +46,12 @@ export class ApiError extends Error {
     /** Plain-language recovery instruction shown to the customer. */
     readonly recovery: string,
     readonly retryable = true,
+    /** Server field-level messages (VALIDATION_FAILED) — rendered inline at the field. */
+    readonly fields?: Record<string, string>,
+    /** The server's own §12 code (NOT_FOUND, RATE_LIMITED, NOT_CONFIGURED, …) when the error came from the API. */
+    readonly serverCode?: string,
+    /** HTTP status when the error came from the API. */
+    readonly status?: number,
   ) {
     super(message);
     this.name = "ApiError";

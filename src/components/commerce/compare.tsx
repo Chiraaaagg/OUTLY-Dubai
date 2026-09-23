@@ -6,9 +6,10 @@ import { useApp } from "@/components/providers/app-provider";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Scene } from "@/components/ui/scene";
 import { Rating } from "@/components/ui/primitives";
-import { activityBySlug } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
 import type { Activity } from "@/lib/types";
 import { cn, formatDuration, priceIn } from "@/lib/utils";
+import type { DisplayCurrency } from "@/lib/currency";
 
 /**
  * Compare tray + comparison table.
@@ -28,7 +29,7 @@ export type CompareColumn =
   | "dietary"
   | "private";
 
-const ROWS: { id: CompareColumn; label: string; render: (a: Activity, currency: "INR" | "AED") => React.ReactNode }[] =
+const ROWS: { id: CompareColumn; label: string; render: (a: Activity, currency: DisplayCurrency) => React.ReactNode }[] =
   [
     {
       id: "price",
@@ -225,11 +226,15 @@ export function ComparisonTable({
 /** Floating tray that appears once two or more activities are selected. */
 export function CompareTray() {
   const { compare, toggleCompare, clearCompare, hydrated } = useApp();
+  const { activities } = useCatalog();
   if (!hydrated || compare.length === 0) return null;
 
-  const items = compare.map(activityBySlug).filter((a): a is Activity => Boolean(a));
+  const items = compare.map((slug) => activities.find((a) => a.slug === slug)).filter((a): a is Activity => Boolean(a));
 
   return (
+    <>
+    {/* In-flow spacer: the bar below is fixed, so without this it hides the last content on the page. */}
+    <div aria-hidden="true" className="h-24" />
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-200 bg-paper/97 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-sticky)] backdrop-blur">
       <div className="container-page flex items-center gap-3 px-0">
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
@@ -268,5 +273,6 @@ export function CompareTray() {
         </ButtonLink>
       </div>
     </div>
+    </>
   );
 }

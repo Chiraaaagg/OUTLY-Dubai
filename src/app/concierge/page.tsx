@@ -10,7 +10,8 @@ import { Alert, Breadcrumbs, Card, SectionHeading, Skeleton } from "@/components
 import { Scene } from "@/components/ui/scene";
 import { track } from "@/lib/analytics";
 import { requestQuote } from "@/lib/api";
-import { activities } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
+import { emergencyDisplay, emergencyHref } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,8 +32,11 @@ export default function ConciergePage() {
 
 function ConciergeInner() {
   const params = useSearchParams();
+  const { activities } = useCatalog();
   const sku = params.get("sku");
   const prefilled = sku ? activities.find((a) => a.slug === sku) : undefined;
+  const deskPhone = emergencyDisplay();
+  const deskPhoneHref = emergencyHref();
 
   const [form, setForm] = useState({
     name: "",
@@ -96,13 +100,15 @@ function ConciergeInner() {
             quote within two hours.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href="tel:+97140000000"
-              className="inline-flex min-h-13 items-center gap-2 rounded-[var(--radius-control)] bg-white px-5 font-bold text-ink-900"
-            >
-              <Phone className="h-[1.15rem] w-[1.15rem]" />
-              +971 4 000 0000
-            </a>
+            {deskPhone && deskPhoneHref && (
+              <a
+                href={deskPhoneHref}
+                className="inline-flex min-h-13 items-center gap-2 rounded-[var(--radius-control)] bg-white px-5 font-bold text-ink-900"
+              >
+                <Phone className="h-[1.15rem] w-[1.15rem]" />
+                {deskPhone}
+              </a>
+            )}
             <WhatsAppButton
               size="lg"
               variant="whatsapp"
@@ -112,7 +118,7 @@ function ConciergeInner() {
         </div>
       </section>
 
-      <div className="container-page grid gap-8 py-12 lg:grid-cols-[1.15fr_1fr] lg:items-start">
+      <div className="container-page grid grid-safe gap-8 py-12 lg:grid-cols-[1.15fr_1fr] lg:items-start">
         <Card className="p-6">
           <h2 className="text-2xl">Request a quote</h2>
           <p className="mt-1.5 text-sm text-ink-600">
@@ -212,7 +218,8 @@ function ConciergeInner() {
 
               {state === "error" && (
                 <Alert tone="danger" title="That didn't send">
-                  Try again, or call us directly on +971 4 000 0000 — nothing you typed is lost.
+                  Try again{deskPhone ? `, or call us directly on ${deskPhone}` : ", or message us on WhatsApp"}{" "}
+                  — nothing you typed is lost.
                 </Alert>
               )}
 

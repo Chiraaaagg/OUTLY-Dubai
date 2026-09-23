@@ -14,12 +14,13 @@ import { PageView } from "@/components/analytics/page-view";
 import { WhatsAppCard } from "@/components/commerce/whatsapp";
 import { ButtonLink } from "@/components/ui/button";
 import { Breadcrumbs, Card, SectionHeading } from "@/components/ui/primitives";
+import { emergencyDisplay, emergencyHref, whatsappDisplay } from "@/lib/site-config";
 import { RESPONSE_SLA, SUPPORT_HOURS } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
   title: "Help & Support",
   description:
-    "Find a booking, resend a voucher, change a date, cancel, or reach a human on WhatsApp in about eight minutes. 24/7 emergency support while you're in Dubai.",
+    "Find a booking, change a date, cancel, or reach a human on WhatsApp in about 30 minutes during our working hours.",
   alternates: { canonical: "/support" },
 };
 
@@ -77,6 +78,10 @@ const TASKS = [
  * a page, not a conversation.
  */
 export default function SupportPage() {
+  const wa = whatsappDisplay();
+  const emergency = emergencyDisplay();
+  const emergencyTel = emergencyHref();
+  const channelCount = 1 + (emergency ? 2 : 0);
   return (
     <div className="container-page py-6 pb-20">
       <PageView pageType="support" />
@@ -85,7 +90,7 @@ export default function SupportPage() {
         <h1 className="text-[1.75rem] sm:text-3xl">How can we help?</h1>
         <p className="mt-1.5 text-[0.95rem] text-ink-600">
           Most things below are faster to do yourself. If they&apos;re not, a real person answers on
-          WhatsApp in about eight minutes.
+          WhatsApp in about 30 minutes.
         </p>
 
         <section className="mt-8" aria-labelledby="tasks">
@@ -112,9 +117,13 @@ export default function SupportPage() {
             id="channels"
             kicker="When you need a person"
             title="How to reach us"
-            sub="Three channels, each for a different kind of problem."
+            sub={
+              channelCount === 3
+                ? "Three channels, each for a different kind of problem."
+                : "One channel, a real person on the other end."
+            }
           />
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className={`grid gap-4 ${channelCount === 3 ? "sm:grid-cols-3" : "sm:max-w-md"}`}>
             <Card className="p-5">
               <MessageCircle className="mb-2 h-5 w-5 text-whatsapp" aria-hidden="true" />
               <h3 className="text-[1.02rem]">WhatsApp — the main one</h3>
@@ -122,30 +131,34 @@ export default function SupportPage() {
                 {RESPONSE_SLA} during {SUPPORT_HOURS}. Out of hours you get an automatic
                 acknowledgement within a minute telling you when we&apos;ll reply.
               </p>
-              <p className="mt-2 font-bold text-ink-900">+91 90000 00000</p>
+              {wa && <p className="mt-2 font-bold text-ink-900">{wa}</p>}
             </Card>
-            <Card className="p-5">
-              <Phone className="mb-2 h-5 w-5 text-sun-500" aria-hidden="true" />
-              <h3 className="text-[1.02rem]">Phone</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                For bookings over ₹25,000, all private experiences, and anything within 48 hours of
-                travel.
-              </p>
-              <a href="tel:+97140000000" className="mt-2 block font-bold text-ink-900 underline">
-                +971 4 000 0000
-              </a>
-            </Card>
-            <Card className="border-[color-mix(in_oklab,var(--color-danger)_25%,white)] p-5">
-              <Phone className="mb-2 h-5 w-5 text-[var(--color-danger)]" aria-hidden="true" />
-              <h3 className="text-[1.02rem]">24/7 emergency</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                On every voucher. For anything happening right now in Dubai — a driver who
-                hasn&apos;t come, a ticket rejected at a gate.
-              </p>
-              <a href="tel:+97140000000" className="mt-2 block font-bold text-ink-900 underline">
-                +971 4 000 0000
-              </a>
-            </Card>
+            {emergency && emergencyTel && (
+              <>
+                <Card className="p-5">
+                  <Phone className="mb-2 h-5 w-5 text-sun-500" aria-hidden="true" />
+                  <h3 className="text-[1.02rem]">Phone</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+                    For bookings over ₹25,000, all private experiences, and anything within 48 hours
+                    of travel.
+                  </p>
+                  <a href={emergencyTel} className="mt-2 block font-bold text-ink-900 underline">
+                    {emergency}
+                  </a>
+                </Card>
+                <Card className="border-[color-mix(in_oklab,var(--color-danger)_25%,white)] p-5">
+                  <Phone className="mb-2 h-5 w-5 text-[var(--color-danger)]" aria-hidden="true" />
+                  <h3 className="text-[1.02rem]">24/7 emergency</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+                    On every voucher. For anything happening right now in Dubai — a driver who
+                    hasn&apos;t come, a ticket rejected at a gate.
+                  </p>
+                  <a href={emergencyTel} className="mt-2 block font-bold text-ink-900 underline">
+                    {emergency}
+                  </a>
+                </Card>
+              </>
+            )}
           </div>
         </section>
 

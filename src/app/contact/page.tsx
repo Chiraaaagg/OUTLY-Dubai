@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, Breadcrumbs, Card } from "@/components/ui/primitives";
 import { track } from "@/lib/analytics";
 import { requestQuote } from "@/lib/api";
+import { emergencyDisplay, emergencyHref, siteConfig } from "@/lib/site-config";
 import { RESPONSE_SLA, SUPPORT_HOURS } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,11 @@ export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", topic: TOPICS[0], message: "" });
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const emergency = emergencyDisplay();
+  const emergencyTel = emergencyHref();
+  const entity = [siteConfig.legalName, siteConfig.dubaiLicence && `Dubai DET licence ${siteConfig.dubaiLicence}`, siteConfig.vatTrn && `TRN ${siteConfig.vatTrn}`, siteConfig.gstin && `GSTIN ${siteConfig.gstin}`]
+    .filter(Boolean)
+    .join(" · ");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +71,7 @@ export default function ContactPage() {
           The form below is for invoices, group bookings and supplier enquiries.
         </p>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+        <div className="mt-8 grid grid-safe gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
           <Card className="p-5">
             <h2 className="text-xl">Send us a message</h2>
             {state === "sent" ? (
@@ -177,24 +183,28 @@ export default function ContactPage() {
             <Card className="p-5">
               <h2 className="text-lg">Other ways</h2>
               <ul className="mt-3 space-y-3 text-sm">
-                <li className="flex gap-2.5">
-                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
-                  <span>
-                    <strong className="block font-bold text-ink-900">24/7 emergency</strong>
-                    <a href="tel:+97140000000" className="text-ink-600 underline">
-                      +971 4 000 0000
-                    </a>
-                  </span>
-                </li>
-                <li className="flex gap-2.5">
-                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
-                  <span>
-                    <strong className="block font-bold text-ink-900">Email</strong>
-                    <a href="mailto:help@outly.in" className="text-ink-600 underline">
-                      help@outly.in
-                    </a>
-                  </span>
-                </li>
+                {emergency && emergencyTel && (
+                  <li className="flex gap-2.5">
+                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
+                    <span>
+                      <strong className="block font-bold text-ink-900">24/7 emergency</strong>
+                      <a href={emergencyTel} className="text-ink-600 underline">
+                        {emergency}
+                      </a>
+                    </span>
+                  </li>
+                )}
+                {siteConfig.supportEmail && (
+                  <li className="flex gap-2.5">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
+                    <span>
+                      <strong className="block font-bold text-ink-900">Email</strong>
+                      <a href={`mailto:${siteConfig.supportEmail}`} className="text-ink-600 underline">
+                        {siteConfig.supportEmail}
+                      </a>
+                    </span>
+                  </li>
+                )}
                 <li className="flex gap-2.5">
                   <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
                   <span>
@@ -205,19 +215,15 @@ export default function ContactPage() {
                 <li className="flex gap-2.5">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
                   <span>
-                    <strong className="block font-bold text-ink-900">Offices</strong>
-                    <span className="text-ink-600">
-                      Mumbai, India · Business Bay, Dubai, UAE
-                    </span>
+                    <strong className="block font-bold text-ink-900">Registered office</strong>
+                    <span className="text-ink-600">{siteConfig.registeredAddress ?? "Dubai, United Arab Emirates"}</span>
                   </span>
                 </li>
                 <li className="flex gap-2.5">
                   <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
                   <span>
                     <strong className="block font-bold text-ink-900">Registered entity</strong>
-                    <span className="text-ink-600">
-                      OUTLY Travel Technologies Pvt. Ltd. · GSTIN 07AABCO1234A1Z5
-                    </span>
+                    <span className="text-ink-600">{entity}</span>
                   </span>
                 </li>
               </ul>

@@ -3,21 +3,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { CompareTray } from "@/components/commerce/compare";
 import { ActiveFilterPills, FilterSidebar, FilterToolbar } from "@/components/commerce/filters";
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Accordion } from "@/components/ui/accordion";
 import { ButtonLink } from "@/components/ui/button";
-import { Alert, Breadcrumbs, EmptyState, Prose, SectionHeading } from "@/components/ui/primitives";
+import { Alert, Breadcrumbs, Card, EmptyState, Prose, SectionHeading } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
-import { categories, categoryBySlug } from "@/lib/data/categories";
-import { activitiesBySlugs } from "@/lib/data/activities";
+import { getActivities, getActivitiesBySlugs, getCategories, getCategoryBySlug } from "@/lib/catalog/server";
 import { searchActivities } from "@/lib/search";
 import type { Dietary, SearchFilters, SortKey, Suitability } from "@/lib/types";
 import { Suspense } from "react";
 
-export function generateStaticParams() {
-  return categories.map((c) => ({ slug: c.slug }));
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  return (await getCategories()).map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({
@@ -26,10 +28,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const category = categoryBySlug(slug);
+  const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Category not found" };
   return {
-    title: `${category.name} — All-In Rupee Pricing`,
+    title: `${category.name} — All-In Pricing`,
     description: category.intro.slice(0, 155),
     alternates: { canonical: `/categories/${category.slug}` },
   };
@@ -54,8 +56,9 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
   const sp = await searchParams;
-  const category = categoryBySlug(slug);
+  const category = await getCategoryBySlug(slug);
   if (!category) notFound();
+  const [allActivities, allCategories] = await Promise.all([getActivities(), getCategories()]);
 
   const get = (k: string) => (Array.isArray(sp[k]) ? sp[k]?.[0] : (sp[k] as string | undefined));
   const list = (k: string) => (get(k) ?? "").split(",").filter(Boolean);
@@ -75,11 +78,13 @@ export default async function CategoryPage({
     sort: (get("sort") as SortKey) ?? "recommended",
   };
 
-  const result = searchActivities(filters);
-  const featured = activitiesBySlugs(category.featuredSlugs);
+  const result = searchActivities(filters, allActivities);
+  const featured = await getActivitiesBySlugs(category.featuredSlugs);
   const related = category.relatedSlugs
-    .map(categoryBySlug)
+    .map((s) => allCategories.find((c) => c.slug === s))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
+  /** Two-column reading layout on lg only when the copy is long enough to need it. */
+  const longIntro = category.intro.length >= 900;
 
   return (
     <>
@@ -111,35 +116,43 @@ export default async function CategoryPage({
         </div>
       </section>
 
-      {/* Curated top picks — Tier B/C first, before the raw grid */}
-      <section className="container-page py-10" aria-labelledby="top-picks">
-        <SectionHeading
-          id="top-picks"
-          kicker="Our picks"
-          title={`The ${category.shortName.toLowerCase()} we'd book ourselves`}
-          sub="Curated first, catalogue second. These are the ones we send our own families on."
-        />
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {featured.map((a, i) => (
-            <ActivityCard
-              key={a.slug}
-              activity={a}
-              position={i + 1}
-              source="category_featured"
-              showCompare
-              showInquiry
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Full filtered list */}
-      <div className="container-page grid gap-8 pb-12 lg:grid-cols-[17rem_1fr]">
+      {/*
+       * Catalogue area (audit S06): the sticky filter sidebar starts at the top
+       * of this grid, and the curated picks live in the right column above the
+       * full list — Tier B/C first, catalogue second, without pushing the
+       * filters below the fold.
+       */}
+      <div className="container-page grid grid-safe gap-8 py-10 lg:grid-cols-[17rem_1fr]">
         <Suspense fallback={<div className="hidden lg:block" />}>
           <FilterSidebar resultCount={result.total} />
         </Suspense>
 
         <div className="min-w-0">
+          {featured.length > 0 && (
+            <section className="mb-10" aria-labelledby="top-picks">
+              <SectionHeading
+                id="top-picks"
+                kicker="Our picks"
+                title={`The ${category.shortName.toLowerCase()} we'd book ourselves`}
+                sub="Curated first, catalogue second. These are the ones we send our own families on."
+              />
+              {/* 2 × 2 of compact cards on lg — visible, stable, never dominant. */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {featured.map((a, i) => (
+                  <ActivityCard
+                    key={a.slug}
+                    activity={toCard(a)}
+                    layout="compact"
+                    position={i + 1}
+                    source="category_featured"
+                    showCompare
+                    showInquiry
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           <h2 className="mb-4 text-2xl">
             All {category.shortName.toLowerCase()} ({result.total})
           </h2>
@@ -154,7 +167,7 @@ export default async function CategoryPage({
               {result.activities.map((a, i) => (
                 <ActivityCard
                   key={a.slug}
-                  activity={a}
+                  activity={toCard(a)}
                   position={i + 1}
                   source="category_grid"
                   showCompare
@@ -169,12 +182,13 @@ export default async function CategoryPage({
               </Alert>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {result.relaxed.activities.map((a, i) => (
-                  <ActivityCard key={a.slug} activity={a} position={i + 1} source="category_relaxed" />
+                  <ActivityCard key={a.slug} activity={toCard(a)} position={i + 1} source="category_relaxed" />
                 ))}
               </div>
             </div>
           ) : (
             <EmptyState
+          illustration="filters"
               title="Nothing matches those filters here"
               body="Try removing a filter, or ask us — we can often arrange something that isn't in the public catalogue."
               action={<ButtonLink href={`/categories/${category.slug}`}>Clear filters</ButtonLink>}
@@ -183,15 +197,16 @@ export default async function CategoryPage({
         </div>
       </div>
 
-      {/* SEO body copy — unique, useful, ≥300 words (AC-CAT-01) */}
+      {/* SEO body copy — unique, useful, ≥300 words (AC-CAT-01). Audit S05: same
+          heading + paper surface treatment as the FAQ block below it. */}
       <section className="container-page pb-10" aria-labelledby="about">
-        <div className="mx-auto max-w-3xl">
-          <h2 id="about" className="text-2xl">
-            About {category.name.toLowerCase()}
-          </h2>
-          <Prose className="mt-3">
-            <p>{category.intro}</p>
-          </Prose>
+        <div className={longIntro ? undefined : "mx-auto max-w-3xl"}>
+          <SectionHeading id="about" kicker="About" title={`About ${category.name.toLowerCase()}`} />
+          <Card className="p-5 sm:p-6">
+            <Prose className={longIntro ? "lg:columns-2 lg:gap-10" : undefined}>
+              <p>{category.intro}</p>
+            </Prose>
+          </Card>
         </div>
       </section>
 
@@ -257,7 +272,7 @@ export default async function CategoryPage({
               {
                 "@type": "BreadcrumbList",
                 itemListElement: [
-                  { "@type": "ListItem", position: 1, name: "Dubai", item: "https://outly.in/" },
+                  { "@type": "ListItem", position: 1, name: "Dubai", item: "https://outlyy.com/" },
                   { "@type": "ListItem", position: 2, name: category.name },
                 ],
               },

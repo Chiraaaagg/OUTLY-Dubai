@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bug, Loader2, Sparkles } from "lucide-react";
 import { ActivityCard } from "@/components/commerce/activity-card";
-import { ComboCard, ReviewCard, CategoryCard, BenefitCard } from "@/components/commerce/cards";
+import { ComboCard, CategoryCard, BenefitCard } from "@/components/commerce/cards";
+import { SisterReviewCard } from "@/components/commerce/sister-reviews";
+import { sisterReviews } from "@/lib/data/sister-reviews";
 import { PriceBlock, QuotePrice, CurrencyToggle } from "@/components/commerce/price";
-import { TrustMarquee, TrustSummary, WhyOutly, PaymentMethods } from "@/components/commerce/trust";
+import { TrustMarquee, TrustSummary, WhyOutlyy, PaymentMethods } from "@/components/commerce/trust";
 import { WhatsAppButton, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { VoucherCode } from "@/components/commerce/voucher";
 import { AgentCard, ConfirmFirstNote, HowItWorks, IndicativePriceNote, NextSteps, ResponsePromise } from "@/components/commerce/inquiry-ui";
@@ -51,7 +53,6 @@ import { SCENARIOS } from "@/lib/api/client";
 import { activities } from "@/lib/data/activities";
 import { categories } from "@/lib/data/categories";
 import { combos } from "@/lib/data/combos";
-import { reviews } from "@/lib/data/reviews";
 import { EMPTY_PAX, toDateKey } from "@/lib/utils";
 import type { PaxCount } from "@/lib/types";
 
@@ -162,7 +163,7 @@ export default function DesignSystemPage() {
   return (
     <div className="container-page py-6 pb-20">
       <Breadcrumbs items={[{ label: "Dubai", href: "/" }, { label: "Design system" }]} className="mb-3" />
-      <h1 className="text-[2rem] sm:text-4xl">OUTLY design system</h1>
+      <h1 className="text-[2rem] sm:text-4xl">OUTLYY design system</h1>
       <p className="mt-2 max-w-2xl text-[1.02rem] leading-relaxed text-ink-600">
         Tokens, components and every interaction state in one place. Playful but not childish;
         vibrant but disciplined. Decoration never competes with price, availability, the booking
@@ -203,7 +204,7 @@ export default function DesignSystemPage() {
 
       {/* ---------------------------------------------------- BRAND */}
       <Section title="Brand direction" kicker="Personality">
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+        <div className="grid grid-safe gap-4 lg:grid-cols-[1.2fr_1fr]">
           <Card className="sun-wash p-6">
             <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-sun-700">
               Voice
@@ -403,8 +404,8 @@ export default function DesignSystemPage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <CategoryCard category={categories[1]} count={4} className="aspect-[5/4]" />
             <ComboCard combo={combos[1]} />
-            <ReviewCard review={reviews[0]} />
-            <BenefitCard title="All-in rupee pricing" detail="Nothing added at checkout, ever." />
+            <SisterReviewCard review={sisterReviews[0]} />
+            <BenefitCard title="All-in pricing" detail="Nothing added at checkout, ever." />
           </div>
         </div>
       </Section>
@@ -569,12 +570,12 @@ export default function DesignSystemPage() {
 
           <Divider label="Voucher" />
           <Card className="ticket-edge flex flex-wrap items-center gap-6 p-6">
-            <VoucherCode reference="OUT-482913" />
+            <VoucherCode reference="OUT-123456" />
             <div>
               <p className="text-2xs font-bold uppercase tracking-wide text-ink-500">
                 Booking reference
               </p>
-              <p className="font-display text-2xl font-bold tnum">OUT-482913</p>
+              <p className="font-display text-2xl font-bold tnum">OUT-123456</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <InstantBadge size="sm" />
                 <Badge tone="diet" size="sm">
@@ -645,7 +646,7 @@ export default function DesignSystemPage() {
       </Section>
 
       <Section title="Trust modules" kicker="Credibility">
-        <WhyOutly />
+        <WhyOutlyy />
       </Section>
 
       {/* ---------------------------------------------------- ANALYTICS */}
@@ -673,7 +674,7 @@ export default function DesignSystemPage() {
           )}
           <p className="mt-3 text-xs text-ink-500">
             Also available in the console as{" "}
-            <code className="font-mono">window.__outlyEvents</code>.
+            <code className="font-mono">window.__outlyyEvents</code>.
           </p>
         </Card>
       </Section>

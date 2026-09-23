@@ -6,7 +6,7 @@ import { ActivityCard } from "@/components/commerce/activity-card";
 import { WhatsAppButton } from "@/components/commerce/whatsapp";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { EmptyState, SkeletonGrid } from "@/components/ui/primitives";
-import { activities, activityBySlug } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
 import type { Activity } from "@/lib/types";
 
 /**
@@ -19,6 +19,8 @@ import type { Activity } from "@/lib/types";
  */
 export default function SavedPage() {
   const { wishlist, hydrated, toast, currency } = useApp();
+  const { activities } = useCatalog();
+  const activityBySlug = (slug: string) => activities.find((a) => a.slug === slug);
   const saved = wishlist.map(activityBySlug).filter((a): a is Activity => Boolean(a));
   const total = saved.reduce((sum, a) => sum + a.price.adult.inr, 0);
 
@@ -66,6 +68,7 @@ export default function SavedPage() {
 
       {saved.length === 0 ? (
         <EmptyState
+          illustration="saved"
           icon={<Heart className="h-6 w-6" />}
           title="Nothing saved yet"
           body="Save the ones you're considering and share the list with whoever you're travelling with. We'll tell you if a price drops or availability gets tight."

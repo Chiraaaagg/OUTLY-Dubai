@@ -1,12 +1,22 @@
 /**
  * Trust & legal page content.
  *
- * NOT legal advice and not lawyer-reviewed. These are product-written drafts in
- * the plain-language style the PRD demands ("cancellation policy in plain
- * language — not legalese"). PRD §16 requires legal review before launch,
- * particularly for DPDP Act compliance and the GST/TCS treatment — flagged in
- * docs/known-limitations.md.
+ * Written against the verified company facts recorded in
+ * `docs/legal-compliance-audit.md` (H P D Tourism L.L.C, Dubai DET licence
+ * 843819, tour-operator activity, TRN 100598421400003, principal/merchant of
+ * record, VAT-inclusive AED pricing, per-activity cancellation terms, the
+ * website in Vercel bom1 (Mumbai) with the database still in the United
+ * States, staff in the UAE and India).
+ *
+ * Still NOT lawyer-reviewed. These are the product's plain-language drafts in
+ * the style the PRD demands; counsel qualified in the UAE (PDPL, Consumer
+ * Protection Law 15/2020, DET tourism rules) and India (DPDP Act 2023,
+ * Consumer Protection Act 2019) must review them before launch. Every company
+ * identifier comes from `siteConfig`, so an unset value renders nothing rather
+ * than a placeholder.
  */
+
+import { entityLine, siteConfig } from "@/lib/site-config";
 
 export interface LegalPage {
   slug: string;
@@ -16,47 +26,65 @@ export interface LegalPage {
   sections: { heading: string; paragraphs: string[]; bullets?: string[] }[];
 }
 
+const UPDATED = "22 September 2026";
+
+const company = siteConfig.legalName ?? "the company operating OUTLYY";
+const identity = entityLine() ?? "";
+const address = siteConfig.registeredAddress;
+const supportEmail = siteConfig.supportEmail;
+const grievance = siteConfig.grievanceName && siteConfig.grievanceEmail ? `${siteConfig.grievanceName} (${siteConfig.grievanceEmail})` : undefined;
+const trn = siteConfig.vatTrn;
+
+/** "…, Office 1202, …" appended only when the address is configured. */
+const atAddress = address ? ` Registered office: ${address}.` : "";
+
 export const legalPages: Record<string, LegalPage> = {
   "cancellation-policy": {
     slug: "cancellation-policy",
     title: "Cancellation & refund policy",
-    updated: "1 September 2026",
+    updated: UPDATED,
     intro:
-      "Written the way we would explain it on the phone. The specific rule for any experience is always shown on its own page before you pay, and again on your voucher — this page is the general framework behind those rules.",
+      "Each experience carries its own cancellation terms, set by the operator who runs it. The terms that apply to you are the ones shown on the listing and repeated in your confirmation — this page explains how they work and how to use them.",
     sections: [
       {
-        heading: "The general rule",
+        heading: "The policy on your listing is the policy that applies",
         paragraphs: [
-          "Most experiences on OUTLY can be cancelled free of charge up to 24 hours before your start time, with the full amount refunded. Some carry a 48-hour window because the operator commits resources earlier — private camps, charters and helicopter flights are the usual examples. A small number of timed-entry tickets are non-refundable once issued.",
-          "Whichever applies to what you are booking is stated on the activity page above the Book button, not buried in a terms document. If the page and this policy ever disagree, the activity page wins.",
+          "Cancellation windows differ by experience: some are free to cancel up to 24 or 48 hours before, some are non-refundable from the moment the operator confirms, and a few are refundable only if the operator cancels. Every listing states its own window before you enquire, and we repeat it in writing when we confirm your booking.",
+          "If the listing and your written confirmation ever disagree, the written confirmation wins — it is the document that reflects what the operator actually confirmed for your date.",
         ],
       },
       {
         heading: "How to cancel",
         paragraphs: [
-          "From Manage booking, using your reference and the phone or email you booked with. You will see the exact refund amount and the expected credit date before you confirm anything. There is no form to submit and nobody to wait for.",
-          "If you would rather talk to someone, message us on WhatsApp. We will often suggest moving the date instead — for a date problem rather than a change of mind, that usually costs nothing and keeps the experience.",
+          `Message us on WhatsApp${siteConfig.whatsappNumber ? "" : ""} or email ${supportEmail ?? "our support address"} with your reference number. A cancellation is effective from the moment we receive it, not from when we reply, and we send written confirmation of the outcome.`,
+          `Requests sent outside our hours (${siteConfig.supportHours}) are timestamped on arrival, so a message sent at 11pm the night before a free-cancellation deadline counts as sent at 11pm.`,
         ],
       },
       {
         heading: "When you get your money back",
         paragraphs: [
-          "We initiate eligible refunds within 24 hours of cancellation and send written confirmation. The money reaches your original payment method in 5–7 working days depending on your bank. UPI refunds are usually faster; credit cards are usually slower.",
-          "If you paid a 30% deposit and cancel within the free window, the deposit is refunded in full. If you cancel after the free window, the deposit covers the operator's charge and the balance is not collected.",
+          "Where the listing's terms give you a refund, we return the amount to the original payment method. Bank and card processing times are outside our control; the money usually appears within five to ten working days of us releasing it.",
+          "Where the listing's terms do not give you a refund, we will still ask the operator on your behalf. Some operators allow a date change instead of a refund, and we will always try that before telling you no.",
         ],
       },
       {
         heading: "If we or the operator cancel",
         paragraphs: [
-          "If an operator cannot honour a confirmed booking, you get three options within two hours: an alternative experience of equal value, an alternative date, or a full refund. You choose. We do not offer credit in place of a refund.",
-          "Weather cancellations on balloon and helicopter flights are refunded in full or rebooked at your choice, decided by you rather than by us. The operator's call is usually made the evening before or at the launch site.",
+          "If an experience cannot run — weather, safety, mechanical failure, an operator shortfall — you choose between a full refund of what you paid us and a rebooking on another date at the same price, even if that date is priced higher.",
+          "We tell you as soon as we know. We do not hold a cancellation back in the hope that it resolves itself.",
         ],
       },
       {
         heading: "If something goes wrong on the day",
         paragraphs: [
-          "Call the emergency number on your voucher before you leave the venue — it is answered 24/7 by a person. If a pickup is more than 30 minutes late we either dispatch another vehicle or refund the booking in full. If a confirmed dietary requirement was not provided, we refund the meal portion of the booking and log it against the supplier.",
-          "We can only put things right if we hear about them while they are happening or shortly after. Complaints raised weeks later are much harder to resolve with an operator, though we will still try.",
+          `Contact us immediately, while the problem is still fixable — on WhatsApp during our hours (${siteConfig.supportHours})${siteConfig.emergencyPhone ? ", or on the emergency number printed on your confirmation at any time" : ""}. Tell us what happened and, where you can, send a photograph.`,
+          "What we can put right depends on the operator's terms and on what actually happened; we will tell you honestly what is recoverable and what is not, and we pursue the operator ourselves rather than asking you to do it.",
+        ],
+      },
+      {
+        heading: "Your statutory rights",
+        paragraphs: [
+          "Nothing in this policy removes rights you have under the UAE Consumer Protection Law (Federal Law 15 of 2020) or under the consumer law of your own country of residence.",
         ],
       },
     ],
@@ -64,30 +92,35 @@ export const legalPages: Record<string, LegalPage> = {
 
   "price-guarantee": {
     slug: "price-guarantee",
-    title: "Our price promise",
-    updated: "1 September 2026",
+    title: "How our prices work",
+    updated: UPDATED,
     intro:
-      "Two commitments, both checkable. The first is about honesty; the second is about value. We take the first far more seriously than the second.",
+      "Prices shown on the site are indicative until an agent confirms availability and the final price with the operator. This page explains exactly what the number on a listing means.",
     sections: [
       {
-        heading: "1. No fee, tax or surcharge appears after the first price you see",
+        heading: "Indicative until confirmed",
         paragraphs: [
-          "Every price on OUTLY includes taxes and booking fees. The number on the activity card is the number on the activity page, which is the number at checkout, which is the number charged to your card or UPI. The only things that change your total are optional extras you deliberately add.",
-          "If a charge ever appears that was not visible when you first saw the price, that is a defect on our side. Tell us and we refund the difference without argument — no investigation, no waiting.",
+          "We do not take payment on this website. You send an enquiry, we check the date and the exact price with the operator, and we come back to you in writing with the confirmed price before anything is payable. The listing price is our best current information, not a quotation.",
+          "If the confirmed price is higher than the listing price, you are free to walk away — you owe nothing until you accept a written confirmation.",
         ],
       },
       {
-        heading: "2. If you find it cheaper, tell us",
+        heading: "What the price includes",
         paragraphs: [
-          "If you find the same experience, same operator, same inclusions, same date, bookable in rupees at a lower all-in price within 24 hours of booking with us, send us the link. We will match it or refund the difference.",
-          "The qualifiers matter and we would rather state them than surprise you: it has to be the same operator and the same inclusions, and the comparison price has to be genuinely bookable at the time you show it to us — not a cached listing or a price that requires a currency conversion you would not actually get.",
+          `Prices are quoted inclusive of UAE VAT${trn ? ` (TRN ${trn})` : ""} and of the taxes and fees the operator charges. Optional extras — transfers, upgrades, add-ons — are priced separately and are never added silently.`,
+          "Where an experience is priced per person, the listing says so; where it is priced per vehicle, boat or group, the listing says that instead.",
+        ],
+      },
+      {
+        heading: "Rupee prices and currency",
+        paragraphs: [
+          "Indian rupee amounts are shown as a convenience conversion of the dirham price at a recent rate. The contract and any payment are in UAE dirhams unless we tell you otherwise in writing, and your bank's exchange rate and any foreign-transaction fee it charges are outside our control.",
         ],
       },
       {
         heading: "What we will not do",
         paragraphs: [
-          "We do not run fake discounts. A struck-through comparison price appears only where the higher figure is a real, published gate or walk-up rate that a person could actually pay — never an invented anchor.",
-          "We do not run countdown timers on prices that are not genuinely time-limited, and we do not display 'only 2 left' unless the operator's live inventory says so. Manufactured urgency works once, and then it costs you every repeat booking.",
+          "We do not add booking fees, service fees or card surcharges after a confirmed price. We do not quote a lead-in price that no real date can be booked at. If we cannot honour a price we quoted in writing, we say so and you are released from the booking.",
         ],
       },
     ],
@@ -95,48 +128,77 @@ export const legalPages: Record<string, LegalPage> = {
 
   terms: {
     slug: "terms",
-    title: "Terms of use",
-    updated: "1 September 2026",
-    intro:
-      "OUTLY Travel Technologies Pvt. Ltd. acts as a booking agent between you and the experience operator. These terms cover how that works.",
+    title: "Terms of service",
+    updated: UPDATED,
+    intro: `${identity || `These terms are between you and ${company}.`} They cover how enquiries, confirmations and bookings work.`,
     sections: [
       {
-        heading: "What we are",
+        heading: "Who you are contracting with",
         paragraphs: [
-          "We contract with licensed Dubai and Abu Dhabi tour operators and sell their experiences to you. The operator delivers the experience and is responsible for its safety and conduct; we are responsible for the accuracy of what we told you, for your booking and payment, and for supporting you before, during and after.",
-          "Where an experience is delivered poorly, we will pursue the operator on your behalf and, in the cases described in our cancellation policy, refund you directly rather than waiting for them.",
+          `${company}${siteConfig.dubaiLicence ? `, licensed as a tour operator by the Dubai Department of Economy and Tourism under licence ${siteConfig.dubaiLicence}` : ""}, trades as OUTLYY and is the company you contract with.${atAddress}${trn ? ` VAT registration (TRN) ${trn}.` : ""}`,
+          "We sell the experiences on this site in our own name. Individual activities are delivered on the ground by licensed operators we contract with; we remain responsible to you for the booking itself, for the accuracy of what we told you, and for supporting you before, during and after.",
         ],
       },
       {
-        heading: "Booking and payment",
+        heading: "Enquiries, confirmations and bookings",
         paragraphs: [
-          "A booking is confirmed when payment is received and, for experiences requiring operator confirmation, when that operator confirms — within two hours. Until then your payment is held and fully refundable.",
-          "Prices are all-inclusive as described in our price promise. Payment is processed by a PCI-DSS compliant gateway; card details never reach our servers.",
+          "Sending an enquiry does not create a booking and does not oblige you to pay anything. We check the date and price with the operator and reply with a written confirmation — normally within about 30 minutes during our working hours.",
+          `A booking exists only when you accept that written confirmation and we receive payment. Payment is made to ${company}; we are the merchant of record for your booking.`,
+          `Our working hours are ${siteConfig.supportHours}. Enquiries that arrive outside those hours are answered when we next open.`,
+        ],
+      },
+      {
+        heading: "Prices, taxes and currency",
+        paragraphs: [
+          `Listing prices are indicative until confirmed in writing, and are inclusive of UAE VAT${trn ? "" : " where VAT applies"}. Rupee amounts are a convenience conversion; the contract currency is UAE dirhams unless stated otherwise in writing.`,
+          "Optional extras are priced separately and shown before you accept. We do not add fees after a confirmed price.",
+        ],
+      },
+      {
+        heading: "Cancellations and changes",
+        paragraphs: [
+          "Each experience carries the operator's own cancellation terms, shown on the listing and repeated in your confirmation. Those terms govern your booking; our cancellation policy page explains how to use them and what we do when an experience is cancelled by us or by the operator.",
         ],
       },
       {
         heading: "Your responsibilities",
         paragraphs: [
-          "Give us accurate traveller details, a working phone number, and any dietary, medical or mobility requirement at the time of booking rather than on the day. Several of the experiences we sell cannot accommodate a requirement disclosed at the meeting point.",
-          "Arrive at the stated time. Operators do not wait, and a missed departure is not refundable.",
+          "Give us accurate traveller details, a working phone number, and any dietary, medical, mobility or age-related requirement at the time of enquiry rather than on the day. Several experiences cannot accommodate a requirement disclosed at the meeting point.",
+          "Arrive at the stated time and place. Operators do not wait, and a missed departure is generally not refundable.",
         ],
         bullets: [
-          "Carry valid photo ID; some venues and all Abu Dhabi routes require it",
-          "Follow operator safety instructions — they can refuse participation on safety grounds",
+          "Carry valid photo identification; several venues and all Abu Dhabi routes require it",
+          "Follow the operator's safety instructions — they may refuse participation on safety grounds",
           "Tell us immediately if something goes wrong, while it is still fixable",
+          "You are responsible for your own visas, insurance and fitness to take part",
         ],
       },
       {
-        heading: "Reviews",
+        heading: "Content, reviews and intellectual property",
         paragraphs: [
-          "Only customers with a completed booking can review, and reviews are moderated within 24 hours. We publish negative reviews. We remove reviews that identify individuals, contain abuse, or are not about the experience booked — and we tell the author why.",
+          `The OUTLYY name, the site design, the written descriptions and the arrangement of this catalogue belong to ${company}. Photographs are either licensed stock, supplied by the operator, or our own; third-party names and logos belong to their owners and their appearance here does not imply endorsement.`,
+          "Where we publish reviews of a sister brand in our group, they are labelled as such and linked to their original source. We do not publish invented reviews and we do not represent another business's reviews as our own.",
+          "You may not copy, scrape or republish our catalogue, prices or descriptions without written permission.",
         ],
       },
       {
         heading: "Liability",
         paragraphs: [
-          "Our liability is limited to the value of the booking. We are not liable for losses arising from operator conduct outside our control, weather, or events beyond reasonable anticipation — though our cancellation policy describes what we do refund in those situations regardless of liability.",
-          "Nothing here limits rights you have under Indian consumer law.",
+          "Our liability for a booking is limited to the amount you paid for that booking, except where the law does not permit such a limit — including death or personal injury caused by our negligence, fraud, and rights you have under the UAE Consumer Protection Law or under the consumer law of your country of residence.",
+          "We are not liable for losses caused by events outside our reasonable control — weather, road closures, government action, operator failure that we could not reasonably have foreseen — though our cancellation policy describes what we refund in those situations regardless of fault.",
+        ],
+      },
+      {
+        heading: "Governing law",
+        paragraphs: [
+          "These terms are governed by the laws of the United Arab Emirates as applied in the Emirate of Dubai, and the courts of Dubai have jurisdiction. This does not deprive you of the protection of mandatory consumer law in your country of residence.",
+        ],
+      },
+      {
+        heading: "Contact",
+        paragraphs: [
+          [supportEmail ? `Email ${supportEmail}.` : undefined, siteConfig.whatsappNumber ? "WhatsApp using the button on any page." : undefined, address ? `Post: ${address}.` : undefined].filter(Boolean).join(" ") ||
+            "Use the contact page.",
         ],
       },
     ],
@@ -145,42 +207,239 @@ export const legalPages: Record<string, LegalPage> = {
   privacy: {
     slug: "privacy",
     title: "Privacy policy",
-    updated: "1 September 2026",
+    updated: UPDATED,
     intro:
-      "What we collect, why, and how to get rid of it. Written to be readable; the DPDP Act compliance detail is in the sections below rather than in a separate document.",
+      "What we collect, why we collect it, who else sees it, where it is stored, how long we keep it, and how to make us delete it. Written to be read.",
     sections: [
+      {
+        heading: "Who is responsible for your data",
+        paragraphs: [
+          `${company} — trading as OUTLYY — decides how and why your personal data is used, which makes us the controller.${atAddress}`,
+          grievance
+            ? `Questions, requests and complaints about your data go to ${grievance}. They are our data-protection and grievance contact for the purposes of the UAE Personal Data Protection Law and India's Digital Personal Data Protection Act 2023, and they answer within 30 days.`
+            : "Questions, requests and complaints about your data go to our support address.",
+        ],
+      },
       {
         heading: "What we collect",
         paragraphs: [
-          "Booking details: name, email, phone, hotel or pickup location, traveller counts, and any dietary, accessibility or medical requirement you tell us. We collect passport or Emirates ID details only where a specific operator requires them, and only for that booking.",
-          "Usage data: pages viewed, searches, filters applied and bookings made, tied to your session. We use this to improve the product and to measure advertising — not to build a profile for resale.",
+          "When you send an enquiry: your name, phone number, email address, travel dates, number and type of travellers, hotel or pickup area, any dietary preference, any special request you type, your budget band, and the experiences you were looking at.",
+          "When you sign in: your phone number and the one-time code we send you, plus the profile and preferences you choose to save.",
+          "Automatically: pages viewed, searches and filters used, the approximate country your request came from, a shortened one-way fingerprint of your IP address, your browser's user-agent string, and the identifiers described in our cookie policy — including the advertising click identifiers (for example from Google or Meta) that were attached to the link you arrived on.",
+        ],
+        bullets: [
+          "We do not collect card or bank details on this site — no payment is taken here",
+          "We do not ask for passport or Emirates ID details unless a specific operator requires them for your booking, and then only for that booking",
+          "We do not knowingly collect data about children; traveller counts by age band are not the same as a child's identity",
         ],
       },
       {
-        heading: "Why we collect it",
+        heading: "Why we use it, and on what basis",
         paragraphs: [
-          "To make and deliver your booking, to pass your requirements to the operator, to send your voucher and trip messages, to support you when something goes wrong, and to meet tax and accounting obligations.",
-          "Dietary and accessibility information is shared with the specific operator delivering your experience, because that is the only way it gets acted on. It is not used for anything else.",
+          "To answer your enquiry, check availability with the operator, confirm your booking, send confirmations and trip messages, and support you when something goes wrong. This is necessary to take steps at your request and to perform our contract with you.",
+          "To meet tax and accounting obligations — UAE VAT records in particular — which is a legal obligation.",
+          "To keep the site secure, prevent spam and abuse, and measure how well the product works. This is our legitimate interest, balanced against your privacy: security data is minimised and analytics identifiers are not used to build a profile for sale.",
+          "To send marketing messages, and to message you on WhatsApp — both only with your consent, which you can withdraw at any time without affecting the service you have already booked.",
         ],
       },
       {
-        heading: "WhatsApp and marketing",
+        heading: "Dietary, medical and accessibility information",
         paragraphs: [
-          "Transactional messages — confirmations, vouchers, driver details, day-of updates — are sent because you made a booking. Marketing messages require a separate opt-in, and a single reply of STOP turns them off within 60 seconds across every flow.",
-          "We do not sell your phone number or email to anyone.",
+          "A dietary preference or a medical or mobility note can reveal something sensitive about you. We ask for it only so the operator can act on it, we pass it only to the operator delivering your experience, and we use it for nothing else. If you would rather not type it here, tell us on WhatsApp or leave it out and we will ask the operator generically.",
+        ],
+      },
+      {
+        heading: "Who else sees your data",
+        paragraphs: [
+          "The operator delivering your experience receives what they need to deliver it: traveller names, counts, pickup point, date and time, and any requirement you told us about.",
+          "The companies that run our technology see data only as part of running it, under contract, and may not use it for their own purposes.",
+        ],
+        bullets: [
+          "Vercel — website and application hosting (Mumbai, India region)",
+          "Neon — database hosting (United States, Ohio region)",
+          "Resend — transactional email delivery",
+          "MSG91 — delivery of sign-in codes by SMS",
+          "Google — website analytics (Google Analytics 4), only where you have accepted measurement cookies",
+          "Pexels — stock photography shown on the site (no personal data is sent to them)",
+          "Our WhatsApp messaging provider, named here before we switch WhatsApp messaging on",
+          "Payment providers, named here before we begin taking payment on this site",
+        ],
+      },
+      {
+        heading: "Where your data is stored, and who reaches it",
+        paragraphs: [
+          "Our website runs in Mumbai, India, and our database is hosted in the United States. That means your data is transferred outside the UAE and, for European visitors, outside the EEA. We rely on our contracts with those providers — which include the standard data-protection terms they publish — to keep the same protections travelling with the data.",
+          "Our staff in the United Arab Emirates and in India access customer data to answer enquiries and deliver bookings. Access requires an individual account with two-factor authentication, is limited to what a role needs, and every action on a customer record is written to an audit log.",
+        ],
+      },
+      {
+        heading: "WhatsApp, email and marketing",
+        paragraphs: [
+          "Messages about an enquiry or a booking you made — confirmations, day-of details, changes — are service messages, sent because you asked us for something.",
+          "Marketing messages are separate and require you to opt in. Replying STOP, or turning the setting off in your account, ends them; we action it immediately and it does not affect your existing bookings.",
+          "WhatsApp messages are carried by Meta's WhatsApp Business Platform. Meta processes them under its own terms; we send the minimum needed to answer you.",
+          "We do not sell your phone number, email address or any other personal data.",
+        ],
+      },
+      {
+        heading: "How long we keep it",
+        paragraphs: [
+          "Enquiries that never became bookings, and anything we classified as spam: 24 months, then deleted.",
+          "Bookings, invoices and payment records: seven years, because tax and accounting law requires it. If you ask us to delete your data before then, we remove the personal details and keep the financial record with your identity stripped out.",
+          "Message logs and analytics events: 24 months. Records of the consents you gave: for as long as you could raise a complaint about a message we sent. Our internal audit log is kept as the security record.",
         ],
       },
       {
         heading: "Your rights",
         paragraphs: [
-          "You can export everything we hold about you, correct it, or ask us to delete it, from Profile settings or by messaging us. We action deletion requests within statutory timelines.",
-          "Bookings and invoices from the last seven years are retained for tax and legal reasons even after a deletion request. We would rather tell you that than quietly keep them.",
+          "You can ask us for a copy of everything we hold about you, correct it, ask us to delete it, object to us using it for marketing or analytics, or ask us to restrict how we use it. Signed-in customers can export their data and request deletion from Profile settings; everyone else can ask us by email.",
+          grievance
+            ? `Send requests to ${grievance}. We answer within 30 days. If you are not satisfied, you may complain to the UAE Data Office, or — if you are in India — to the Data Protection Board of India, or to your local data-protection authority.`
+            : "Send requests to our support address. We answer within 30 days.",
+          "A deletion request removes your personal details from our systems. Financial records required by law are retained with your identity replaced by an irreversible marker, and entries in our append-only audit and consent logs are kept because they are the evidence that we handled your data correctly.",
         ],
       },
       {
         heading: "Security",
         paragraphs: [
-          "Personal data is encrypted at rest and in transit. Card data never touches our servers — payments are handled by a PCI-DSS compliant gateway. Admin access requires multi-factor authentication and every state-changing action is written to an immutable audit log.",
+          "Data is encrypted in transit and at rest. Staff accounts require two-factor authentication and are rate-limited and locked after repeated failures. Sensitive fields are masked from staff who do not need them, IP addresses are stored only as a one-way hash, and every change to a customer record is written to an immutable audit log.",
+          "No system is perfect. If a breach affects your data and is likely to put you at risk, we will tell you and the relevant regulator, as the law requires.",
+        ],
+      },
+      {
+        heading: "Cookies",
+        paragraphs: ["Our cookie policy explains every cookie and identifier we set, and how to refuse the non-essential ones."],
+      },
+      {
+        heading: "Changes",
+        paragraphs: [
+          `We update this policy when what we do changes. The date at the top is the last change. Material changes are announced on the site before they take effect.${supportEmail ? ` Questions: ${supportEmail}.` : ""}`,
+        ],
+      },
+    ],
+  },
+
+  cookies: {
+    slug: "cookies",
+    title: "Cookie policy",
+    updated: UPDATED,
+    intro: "Every cookie and browser identifier this site sets, what it is for, how long it lasts, and how to refuse the ones that are not essential.",
+    sections: [
+      {
+        heading: "Strictly necessary",
+        paragraphs: ["These make the site work. They cannot be switched off and they are not used for advertising."],
+        bullets: [
+          "outlyy_customer_session — keeps you signed in after a one-time code; expires with the session",
+          "outlyy_customer — a flag that tells the site to show account links; no personal data",
+          "outlyy_admin_session, outlyy_admin_pending — staff sign-in only, 8 hours",
+          "outlyy_consent — the cookie choice you made on this banner, so we do not ask again; 6 months",
+          "Local storage: your cart, saved list, comparison tray, recent searches and currency choice — stored in your browser, never sent to us except when you submit an enquiry",
+        ],
+      },
+      {
+        heading: "Measurement and attribution",
+        paragraphs: [
+          "These tell us which pages lead to enquiries so we can fix the ones that do not. Most are first-party — set by this site — and we do not sell what any of them record.",
+          "One is not ours: we use Google Analytics 4, so if you accept measurement, Google receives your IP address (truncated before storage), the pages you view and a random device identifier. Google acts as our processor for this and is in the United States, so the transfer note in our privacy policy applies. Advertising personalisation and data sharing with Google Ads stay switched off unless you also accept the advertising category.",
+          "None of them are set until you agree. Before you choose, and if you choose no, they are not written at all and no analytics event leaves your browser — the site simply does not measure you. Measurement and advertising attribution can be accepted separately.",
+        ],
+        bullets: [
+          "outlyy_sid — groups your page views into one visit; 30 minutes",
+          "outlyy_aid — a random identifier that lets us count returning visits; 1 year",
+          "outlyy_attr — remembers how you first reached us (search, ad, referral) including advertising click identifiers such as gclid or fbclid; 1 year",
+          "_ga, _ga_<id> — set by Google Analytics to count visits and distinguish one device from another; up to 2 years. These are Google's cookies, not ours, and are the only third-party cookies on this site.",
+        ],
+      },
+      {
+        heading: "Advertising",
+        paragraphs: [
+          "We load no advertising pixels — no Meta Pixel, no Google Ads remarketing tag. The only advertising-adjacent signal is Google Analytics' own advertising features, and those are held off by Google Consent Mode unless you accept the advertising category. Accept measurement only and Google is told, in its own protocol, that advertising storage is denied.",
+          "If we ever add a real advertising pixel it will be listed here by name before it loads, and it will load only after you agree.",
+        ],
+      },
+      {
+        heading: "How to refuse or change your mind",
+        paragraphs: [
+          "The banner on your first visit has Reject all next to Accept all, and a Choose option for picking one category and not the other. Refusing changes nothing about what you can see or do here.",
+          "To change the decision later, use the Cookie settings link at the bottom of any page. Withdrawing consent deletes the cookies in the category you turned off straight away, without a page reload.",
+          "Your browser also offers a blanket block on cookies; the strictly necessary ones above are then unavailable and sign-in will not work.",
+        ],
+      },
+    ],
+  },
+
+  "data-rights": {
+    slug: "data-rights",
+    title: "Your data rights & how to complain",
+    updated: UPDATED,
+    intro: "How to see your data, correct it, delete it, stop messages, and escalate if we get it wrong.",
+    sections: [
+      {
+        heading: "Who to contact",
+        paragraphs: [
+          grievance
+            ? `${grievance} handles data-protection requests and grievances for ${company}. This is the Grievance Officer contact required by India's Digital Personal Data Protection Act 2023 and the data-protection contact required by the UAE Personal Data Protection Law.${atAddress}`
+            : `Requests go to ${supportEmail ?? "our support address"}.${atAddress}`,
+        ],
+      },
+      {
+        heading: "What you can ask for",
+        paragraphs: ["Any of the following, free of charge, by email or from your account:"],
+        bullets: [
+          "A copy of the personal data we hold about you (signed-in customers can export it instantly from Profile settings)",
+          "Correction of anything wrong",
+          "Deletion of your personal data — we anonymise financial records we must keep by law",
+          "An end to marketing messages, or to WhatsApp messaging",
+          "An explanation of how we used your data, and objection to analytics",
+        ],
+      },
+      {
+        heading: "How long we take",
+        paragraphs: [
+          "We acknowledge a request as soon as we see it and complete it within 30 days. If a request is complex and needs longer, we tell you why and when it will be done.",
+          "We may ask you to confirm the phone number or email on the account before we act, so that nobody else can request your data.",
+        ],
+      },
+      {
+        heading: "If you are not satisfied",
+        paragraphs: [
+          "Tell us first — most problems are a misunderstanding we can fix the same day. If you are still unhappy, you can complain to the UAE Data Office; if you are in India, to the Data Protection Board of India; if you are in the EEA or the UK, to your national data-protection authority.",
+          "Consumer complaints about a booking (rather than about data) can be raised with the Dubai Department of Economy and Tourism after you have given us a chance to put it right.",
+        ],
+      },
+    ],
+  },
+
+  disclaimer: {
+    slug: "disclaimer",
+    title: "Disclaimer",
+    updated: UPDATED,
+    intro: "What the information on this site is, and what it is not.",
+    sections: [
+      {
+        heading: "Experiences are delivered by licensed operators",
+        paragraphs: [
+          `${company} sells these experiences in its own name and remains responsible to you for your booking. The activity itself — the vehicle, the vessel, the guide, the venue — is delivered by a licensed operator, and their on-site safety rules and conduct are theirs. We tell you who is operating an experience when we confirm it.`,
+        ],
+      },
+      {
+        heading: "Prices and availability are indicative",
+        paragraphs: [
+          "Listing prices and availability are our best current information, gathered from operators. They are not a quotation. The price and the date become binding only in the written confirmation we send you.",
+        ],
+      },
+      {
+        heading: "Descriptions, photographs and third-party names",
+        paragraphs: [
+          "Descriptions are written from operator material and our own checks. Photographs are licensed stock, supplied by the operator, or our own, and are illustrative of the experience rather than of a specific departure, vehicle or seat.",
+          "Third-party names, venue names and logos are the property of their owners. Their appearance here identifies the place or the operator and does not imply a partnership or endorsement unless we say so in writing.",
+        ],
+      },
+      {
+        heading: "Travel, health and documents",
+        paragraphs: [
+          "You are responsible for your visas, travel insurance, and your fitness to take part in an activity. Where an experience carries an age, height, weight, pregnancy or medical restriction, it is stated on the listing — please read it before you book.",
+          "Nothing on this site is medical, legal, immigration or financial advice.",
         ],
       },
     ],
@@ -188,8 +447,8 @@ export const legalPages: Record<string, LegalPage> = {
 
   about: {
     slug: "about",
-    title: "Why OUTLY exists",
-    updated: "1 September 2026",
+    title: "Why OUTLYY exists",
+    updated: UPDATED,
     intro:
       "We are not trying to build a better Klook. We are trying to beat the travel agent you would otherwise use — on trust, not just on price.",
     sections: [
@@ -203,20 +462,27 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "What we do differently",
         paragraphs: [
-          "We publish all-in rupee prices and never add anything at checkout. We treat dietary and accessibility needs as filters and confirm them in writing with the supplier's kitchen. We publish pickup coverage before you pay and send the driver's name and number the night before. And we keep a person on WhatsApp who answers in about eight minutes, because a fifty-thousand-rupee family booking is a conversation, not a checkout.",
-          "We also keep the catalogue deliberately small. Around twenty-six experiences, from a handful of operators we score monthly on punctuality, rejection rate and complaints. A traveller with three hundred options and no way to tell them apart books nothing.",
+          "We show all-in prices, inclusive of VAT, and confirm the exact price with the operator before anything is payable. We treat dietary and accessibility needs as filters and confirm them in writing with the operator. We publish pickup coverage before you commit. And we keep a person on WhatsApp during our working hours, because a large family booking is a conversation, not a checkout.",
+          "We also keep the catalogue deliberately small and curated, from operators we contract with directly. A traveller with three hundred options and no way to tell them apart books nothing.",
         ],
       },
       {
         heading: "How we make money",
         paragraphs: [
-          "A margin on what we sell, built into the published price. We do not charge booking fees, we do not take a cut of your cancellation, and we do not sell your data. Where a bundle saves you money we show the separate-purchase price next to it so you can check the arithmetic yourself.",
+          "A margin on what we sell, built into the confirmed price. We do not charge booking fees, we do not take a cut of your cancellation, and we do not sell your data.",
         ],
       },
       {
-        heading: "Where we are",
+        heading: "Who we are",
         paragraphs: [
-          "OUTLY Travel Technologies Pvt. Ltd. — Mumbai, India and Business Bay, Dubai. GSTIN 07AABCO1234A1Z5. Support runs 9am–11pm IST every day, with a 24/7 emergency line for anyone currently in Dubai.",
+          [
+            identity || undefined,
+            address ? `Registered office: ${address}.` : undefined,
+            trn ? `VAT registration (TRN) ${trn}.` : undefined,
+            `Support runs ${siteConfig.supportHours}.`,
+          ]
+            .filter(Boolean)
+            .join(" "),
         ],
       },
     ],

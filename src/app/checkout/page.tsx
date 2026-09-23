@@ -31,6 +31,7 @@ import {
 } from "@/lib/pricing";
 import type { Dietary, Traveller } from "@/lib/types";
 import { cn, formatDateLong, paxLabel, priceIn } from "@/lib/utils";
+import { transactionCurrency } from "@/lib/currency";
 
 /**
  * CHECKOUT (PRD §5.6)
@@ -194,7 +195,8 @@ export default function CheckoutPage() {
         paymentMethod: method,
         couponCode: couponResult?.ok ? couponResult.coupon.code : undefined,
         rail: "self_serve",
-        currency,
+        // Orders settle in a currency the business invoices in; USD is display only.
+        currency: transactionCurrency(currency),
         totalINR: total.inr,
         totalAED: total.aed,
         discountINR: discount.inr,
@@ -217,7 +219,7 @@ export default function CheckoutPage() {
       }
 
       sessionStorage.setItem(
-        "outly.lastOrder",
+        "outlyy.lastOrder",
         JSON.stringify({ ...order, items: cart, traveller, total, method }),
       );
       clearCart();
@@ -248,6 +250,7 @@ export default function CheckoutPage() {
     return (
       <div className="container-page py-10 pb-20">
         <EmptyState
+          illustration="cart"
           title="Nothing to check out yet"
           body="Your trip is empty. Add an experience and it'll appear here — or if you started a booking on WhatsApp, we can pick it up from there."
           action={<ButtonLink href="/search">Browse experiences</ButtonLink>}
@@ -313,7 +316,7 @@ export default function CheckoutPage() {
         })}
       </ol>
 
-      <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+      <div className="grid grid-safe gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <div className="min-w-0 space-y-5">
           {/* ---------------------------------------------------- STEP 1 */}
           <Card className="p-5">

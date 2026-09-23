@@ -165,7 +165,7 @@ export function BookingWidget({
             context={{
               intent: "concierge",
               activityTitle: activity.title,
-              activityUrl: `https://outly.in/activities/${activity.slug}`,
+              activityUrl: `https://outlyy.com/activities/${activity.slug}`,
               placement: "adp_quote",
             }}
             label="Speak to a trip designer"
@@ -481,7 +481,7 @@ export function BookingWidget({
             context={{
               intent: paxBillable(pax) >= 5 ? "group" : "activity",
               activityTitle: `${activity.title}${variant ? ` — ${variant.name}` : ""}`,
-              activityUrl: `https://outly.in/activities/${activity.slug}`,
+              activityUrl: `https://outlyy.com/activities/${activity.slug}`,
               date: formatDateKey(date),
               time,
               pax,
@@ -568,7 +568,7 @@ export function StickyBookingBar({ activity }: { activity: Activity }) {
           context={{
             intent: "activity",
             activityTitle: activity.title,
-            activityUrl: `https://outly.in/activities/${activity.slug}`,
+            activityUrl: `https://outlyy.com/activities/${activity.slug}`,
             placement: "sticky_bar",
           }}
         />

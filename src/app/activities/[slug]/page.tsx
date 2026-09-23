@@ -13,12 +13,13 @@ import {
 } from "lucide-react";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { ComboCard } from "@/components/commerce/cards";
 import { BookingWidget, StickyBookingBar } from "@/components/commerce/booking-widget";
 import { Gallery } from "@/components/commerce/gallery";
 import { PriceBlock } from "@/components/commerce/price";
 import { IndicativePriceNote } from "@/components/commerce/inquiry-ui";
-import { ReviewsSection } from "@/components/commerce/reviews-section";
+import { SisterBrandReviews } from "@/components/commerce/sister-reviews";
 import { TrustSummary } from "@/components/commerce/trust";
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Accordion } from "@/components/ui/accordion";
@@ -35,14 +36,14 @@ import {
 } from "@/components/ui/badge";
 import { Breadcrumbs, Card, Rating, SectionHeading } from "@/components/ui/primitives";
 import { Rail, RailItem } from "@/components/ui/rail";
-import { activities, activityBySlug, activitiesBySlugs } from "@/lib/data/activities";
-import { categoryBySlug } from "@/lib/data/categories";
+import { getActivities, getActivityBySlug, getActivitiesBySlugs, getCategoryBySlug } from "@/lib/catalog/server";
 import { combos } from "@/lib/data/combos";
-import { reviewsFor } from "@/lib/data/reviews";
 import { formatDuration } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return activities.map((a) => ({ slug: a.slug }));
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  return (await getActivities()).map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({
@@ -51,7 +52,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const activity = activityBySlug(slug);
+  const activity = await getActivityBySlug(slug);
   if (!activity) return { title: "Activity not found" };
   return {
     title: activity.seo.title,
@@ -90,14 +91,14 @@ export default async function ActivityPage({
 }) {
   const { slug } = await params;
   const { date } = await searchParams;
-  const activity = activityBySlug(slug);
+  const activity = await getActivityBySlug(slug);
   if (!activity) notFound();
 
-  const category = categoryBySlug(activity.categorySlug);
-  const reviews = reviewsFor(activity.slug);
-  const related = activitiesBySlugs(activity.relatedSlugs).slice(0, 4);
+  const category = await getCategoryBySlug(activity.categorySlug);
+  const relatedAll = await getActivitiesBySlugs(activity.relatedSlugs);
+  const related = relatedAll.slice(0, 4);
   const linkedCombos = combos.filter((c) => activity.comboSlugs.includes(c.slug));
-  const frequentlyBooked = activitiesBySlugs(activity.relatedSlugs).slice(0, 2);
+  const frequentlyBooked = relatedAll.slice(0, 2);
 
   const attributes = [
     { icon: Clock, label: formatDuration(activity.durationMinutes) },
@@ -154,17 +155,13 @@ export default async function ActivityPage({
         />
       </div>
 
-      <div className="container-page grid gap-8 py-6 lg:grid-cols-[1.55fr_1fr] lg:items-start">
+      <div className="container-page grid grid-safe gap-8 py-6 lg:grid-cols-[1.55fr_1fr] lg:items-start">
         {/* ------------------------------------------------------------- MAIN */}
         <div className="min-w-0">
           <h1 className="text-[1.75rem] leading-tight sm:text-[2.1rem]">{activity.title}</h1>
           <p className="mt-2 text-[1.02rem] leading-relaxed text-ink-600">{activity.subtitle}</p>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Rating value={activity.rating} count={activity.reviewCount} size="md" />
-            <span className="text-sm text-ink-600">
-              {activity.bookedThisMonth.toLocaleString("en-IN")} booked this month
-            </span>
             <span className="flex items-center gap-1 text-sm text-ink-600">
               <MapPin className="h-4 w-4 text-ink-400" aria-hidden="true" />
               {activity.location}
@@ -372,7 +369,7 @@ export default async function ActivityPage({
                 {frequentlyBooked.map((a, i) => (
                   <ActivityCard
                     key={a.slug}
-                    activity={a}
+                    activity={toCard(a)}
                     layout="compact"
                     position={i + 1}
                     source="adp_cross_sell"
@@ -399,15 +396,8 @@ export default async function ActivityPage({
             </section>
           )}
 
-          {/* Reviews */}
-          {reviews.length > 0 && (
-            <ReviewsSection
-              className="mt-10"
-              reviews={reviews}
-              rating={activity.rating}
-              count={activity.reviewCount}
-            />
-          )}
+          {/* OUTLYY has no reviews of its own yet, so the group's are shown and labelled. */}
+          <SisterBrandReviews className="mt-10" limit={3} />
 
           {/* FAQ */}
           {activity.faqs.length > 0 && (
@@ -426,7 +416,7 @@ export default async function ActivityPage({
             context={{
               intent: "activity",
               activityTitle: activity.title,
-              activityUrl: `https://outly.in/activities/${activity.slug}`,
+              activityUrl: `https://outlyy.com/activities/${activity.slug}`,
               placement: "adp_body",
             }}
             title="Still deciding? Ask before you commit to anything."
@@ -441,7 +431,7 @@ export default async function ActivityPage({
           </div>
           <BookingWidget activity={activity} initialDate={date} />
           <Card className="mt-4 p-5">
-            <h2 className="mb-3 text-[0.95rem]">Why book this with OUTLY</h2>
+            <h2 className="mb-3 text-[0.95rem]">Why book this with OUTLYY</h2>
             <TrustSummary />
           </Card>
         </aside>
@@ -459,7 +449,7 @@ export default async function ActivityPage({
           <Rail ariaLabel="Similar experiences">
             {related.map((a, i) => (
               <RailItem key={a.slug}>
-                <ActivityCard activity={a} layout="rail" position={i + 1} source="adp_related" />
+                <ActivityCard activity={toCard(a)} layout="rail" position={i + 1} source="adp_related" />
               </RailItem>
             ))}
           </Rail>
@@ -480,18 +470,13 @@ export default async function ActivityPage({
                 "@type": "Product",
                 name: activity.title,
                 description: activity.subtitle,
-                brand: { "@type": "Brand", name: "OUTLY" },
+                brand: { "@type": "Brand", name: "OUTLYY" },
                 offers: {
                   "@type": "Offer",
                   price: activity.price.adult.inr,
                   priceCurrency: "INR",
                   availability: "https://schema.org/InStock",
-                  url: `https://outly.in/activities/${activity.slug}`,
-                },
-                aggregateRating: {
-                  "@type": "AggregateRating",
-                  ratingValue: activity.rating,
-                  reviewCount: activity.reviewCount,
+                  url: `https://outlyy.com/activities/${activity.slug}`,
                 },
               },
               ...(activity.faqs.length
@@ -509,12 +494,12 @@ export default async function ActivityPage({
               {
                 "@type": "BreadcrumbList",
                 itemListElement: [
-                  { "@type": "ListItem", position: 1, name: "Dubai", item: "https://outly.in/" },
+                  { "@type": "ListItem", position: 1, name: "Dubai", item: "https://outlyy.com/" },
                   {
                     "@type": "ListItem",
                     position: 2,
                     name: category?.name ?? "Activities",
-                    item: `https://outly.in/categories/${activity.categorySlug}`,
+                    item: `https://outlyy.com/categories/${activity.categorySlug}`,
                   },
                   { "@type": "ListItem", position: 3, name: activity.title },
                 ],

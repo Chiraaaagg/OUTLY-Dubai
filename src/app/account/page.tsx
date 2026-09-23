@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, Heart, Inbox, LifeBuoy, Ticket } from "lucide-react";
+import { CalendarDays, Heart, Inbox, LifeBuoy } from "lucide-react";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
+import { CustomerInquiryCard } from "@/components/commerce/inquiry-ui";
 import { WhatsAppCard } from "@/components/commerce/whatsapp";
 import { ButtonLink } from "@/components/ui/button";
-import { Card, SectionHeading } from "@/components/ui/primitives";
-import { Scene } from "@/components/ui/scene";
-import { Badge } from "@/components/ui/badge";
-import { activities } from "@/lib/data/activities";
-import { demoUser, upcomingBookings } from "@/lib/data/bookings";
-import { openInquiries } from "@/lib/data/inquiries";
-import { AgentCard } from "@/components/commerce/inquiry-ui";
-import { WhatsAppButton } from "@/components/commerce/whatsapp";
-import { formatDateLong, parseDateKey, priceIn } from "@/lib/utils";
+import { EmptyState, SectionHeading } from "@/components/ui/primitives";
+import { getActivities } from "@/lib/catalog/server";
+import { isClosedStatus } from "@/lib/inquiry-stages";
+import { toDateKey } from "@/lib/utils";
+import { customerService } from "@/server/services/customer.service";
+import { OrderRow, orderFirstDate } from "./_components/order-row";
+import { requireCustomer } from "./_lib/session";
 
 export const metadata: Metadata = {
   title: "Your account",
@@ -21,110 +21,88 @@ export const metadata: Metadata = {
 };
 
 /**
- * ACCOUNT DASHBOARD (PRD §5.9)
+ * ACCOUNT DASHBOARD (customer-auth contract §4)
  *
- * Upcoming trip first with a countdown, then quick actions. A returning
- * customer's most common intent is "where's my voucher" or "what time is my
- * pickup" — both are one tap from here.
+ * Real data only: the open inquiry with its agent and WhatsApp follow-up
+ * first (in inquiry mode that is the live thing), then the next paid trip
+ * if there is one, then the four places a returning customer goes. Empty
+ * states say what they mean — a first-time visitor sees "nothing yet", not a
+ * demo.
  */
-export default function AccountPage() {
-  const next = upcomingBookings[0];
-  const nextDate = next?.items[0]?.date;
-  const daysAway = nextDate
-    ? Math.max(
-        0,
-        Math.round((parseDateKey(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-      )
-    : null;
+export default async function AccountPage() {
+  const session = await requireCustomer("/account");
+  const [inquiries, orders] = await Promise.all([
+    customerService.listInquiries(session),
+    customerService.listOrders(session),
+  ]);
 
-  const recommended = activities.filter((a) => a.tier === "B" || a.tier === "C").slice(0, 3);
+  const open = inquiries.filter((i) => !isClosedStatus(i.status));
+  const today = toDateKey(new Date());
+  const upcoming = orders
+    .filter((o) => o.status !== "cancelled" && o.status !== "completed")
+    .filter((o) => {
+      const d = orderFirstDate(o);
+      return !d || d >= today;
+    })
+    .sort((a, b) => (orderFirstDate(a) ?? "9999").localeCompare(orderFirstDate(b) ?? "9999"));
+
+  const nextInquiry = open[0];
+  const nextTrip = upcoming[0];
+  const recommended = (await getActivities()).filter((a) => a.tier === "B" || a.tier === "C").slice(0, 3);
 
   return (
     <>
-      <PageView pageType="account_dashboard" props={{ user_segment: demoUser.segment }} />
+      <PageView pageType="account_dashboard" />
 
-      {/* Open inquiry first — in inquiry mode this is the live thing (pivot §2.1). */}
-      {openInquiries[0] && (
-        <Card className="mb-6 p-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="heat">Inquiry in progress</Badge>
-            <span className="text-xs font-bold tnum text-ink-500">{openInquiries[0].reference}</span>
-          </div>
-          <h2 className="mt-2 text-xl leading-snug">
-            {openInquiries[0].items[0]?.title ?? "Trip planning request"}
-            {openInquiries[0].items.length > 1 && (
-              <span className="font-sans text-sm font-semibold text-ink-500">
-                {" "}
-                + {openInquiries[0].items.length - 1} more
-              </span>
+      <section aria-labelledby="dash-inquiry" className="mb-6">
+        <h2 id="dash-inquiry" className="sr-only">
+          Current inquiry
+        </h2>
+        {nextInquiry ? (
+          <>
+            <CustomerInquiryCard inquiry={nextInquiry} placement="account_dashboard" />
+            {open.length > 1 && (
+              <ButtonLink href="/account/inquiries" variant="ghost" size="sm" className="mt-2">
+                All {open.length} open inquiries
+              </ButtonLink>
             )}
-          </h2>
-          {openInquiries[0].agent && (
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <AgentCard agent={openInquiries[0].agent} className="flex-1 border-0 bg-shell p-3" />
-              <WhatsAppButton
-                size="md"
-                context={{
-                  intent: "inquiry_followup",
-                  inquiryReference: openInquiries[0].reference,
-                  placement: "account_dashboard",
-                }}
-                label={`Message ${openInquiries[0].agent.name.split(" ")[0]}`}
-              />
-            </div>
-          )}
-          <ButtonLink href="/account/inquiries" variant="ghost" size="sm" className="mt-3">
-            All inquiries
-          </ButtonLink>
-        </Card>
-      )}
+          </>
+        ) : (
+          <EmptyState
+          illustration="inquiries"
+            icon={<Inbox className="h-6 w-6" />}
+            title="No open inquiries"
+            body="Ask us to check availability and price on anything — it appears here with who's handling it and when they'll reply."
+            action={<ButtonLink href="/search">Browse experiences</ButtonLink>}
+          />
+        )}
+      </section>
 
-      {next && (
-        <Card className="mb-6 overflow-hidden">
-          <div className="grid sm:grid-cols-[0.8fr_1.2fr]">
-            <div className="relative min-h-[10rem]">
-              <Scene src={next.items[0].image} alt="" />
-            </div>
-            <div className="p-5">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={next.status === "supplier_pending" ? "warn" : "trust"}>
-                  {next.status === "supplier_pending" ? "Awaiting operator" : "Confirmed"}
-                </Badge>
-                {daysAway !== null && (
-                  <span className="text-xs font-bold text-sun-600">
-                    {daysAway === 0 ? "Today" : daysAway === 1 ? "Tomorrow" : `In ${daysAway} days`}
-                  </span>
-                )}
-              </div>
-              <h2 className="mt-2 text-xl leading-snug">{next.items[0].title}</h2>
-              <p className="mt-1 text-sm text-ink-600">
-                {formatDateLong(next.items[0].date)} · {next.items[0].time}
-              </p>
-              {next.driver && (
-                <p className="mt-2 rounded-[var(--radius-control)] bg-lagoon-50 p-2.5 text-sm text-lagoon-700">
-                  Driver {next.driver.name} · {next.driver.phone} · pickup {next.driver.window}
-                </p>
-              )}
-              <div className="mt-4 flex flex-wrap gap-2">
-                <ButtonLink href={`/voucher/${next.reference}`} size="sm">
-                  <Ticket className="h-4 w-4" />
-                  View voucher
-                </ButtonLink>
-                <ButtonLink href={`/booking/${next.reference}`} variant="outline" size="sm">
-                  Manage booking
-                </ButtonLink>
-              </div>
-            </div>
-          </div>
-        </Card>
+      {nextTrip && (
+        <section aria-labelledby="dash-trip" className="mb-6">
+          <h2 id="dash-trip" className="mb-3 text-xl">
+            Next trip
+          </h2>
+          <OrderRow order={nextTrip} placement="account_dashboard" />
+        </section>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { icon: Inbox, label: "My inquiries", sub: `${openInquiries.length} open`, href: "/account/inquiries" },
-          { icon: CalendarDays, label: "My trips", sub: `${upcomingBookings.length} upcoming`, href: "/account/bookings" },
+          {
+            icon: Inbox,
+            label: "My inquiries",
+            sub: open.length === 1 ? "1 open" : `${open.length} open`,
+            href: "/account/inquiries",
+          },
+          {
+            icon: CalendarDays,
+            label: "My trips",
+            sub: upcoming.length ? `${upcoming.length} upcoming` : "Nothing booked yet",
+            href: "/account/bookings",
+          },
           { icon: Heart, label: "Saved activities", sub: "Your shortlist", href: "/account/saved" },
-          { icon: LifeBuoy, label: "Help", sub: "WhatsApp in ~30 min", href: "/support" },
+          { icon: LifeBuoy, label: "Help", sub: "WhatsApp, reply in ~30 min", href: "/support" },
         ].map((item) => (
           <Link
             key={item.href}
@@ -138,19 +116,13 @@ export default function AccountPage() {
         ))}
       </div>
 
-      {/* Referral / credits card removed — loyalty is V2 (pivot §2.1). Route retained. */}
-
       <section className="mt-8">
-        <SectionHeading
-          kicker="Based on what you've booked"
-          title="You might like these next"
-          href="/search"
-        />
+        <SectionHeading kicker="Popular with our customers" title="Worth a look" href="/search" />
         <div className="grid gap-4 sm:grid-cols-3">
           {recommended.map((a, i) => (
             <ActivityCard
               key={a.slug}
-              activity={a}
+              activity={toCard(a)}
               layout="compact"
               position={i + 1}
               source="account_recommendations"

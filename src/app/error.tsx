@@ -5,6 +5,7 @@ import { AlertTriangle, MessageCircle, RefreshCw } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/primitives";
 import { track } from "@/lib/analytics";
+import { whatsAppUrl } from "@/lib/whatsapp";
 
 /**
  * Route error boundary.
@@ -55,7 +56,11 @@ export default function RouteError({
               Try again
             </Button>
             <a
-              href="https://wa.me/919000000000?text=Hi%20OUTLY!%20I%20hit%20an%20error%20on%20the%20website."
+              href={whatsAppUrl({
+                intent: "general",
+                question: "I hit an error on the website.",
+                placement: "route_error",
+              })}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-13 items-center gap-2 rounded-[var(--radius-control)] border-2 border-whatsapp bg-white px-5 font-semibold text-ink-900 shadow-[0_2px_0_var(--color-whatsapp-dark)]"

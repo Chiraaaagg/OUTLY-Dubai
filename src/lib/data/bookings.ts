@@ -1,211 +1,22 @@
 import type { Booking } from "../types";
 
 /**
- * MOCK bookings. Backs /account/bookings, /manage-booking, /booking/[ref],
- * /voucher/[ref] and the review flow. Both rails are represented, because both
- * write to the same order object (PRD §0).
+ * Bookings are served from the database (`/api/me/orders`, the agent console
+ * and `orderService`), not from here.
  *
- * INTEGRATION BOUNDARY — replace with `GET /orders`. Reference format OUT-######
- * is shared with the agent console.
+ * This file used to hold four fabricated confirmed bookings — named
+ * travellers, hotel pickups, a supplier contact at "Rayna Tourism" — which
+ * Next prerendered into real, reachable URLs: `/voucher/OUT-482913`,
+ * `/booking/OUT-517204` and so on. Anyone who guessed or was sent one of
+ * those links saw what looked like a genuine confirmed order, complete with a
+ * QR voucher. That is a fabricated transaction record, so the fixtures are
+ * gone and the list is empty on purpose.
+ *
+ * The exports stay because the pages and `lib/api` are written against them;
+ * an empty list makes every reference 404 until the real order lookup is
+ * wired in. Do not repopulate this for a demo — point the pages at the API.
  */
-export const bookings: Booking[] = [
-  {
-    reference: "OUT-482913",
-    status: "confirmed",
-    rail: "assisted",
-    createdAt: "2026-09-02T18:24:00+05:30",
-    currency: "INR",
-    paymentMethod: "UPI · Google Pay",
-    couponCode: "FAMILY7",
-    voucherReady: true,
-    subtotal: { inr: 28840, aed: 1243 },
-    discount: { inr: 1500, aed: 65 },
-    total: { inr: 27340, aed: 1178 },
-    traveller: {
-      fullName: "Rajesh Patel",
-      email: "rajesh.patel@example.com",
-      phone: "9876543210",
-      countryCode: "+91",
-      hotel: "Rove Downtown, Business Bay",
-      pickupZone: "Downtown",
-      dietary: "jain",
-      specialRequests:
-        "3 seniors travelling — one cannot do dune bashing. Jain meals for all 7, no onion no garlic.",
-    },
-    supplierContact: { name: "Arabian Dunes Tourism", phone: "+971 50 123 4567" },
-    driver: {
-      name: "Imran Sheikh",
-      phone: "+971 55 987 6543",
-      vehicle: "Toyota Land Cruiser · DXB J 42918",
-      window: "15:00 – 15:30",
-    },
-    items: [
-      {
-        id: "i1",
-        kind: "activity",
-        slug: "gentle-desert-safari-seniors",
-        title: "Gentle Desert Safari — No Dune Bashing",
-        image: "dune-calm",
-        date: "2026-09-14",
-        time: "15:00 pickup",
-        variantId: "std",
-        variantName: "Gentle shared safari",
-        pax: { adult: 2, child: 2, infant: 0, senior: 3 },
-        addOnIds: ["ao-jain"],
-        unit: { inr: 3290, aed: 142 },
-        total: { inr: 17950, aed: 774 },
-        confirmation: "instant",
-        fulfilmentMode: "inquiry",
-        freeCancellationHours: 24,
-        durationMinutes: 360,
-      },
-      {
-        id: "i2",
-        kind: "activity",
-        slug: "dhow-cruise-marina-dinner",
-        title: "Dubai Marina Dhow Cruise with Dinner",
-        image: "dhow-lights",
-        date: "2026-09-16",
-        time: "20:30 sailing",
-        variantId: "std",
-        variantName: "Standard seating",
-        pax: { adult: 2, child: 2, infant: 0, senior: 3 },
-        addOnIds: ["ao-pickup"],
-        unit: { inr: 2790, aed: 120 },
-        total: { inr: 10890, aed: 469 },
-        confirmation: "instant",
-        fulfilmentMode: "inquiry",
-        freeCancellationHours: 24,
-        durationMinutes: 120,
-      },
-    ],
-  },
-  {
-    reference: "OUT-517204",
-    status: "supplier_pending",
-    rail: "self_serve",
-    createdAt: "2026-09-08T21:05:00+05:30",
-    currency: "INR",
-    paymentMethod: "Card · HDFC •••• 4412",
-    voucherReady: false,
-    subtotal: { inr: 19800, aed: 856 },
-    discount: { inr: 0, aed: 0 },
-    total: { inr: 19800, aed: 856 },
-    traveller: {
-      fullName: "Aditya Rao",
-      email: "aditya.rao@example.com",
-      phone: "9812345678",
-      countryCode: "+91",
-      hotel: "Address Beach Resort, JBR",
-      pickupZone: "JBR",
-      specialRequests: "Anniversary — cake at the camp if possible.",
-    },
-    supplierContact: { name: "Arabian Dunes Tourism", phone: "+971 50 123 4567" },
-    items: [
-      {
-        id: "i3",
-        kind: "activity",
-        slug: "premium-private-desert-camp",
-        title: "Private Desert Camp with Falconry & Fine Dining",
-        image: "camp-luxe",
-        date: "2026-09-21",
-        time: "15:30 pickup",
-        variantId: "std",
-        variantName: "Private camp evening",
-        pax: { adult: 2, child: 0, infant: 0, senior: 0 },
-        addOnIds: ["ao-cake"],
-        unit: { inr: 9900, aed: 428 },
-        total: { inr: 19800, aed: 856 },
-        confirmation: "manual",
-        fulfilmentMode: "inquiry",
-        freeCancellationHours: 48,
-        durationMinutes: 420,
-      },
-    ],
-  },
-  {
-    reference: "OUT-390118",
-    status: "completed",
-    rail: "self_serve",
-    createdAt: "2026-08-11T14:02:00+05:30",
-    currency: "AED",
-    paymentMethod: "Card · Emirates NBD •••• 8890",
-    voucherReady: true,
-    reviewSubmitted: false,
-    subtotal: { inr: 14580, aed: 630 },
-    discount: { inr: 0, aed: 0 },
-    total: { inr: 14580, aed: 630 },
-    traveller: {
-      fullName: "Sana Qureshi",
-      email: "sana.q@example.com",
-      phone: "501234567",
-      countryCode: "+971",
-      hotel: "Resident — Dubai Marina",
-      pickupZone: "Marina",
-    },
-    supplierContact: { name: "Rayna Tourism", phone: "+971 4 123 4567" },
-    items: [
-      {
-        id: "i4",
-        kind: "activity",
-        slug: "atlantis-aquaventure",
-        title: "Atlantis Aquaventure Waterpark, Palm Jumeirah",
-        image: "water-splash",
-        date: "2026-08-16",
-        time: "10:00 entry",
-        variantId: "std",
-        variantName: "Full-day entry",
-        pax: { adult: 2, child: 0, infant: 0, senior: 0 },
-        addOnIds: [],
-        unit: { inr: 7290, aed: 315 },
-        total: { inr: 14580, aed: 630 },
-        confirmation: "instant",
-        fulfilmentMode: "inquiry",
-        freeCancellationHours: 24,
-        durationMinutes: 480,
-      },
-    ],
-  },
-  {
-    reference: "OUT-274655",
-    status: "cancelled",
-    rail: "self_serve",
-    createdAt: "2026-07-19T09:40:00+05:30",
-    currency: "INR",
-    paymentMethod: "UPI · PhonePe",
-    voucherReady: false,
-    subtotal: { inr: 3380, aed: 145 },
-    discount: { inr: 0, aed: 0 },
-    total: { inr: 3380, aed: 145 },
-    traveller: {
-      fullName: "Rajesh Patel",
-      email: "rajesh.patel@example.com",
-      phone: "9876543210",
-      countryCode: "+91",
-    },
-    items: [
-      {
-        id: "i5",
-        kind: "activity",
-        slug: "dubai-frame-tickets",
-        title: "Dubai Frame Entry Ticket",
-        image: "frame-gold",
-        date: "2026-07-28",
-        time: "17:00",
-        variantId: "std",
-        variantName: "Standard entry",
-        pax: { adult: 2, child: 0, infant: 0, senior: 0 },
-        addOnIds: [],
-        unit: { inr: 1690, aed: 72 },
-        total: { inr: 3380, aed: 145 },
-        confirmation: "instant",
-        fulfilmentMode: "inquiry",
-        freeCancellationHours: 24,
-        durationMinutes: 60,
-      },
-    ],
-  },
-];
+export const bookings: Booking[] = [];
 
 export const bookingByReference = (ref: string) =>
   bookings.find((b) => b.reference.toLowerCase() === ref.trim().toLowerCase());
@@ -216,22 +27,3 @@ export const upcomingBookings = bookings.filter(
 export const pastBookings = bookings.filter(
   (b) => b.status === "completed" || b.status === "cancelled",
 );
-
-/** Demo account — no auth in this build (see docs/integration-boundaries.md). */
-export const demoUser = {
-  name: "Rajesh Patel",
-  firstName: "Rajesh",
-  email: "rajesh.patel@example.com",
-  phone: "+91 98765 43210",
-  segment: "fit" as const,
-  memberSince: "2026",
-  credits: { inr: 500, aed: 22 },
-  referralCode: "RAJESH500",
-  referrals: { invited: 6, booked: 2, earned: 1000, pending: 500 },
-  preferences: {
-    whatsapp: true,
-    email: true,
-    priceDrops: true,
-    dietary: "jain" as const,
-  },
-};

@@ -3,6 +3,8 @@
 import { MessageCircle, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useApp } from "@/components/providers/app-provider";
+import { emergencyDisplay } from "@/lib/site-config";
 import {
   openWhatsApp,
   RESPONSE_SLA,
@@ -103,7 +105,7 @@ export function WhatsAppCard({
               )}
             >
               {body ??
-                `A real person who knows these suppliers answers in about 30 minutes. Tell us your dates, group and any food or mobility needs — we'll confirm availability and come back with options, priced in rupees.`}
+                `A real person who knows these suppliers answers in about 30 minutes. Tell us your dates, group and any food or mobility needs — we'll confirm availability and come back with options, priced all-in.`}
             </p>
             <p
               className={cn(
@@ -142,15 +144,23 @@ export function FloatingWhatsApp({
   raised,
 }: {
   context: WhatsAppContext;
+  /** Page has a mobile sticky booking bar — lift above it below `sm`. */
   raised?: boolean;
 }) {
+  // The compare tray is fixed at the bottom on every breakpoint; when it is
+  // showing, lift the button above it everywhere (audit S07 — the FAB sat on
+  // top of the tray's Compare action on desktop).
+  const { compare, hydrated } = useApp();
+  const trayVisible = hydrated && compare.length > 0;
   return (
     <div
       className={cn(
         "fixed right-4 z-50 transition-[bottom] duration-200 sm:right-6",
-        raised
-          ? "bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] sm:bottom-6"
-          : "bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:bottom-6",
+        trayVisible
+          ? "bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] sm:bottom-[5.5rem]"
+          : raised
+            ? "bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] sm:bottom-6"
+            : "bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:bottom-6",
       )}
     >
       <button
@@ -166,8 +176,13 @@ export function FloatingWhatsApp({
   );
 }
 
-/** Phone escalation — shown for high-value orders and inside 48h of travel. */
-export function PhoneEscalation({ number = "+971 4 000 0000" }: { number?: string }) {
+/**
+ * Phone escalation — shown for high-value orders and inside 48h of travel.
+ * Defaults to the configured emergency line and renders nothing when neither
+ * a `number` prop nor `NEXT_PUBLIC_EMERGENCY_PHONE` is set (audit X03).
+ */
+export function PhoneEscalation({ number = emergencyDisplay() }: { number?: string }) {
+  if (!number) return null;
   return (
     <a
       href={`tel:${number.replace(/\s/g, "")}`}

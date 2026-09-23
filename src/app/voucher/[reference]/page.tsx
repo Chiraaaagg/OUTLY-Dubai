@@ -8,7 +8,8 @@ import { Logo } from "@/components/layout/logo";
 import { Alert, Breadcrumbs, Card } from "@/components/ui/primitives";
 import { ButtonLink } from "@/components/ui/button";
 import { bookings, bookingByReference } from "@/lib/data/bookings";
-import { activityBySlug } from "@/lib/data/activities";
+import { getActivities } from "@/lib/catalog/server";
+import { emergencyDisplay, emergencyHref, whatsappDisplay } from "@/lib/site-config";
 import { formatDateLong, paxLabel } from "@/lib/utils";
 
 export function generateStaticParams() {
@@ -38,6 +39,10 @@ export default async function VoucherPage({
 }) {
   const { reference } = await params;
   const booking = bookingByReference(reference);
+  const catalogue = await getActivities();
+  const emergency = emergencyDisplay();
+  const emergencyTel = emergencyHref();
+  const wa = whatsappDisplay();
 
   if (!booking) {
     return (
@@ -81,6 +86,25 @@ export default async function VoucherPage({
           className="mb-4 print:hidden"
         />
 
+        {/* Brand lockup. Printed too — the print sheet keeps the voucher's own
+            header, so the black version carries it on a monochrome printer. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/outlyy-voucher-lockup.svg"
+          alt="OUTLYY"
+          width={300}
+          height={64}
+          className="mb-4 h-12 w-auto print:hidden"
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/outlyy-voucher-lockup-print-black.svg"
+          alt="OUTLYY"
+          width={300}
+          height={64}
+          className="mb-4 hidden h-12 w-auto print:block"
+        />
+
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4 print:hidden">
           <div>
             <h1 className="text-[1.75rem] sm:text-3xl">Your voucher</h1>
@@ -117,7 +141,7 @@ export default async function VoucherPage({
           </header>
 
           {booking.items.map((item) => {
-            const activity = activityBySlug(item.slug);
+            const activity = catalogue.find((a) => a.slug === item.slug);
             return (
               <section key={item.id} className="border-b border-dashed border-ink-300 p-5 last:border-0">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -209,15 +233,17 @@ export default async function VoucherPage({
 
           <footer className="space-y-3 bg-ink-900 p-5 text-white">
             <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
-              <div>
-                <p className="text-2xs font-bold uppercase tracking-wide text-white/50">
-                  Emergency support · 24/7
-                </p>
-                <a href="tel:+97140000000" className="flex items-center gap-1.5 font-bold">
-                  <Phone className="h-4 w-4" />
-                  +971 4 000 0000
-                </a>
-              </div>
+              {emergency && emergencyTel && (
+                <div>
+                  <p className="text-2xs font-bold uppercase tracking-wide text-white/50">
+                    Emergency support · 24/7
+                  </p>
+                  <a href={emergencyTel} className="flex items-center gap-1.5 font-bold">
+                    <Phone className="h-4 w-4" />
+                    {emergency}
+                  </a>
+                </div>
+              )}
               {booking.supplierContact && (
                 <div>
                   <p className="text-2xs font-bold uppercase tracking-wide text-white/50">
@@ -228,16 +254,18 @@ export default async function VoucherPage({
                   </p>
                 </div>
               )}
-              <div>
-                <p className="text-2xs font-bold uppercase tracking-wide text-white/50">WhatsApp</p>
-                <p className="font-semibold">+91 90000 00000</p>
-              </div>
+              {wa && (
+                <div>
+                  <p className="text-2xs font-bold uppercase tracking-wide text-white/50">WhatsApp</p>
+                  <p className="font-semibold">{wa}</p>
+                </div>
+              )}
             </div>
             <p className="flex items-start gap-2 border-t border-white/15 pt-3 text-xs leading-relaxed text-white/70">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {booking.items[0]?.freeCancellationHours
                 ? `Free cancellation up to ${booking.items[0].freeCancellationHours} hours before your start time. After that, no refund. Cancel from Manage booking — the exact refund amount is shown before you confirm.`
-                : "This booking is non-refundable. If something goes wrong on the day, call the emergency number above before leaving the venue."}
+                : `This booking is non-refundable. If something goes wrong on the day, ${emergency ? "call the emergency number above" : "message us on WhatsApp"} before leaving the venue.`}
             </p>
           </footer>
         </article>

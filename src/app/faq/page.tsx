@@ -8,7 +8,7 @@ import type { Faq } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
   description:
-    "How OUTLY pricing, UPI payments, Jain and pure-veg food, hotel pickup, vouchers, cancellations and refunds work — answered plainly.",
+    "How OUTLYY pricing, UPI payments, Jain and pure-veg food, hotel pickup, vouchers, cancellations and refunds work — answered plainly.",
   alternates: { canonical: "/faq" },
 };
 
@@ -24,7 +24,7 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
       },
       {
         q: "How fast will I hear back?",
-        a: "A named specialist replies on WhatsApp within 30 minutes between 9am and 11pm IST — the confirmation page and your acknowledgement message both show the exact time, not a vague 'soon'. Out of hours, your inquiry is queued for the first shift and the time shown adjusts to the real one.",
+        a: "A named specialist replies on WhatsApp within about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday) — the confirmation page and your acknowledgement message both show the exact time, not a vague 'soon'. Out of hours, your inquiry is queued for the first shift and the time shown adjusts to the real one.",
       },
       {
         q: "Does the price change?",
@@ -43,11 +43,11 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
     faqs: [
       {
         q: "Is the price I see really the price I pay?",
-        a: "Yes. Every price on OUTLY includes taxes and booking fees, and it is the amount charged. The only things that change your total are optional extras you deliberately add — hotel pickup, a cake, a photographer. If a fee ever appears that wasn't on the activity page, that is a defect on our side and we refund the difference without argument.",
+        a: "Yes. Every price on OUTLYY includes taxes and booking fees, and it is the amount charged. The only things that change your total are optional extras you deliberately add — hotel pickup, a cake, a photographer. If a fee ever appears that wasn't on the activity page, that is a defect on our side and we refund the difference without argument.",
       },
       {
         q: "Why are your prices sometimes higher than the gate price?",
-        a: "Occasionally they are, and we won't pretend otherwise. Where a gate price is genuinely lower we don't show a struck-through comparison. What you get instead is a guaranteed slot, a voucher in rupees, free cancellation where it exists, and someone to call if the operator lets you down.",
+        a: "Occasionally they are, and we won't pretend otherwise. Where a gate price is genuinely lower we don't show a struck-through comparison. What you get instead is a guaranteed slot, an all-in price with nothing added later, free cancellation where it exists, and someone to call if the operator lets you down.",
       },
       {
         q: "Do you show prices in AED?",
@@ -205,7 +205,7 @@ export default function FaqPage() {
           className="mt-10"
           context={{ intent: "general", placement: "faq" }}
           title="Still not answered?"
-          body="Ask us directly. A real person replies in about eight minutes between 9am and 11pm IST — and if the answer is 'no, that won't work for your group', they'll say so."
+          body="Ask us directly. A real person replies in about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday) — and if the answer is 'no, that won't work for your group', they'll say so."
         />
       </div>
 

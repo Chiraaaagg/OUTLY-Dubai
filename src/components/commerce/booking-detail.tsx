@@ -23,7 +23,8 @@ import { Sheet } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { cancelBooking, quoteCancellation, type CancellationQuote } from "@/lib/api";
 import { track } from "@/lib/analytics";
-import { activities } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
+import { emergencyDisplay, emergencyHref, whatsappDisplay } from "@/lib/site-config";
 import type { Booking } from "@/lib/types";
 import { formatDateLong, paxLabel, priceIn } from "@/lib/utils";
 
@@ -40,6 +41,10 @@ import { formatDateLong, paxLabel, priceIn } from "@/lib/utils";
  */
 export function BookingDetail({ booking }: { booking: Booking }) {
   const { currency, toast } = useApp();
+  const { activities } = useCatalog();
+  const wa = whatsappDisplay();
+  const emergency = emergencyDisplay();
+  const emergencyTel = emergencyHref();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [modifyOpen, setModifyOpen] = useState(false);
   const [quote, setQuote] = useState<CancellationQuote | null>(null);
@@ -78,7 +83,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+    <div className="grid grid-safe gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
       <div className="min-w-0 space-y-5">
         {cancelled && (
           <Alert tone="info" title="This booking is cancelled">
@@ -290,20 +295,24 @@ export function BookingDetail({ booking }: { booking: Booking }) {
           <dl className="mt-3 space-y-3 text-sm">
             <div>
               <dt className="text-2xs font-bold uppercase tracking-wide text-ink-500">
-                OUTLY on WhatsApp
+                OUTLYY on WhatsApp
               </dt>
-              <dd className="font-semibold text-ink-900">+91 90000 00000 · replies in ~8 min</dd>
-            </div>
-            <div>
-              <dt className="text-2xs font-bold uppercase tracking-wide text-ink-500">
-                24/7 emergency (in Dubai)
-              </dt>
-              <dd>
-                <a href="tel:+97140000000" className="font-semibold text-ink-900 underline">
-                  +971 4 000 0000
-                </a>
+              <dd className="font-semibold text-ink-900">
+                {wa ? `${wa} · replies in ~8 min` : "Replies in ~8 min"}
               </dd>
             </div>
+            {emergency && emergencyTel && (
+              <div>
+                <dt className="text-2xs font-bold uppercase tracking-wide text-ink-500">
+                  24/7 emergency (in Dubai)
+                </dt>
+                <dd>
+                  <a href={emergencyTel} className="font-semibold text-ink-900 underline">
+                    {emergency}
+                  </a>
+                </dd>
+              </div>
+            )}
             {booking.supplierContact && (
               <div>
                 <dt className="text-2xs font-bold uppercase tracking-wide text-ink-500">Operator</dt>

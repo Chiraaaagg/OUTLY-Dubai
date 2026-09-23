@@ -12,7 +12,7 @@ import { Alert, Breadcrumbs, Card, EmptyState, SectionHeading } from "@/componen
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Scene } from "@/components/ui/scene";
 import { Badge } from "@/components/ui/badge";
-import { activities, activityBySlug } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
 import type { CartItem } from "@/lib/types";
 import { formatDateKey, formatDateLong, formatDuration, paxLabel, priceIn } from "@/lib/utils";
 
@@ -33,6 +33,7 @@ import { formatDateKey, formatDateLong, formatDuration, paxLabel, priceIn } from
  */
 export default function CartPage() {
   const { cart, removeFromCart, cartTotalINR, currency, priceLockMinutes, hydrated } = useApp();
+  const { activities } = useCatalog();
   const inquiry = cartRequiresInquiry(cart);
   const nextHref = inquiry ? "/inquiry" : "/checkout";
   const nextLabel = inquiry ? "Send inquiry" : "Continue to checkout";
@@ -70,6 +71,7 @@ export default function CartPage() {
   // AC-CART-02 — a relevant upsell whenever there is something in the cart.
   const suggestions = useMemo(() => {
     if (!cart.length) return [];
+    const activityBySlug = (slug: string) => activities.find((a) => a.slug === slug);
     const inCart = new Set(cart.map((i) => i.slug));
     const related = cart
       .flatMap((i) => activityBySlug(i.slug)?.relatedSlugs ?? [])
@@ -79,7 +81,7 @@ export default function CartPage() {
       .map(activityBySlug)
       .filter((a): a is NonNullable<typeof a> => Boolean(a))
       .slice(0, 3);
-  }, [cart]);
+  }, [cart, activities]);
 
   const fallbackSuggestions = activities.filter((a) => a.tier === "B").slice(0, 3);
 
@@ -102,6 +104,7 @@ export default function CartPage() {
 
       {cart.length === 0 ? (
         <EmptyState
+          illustration="cart"
           icon={<Sparkles className="h-6 w-6" />}
           title="Your trip is empty"
           body="Add a few experiences and they'll appear here as a day-by-day timeline — then one inquiry covers all of them."
@@ -113,7 +116,7 @@ export default function CartPage() {
           }
         />
       ) : (
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+        <div className="mt-6 grid grid-safe gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
           <div className="min-w-0">
             {/* Price-lock timer is instant-mode only — in inquiry mode nothing is
                 being locked, and a timer would be manufactured urgency (§3.7). */}

@@ -47,10 +47,10 @@ export const landingPages: LandingPage[] = [
     heroKicker: "Built for how Indians actually book Dubai",
     heroSub:
       "All-in rupee pricing, UPI at checkout, pure-veg and Jain food you can filter for, and a real person on WhatsApp in about eight minutes.",
-    heroImage: "skyline-gold",
+    heroImage: "img:landing:dubai-activities-for-indians:0",
     body: [
       "Booking Dubai from India usually means choosing between three unsatisfying options. A local travel agent will hold your hand and quote in rupees, but the markup is invisible, the choice is whatever they have a relationship with, and there are no reviews to check. A global booking site will show you three hundred options priced in dirhams, take a foreign card, and have no idea what Jain food is. Or you can wait and book at the hotel desk in Dubai, at a twenty to fifty percent premium, from whichever operator pays the concierge the most.",
-      "OUTLY exists because none of those three is good enough. We sell a curated set of Dubai experiences — not a catalogue of everything — priced all-in in rupees, bookable with UPI, and backed by a WhatsApp team that answers in about eight minutes during working hours. The price you see on the activity page is the price your card is charged. There is no service fee added at the last screen, no currency conversion surprise, and no tax line that appears after you have entered your details.",
+      "OUTLYY exists because none of those three is good enough. We sell a curated set of Dubai experiences — not a catalogue of everything — priced all-in in rupees, bookable with UPI, and backed by a WhatsApp team that answers in about eight minutes during working hours. The price you see on the activity page is the price your card is charged. There is no service fee added at the last screen, no currency conversion surprise, and no tax line that appears after you have entered your details.",
       "The things Indian families actually ask about are treated as first-class product features rather than notes in a form. Dietary requirements are a filter: pure vegetarian, Jain without onion and garlic, and halal each narrow the results to suppliers who have confirmed it with their kitchen, and the confirmation is printed on your voucher so nobody at the venue can claim they were not told. Suitability is a filter too — a gentle desert safari with no dune bashing is its own bookable variant rather than something you have to negotiate with a driver who is already halfway to Al Lahbab.",
       "Payment works the way it does at home. UPI is the first and largest option at checkout, not an afterthought below the international card fields. Cards, netbanking, wallets and EMI on larger bookings are all supported. If you live in the UAE, prices switch to dirhams automatically and your UAE card works normally — a detail that most India-focused sites get wrong and that matters enormously if you are the family member in Dubai who books everything when relatives visit.",
       "And when self-serve is not the right answer, a human is. Booking fifty thousand rupees of activities for seven people including two children and three grandparents is not a checkout problem, it is a conversation. Tap Ask on WhatsApp from any activity page and the agent already knows which activity you were looking at, which dates you selected, how many people you are, and which dietary filter you applied. They will come back with options, priced in rupees and itemised, and can send you a payment link for exactly what you agreed. It is the same booking engine either way, so your voucher, your account and your cancellation rights are identical whether a person or a form took the order.",
@@ -100,7 +100,7 @@ export const landingPages: LandingPage[] = [
     faqs: [
       {
         q: "Can I pay in Indian rupees with UPI?",
-        a: "Yes. Every price on OUTLY is quoted all-in in rupees and UPI is the first payment option at checkout, alongside cards, netbanking, wallets and EMI on orders above ₹15,000. If you're in the UAE, prices switch to dirhams and UAE cards work normally.",
+        a: "Yes. Every price on OUTLYY is quoted all-in in rupees and UPI is the first payment option at checkout, alongside cards, netbanking, wallets and EMI on orders above ₹15,000. If you're in the UAE, prices switch to dirhams and UAE cards work normally.",
       },
       {
         q: "Is pure vegetarian and Jain food genuinely available?",
@@ -147,14 +147,14 @@ export const landingPages: LandingPage[] = [
     intentLabel: "Pay by UPI",
     heroKicker: "Scan, pay, voucher on WhatsApp",
     heroSub:
-      "UPI is the first payment option at OUTLY checkout — GPay, PhonePe, Paytm and any UPI app. No forex markup, no international card required.",
-    heroImage: "marina-dusk",
+      "UPI is the first payment option at OUTLYY checkout — GPay, PhonePe, Paytm and any UPI app. No forex markup, no international card required.",
+    heroImage: "img:landing:dubai-activities-with-upi:0",
     body: [
       "Most international activity sites treat UPI as an afterthought, if they support it at all. You get a card form built for a European traveller, an international transaction that your bank may decline, a currency conversion you did not choose, and a foreign transaction fee you discover on your statement two days later. For a family booking forty thousand rupees of experiences, that is real money and real friction.",
-      "At OUTLY, UPI is the default. It sits at the top of the payment step with the largest tap target, because it is what most of our customers actually use. You scan or enter your UPI ID, approve in your own app, and the booking is confirmed against the rupee amount you already saw — not a dirham amount converted at whatever rate your card issuer felt like applying that day.",
+      "At OUTLYY, UPI is the default. It sits at the top of the payment step with the largest tap target, because it is what most of our customers actually use. You scan or enter your UPI ID, approve in your own app, and the booking is confirmed against the rupee amount you already saw — not a dirham amount converted at whatever rate your card issuer felt like applying that day.",
       "The rest of the Indian payment stack is here too. Credit and debit cards from Indian banks, netbanking across the major banks, wallets, and EMI on orders above ₹15,000 — which matters for the family bookings that run past thirty or forty thousand rupees. For orders above ₹25,000 on eligible experiences we also offer a deposit: thirty percent now to hold the booking, the balance seven days before you travel. That is a genuine option, not an upsell, and it exists because a large family booking made eight weeks ahead should not require the entire amount up front.",
       "Payment is handled entirely by a PCI-compliant gateway. Card details never touch our servers, and we do not store them unless you explicitly choose to save a method for faster repeat booking. If a payment fails — and UPI occasionally does, usually a bank timeout rather than anything you did — your booking is preserved exactly as you left it, the failure reason is shown in plain language rather than an error code, and you can retry with a different method or hand the whole thing to a WhatsApp agent who will send you a payment link.",
-      "Vouchers arrive the moment payment clears. For instant-confirmation experiences — which is most attraction tickets and many tours — the QR voucher reaches WhatsApp in under a minute, and also lands in your email and your OUTLY account. For experiences that need the operator to confirm, you get a status message within five minutes and the confirmed voucher within two hours, with an automatic escalation to our operations team if that deadline is missed.",
+      "Vouchers arrive the moment payment clears. For instant-confirmation experiences — which is most attraction tickets and many tours — the QR voucher reaches WhatsApp in under a minute, and also lands in your email and your OUTLYY account. For experiences that need the operator to confirm, you get a status message within five minutes and the confirmed voucher within two hours, with an automatic escalation to our operations team if that deadline is missed.",
     ],
     benefits: [
       {
@@ -189,7 +189,7 @@ export const landingPages: LandingPage[] = [
       },
       {
         q: "Is there a fee for using UPI?",
-        a: "No. The price you see is the price charged, and UPI carries no surcharge on OUTLY.",
+        a: "No. The price you see is the price charged, and UPI carries no surcharge on OUTLYY.",
       },
       {
         q: "My UPI payment failed but money left my account. What now?",
@@ -223,13 +223,13 @@ export const landingPages: LandingPage[] = [
     heroKicker: "Already in Dubai with an empty afternoon?",
     heroSub:
       "Live availability, instant confirmation, and a QR voucher on WhatsApp in under a minute. Everything here can be booked for tonight or tomorrow.",
-    heroImage: "skyline-night",
+    heroImage: "img:landing:last-minute-dubai-activities:0",
     body: [
       "Half of Dubai's visitors arrive with two days planned and five days booked. By day two the question changes from 'what should we see' to 'what can we actually get tomorrow' — and that is a different problem, because the answer depends on live availability rather than on what a listicle recommends.",
       "Everything on this page is filtered to instant confirmation with real availability in the next forty-eight hours. There is no 'enquire for availability' on these experiences. If the page says a slot is open for tomorrow morning, it is open, because availability is re-checked against the supplier at the moment you pay rather than read from a cache. If something sells out while you are deciding, you will be told before payment, not after.",
-      "The voucher matters as much as the booking when you are this close to the date. For instant-confirmation experiences the QR code reaches WhatsApp in under a minute of payment clearing, and it works offline once opened — which is the actual use case, because you will be opening it in a car park with roaming data that has decided to stop working. It is also in your email and your OUTLY account, and you can re-download it from a booking lookup with just the reference and your phone number if you never made an account at all.",
+      "The voucher matters as much as the booking when you are this close to the date. For instant-confirmation experiences the QR code reaches WhatsApp in under a minute of payment clearing, and it works offline once opened — which is the actual use case, because you will be opening it in a car park with roaming data that has decided to stop working. It is also in your email and your OUTLYY account, and you can re-download it from a booking lookup with just the reference and your phone number if you never made an account at all.",
       "Some things genuinely cannot be booked last minute, and we would rather say so than take your money and apologise later. Timed-entry attractions like the Museum of the Future frequently sell out three to four days ahead. Sunset slots at the Burj Khalifa go five to seven days ahead in winter. The private desert camp needs the kitchen to plan a menu. Where a same-day booking is genuinely not possible we show the next three available dates instead of an error, and where it is borderline, message us on WhatsApp — an agent can often call the operator and get a straight answer inside ten minutes.",
-      "If you live in the UAE, this page is probably your default. Prices show in dirhams, UAE cards work, and the today/tomorrow filter is applied automatically. The single most common OUTLY booking is an Indian resident in Dubai booking a desert safari for relatives who landed yesterday and have decided they want to see the desert. That takes about ninety seconds on this page.",
+      "If you live in the UAE, this page is probably your default. Prices show in dirhams, UAE cards work, and the today/tomorrow filter is applied automatically. The single most common OUTLYY booking is an Indian resident in Dubai booking a desert safari for relatives who landed yesterday and have decided they want to see the desert. That takes about ninety seconds on this page.",
     ],
     benefits: [
       {
@@ -298,7 +298,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "No taxis, no meeting points, no herding seven people",
     heroSub:
       "Door-to-door transfers with the driver's name, photo and number sent to you the evening before — and a live message when they're ten minutes away.",
-    heroImage: "city-tour",
+    heroImage: "img:landing:dubai-activities-with-hotel-pickup:0",
     body: [
       "The single most common complaint about Dubai activity bookings is not the activity. It is the pickup. A vague ninety-minute window, no driver contact, a call centre that does not answer, and a family of seven standing in a hotel lobby wondering whether to give up and take two taxis. It happens constantly, and it is entirely preventable.",
       "Everything on this page includes hotel pickup and drop in an air-conditioned vehicle, and every one of them tells you which areas are covered before you pay. Deira, Bur Dubai, Downtown, Business Bay, Dubai Marina, JBR and Al Barsha are included on almost all of them. Palm Jumeirah and the outer suburbs sometimes carry a supplement or a longer journey, and where that is true we state it on the activity page rather than discovering it with you on the day.",
@@ -388,7 +388,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "Two or three at once, for less",
     heroSub:
       "Every bundle shows what the same tickets cost bought separately, so you can check the saving instead of taking our word for it.",
-    heroImage: "skyline-gold",
+    heroImage: "img:landing:dubai-attraction-combos:0",
     body: [
       "Bundle pricing in travel is frequently dishonest. A 'combo' is advertised with a large percentage saving calculated against a gate price nobody pays, or against a walk-up rate that exists only in July. The number looks impressive and means nothing.",
       "Our combos show two prices: what the bundle costs, and what those exact same experiences cost bought individually on this site today. The saving is the difference between those two numbers, and you can verify it in about thirty seconds by opening the individual activity pages. Where a bundle does not actually save you money — a single park, for instance — we do not sell one.",
@@ -464,7 +464,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "One long day, properly organised",
     heroSub:
       "Sheikh Zayed Grand Mosque, Qasr Al Watan and the Corniche, with hotel pickup from Dubai and a Hindi-speaking guide if you want one.",
-    heroImage: "mosque-white",
+    heroImage: "img:landing:abu-dhabi-day-tours-from-dubai:0",
     body: [
       "Abu Dhabi is ninety minutes from central Dubai, which makes it an easy day trip and a poor half-day one. The mosque alone deserves two hours, Qasr Al Watan another ninety minutes, and the drive is three hours of your day in total. Anyone selling you Abu Dhabi plus Ferrari World plus the Louvre in a single day is selling you a coach seat and a series of photographs taken through a window.",
       "The version we sell runs about eleven hours door to door and covers the Sheikh Zayed Grand Mosque with a guide, Qasr Al Watan, the Corniche, Emirates Palace and the Heritage Village, with lunch included and vegetarian options as standard. Pickup is from your Dubai hotel at 07:30 and you are back by around 18:30. It is a long day, and for children under six it is a very long day — the half-day Dubai city tour is the gentler alternative.",
@@ -539,7 +539,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "₹3,690 all-in, voucher on WhatsApp in a minute",
     heroSub:
       "Levels 124 & 125, or SKY on 148. We tell you which slot is genuinely worth paying more for.",
-    heroImage: "skyline-gold",
+    heroImage: "img:landing:burj-khalifa-tickets:0",
     body: [
       "There are three Burj Khalifa tickets and the difference between them is mostly about crowds and time of day, not height. Levels 124 and 125 are the standard observation decks, and they carry the view that appears in every photograph of Dubai. Level 148 — sold as At the Top SKY — is higher, has a separate lift, a lounge with refreshments and a hosted experience, and about a tenth of the people.",
       "The bigger price lever is the time. 'Prime hours' means roughly 17:30 to 19:00, when you see the city in daylight, at sunset and lit up, all in one visit. It costs about ₹1,800 more per adult on the standard ticket and it sells out five to seven days ahead between November and March. Non-prime slots in the morning or after 21:00 cost less and are considerably quieter; the late evening view is very nearly as good and photographs better for most phone cameras.",
@@ -606,7 +606,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "From ₹2,990 with hotel pickup and dinner",
     heroSub:
       "Pure-veg and Jain camps, a gentle option with no dune bashing, and driver details sent the night before.",
-    heroImage: "dune-sunset",
+    heroImage: "img:landing:desert-safari-dubai:0",
     body: [
       "The desert safari is the most-booked experience in Dubai and the one that most often disappoints, for three predictable reasons: the pickup, the dune bashing and the food. All three are solvable at the point of booking, and none of them is solvable afterwards.",
       "Pickup first. A safari collects several groups in sequence, so shared transfers carry a thirty-minute window rather than a fixed time. That is normal. What is not normal, and what causes most of the complaints, is having no driver contact and no way to check. Every safari we sell sends you the driver's name, photo, mobile number and window on WhatsApp the evening before, and a live message when they are ten minutes away. If pickup fails by more than thirty minutes, the emergency number on your voucher reaches a person who dispatches another vehicle or refunds you in full.",
@@ -681,7 +681,7 @@ export const landingPages: LandingPage[] = [
     intentLabel: "Dubai Frame",
     heroKicker: "₹1,690 all-in, about an hour, glass floor included",
     heroSub: "Old Dubai on one side, the new skyline on the other, and the best-value view in the city.",
-    heroImage: "frame-gold",
+    heroImage: "img:landing:dubai-frame-tickets:0",
     body: [
       "The Dubai Frame is the most efficient hour in Dubai. A 150-metre gold picture frame standing in Zabeel Park, with the old city on one side and the modern skyline on the other, and a glass-floored walkway across the top that turns opaque as you step off it. It costs ₹1,690 all-in, takes about an hour, and is the single best-value attraction in the city.",
       "It works particularly well as a filler around something else. Unlike the Burj Khalifa or the Museum of the Future, it does not need a booked half-day; it slots neatly before dinner or after a morning city tour. The last slot before sunset is the one to take, when both skylines are lit and the contrast the building was designed to create actually works.",
@@ -733,7 +733,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "₹7,290 all-in — and yes, lockers cost extra at the park",
     heroSub:
       "The largest waterpark in the region. Full-day ticket, towels included, and we tell you what isn't.",
-    heroImage: "water-splash",
+    heroImage: "img:landing:atlantis-aquaventure-tickets:0",
     body: [
       "Aquaventure at Atlantis The Palm is the largest waterpark in the Middle East and needs an entire day to be worth its ticket. Families who arrive at one in the afternoon consistently report managing about half of it, which is a waste of ₹7,290. Arrive at opening.",
       "The ticket is ₹7,290 all-in for adults, ₹6,190 for children aged 3–11, free for under-3s, and ₹5,490 for guests aged 60 and over — a senior rate that many sites simply do not apply, and that we show on the page rather than at the gate. Towels and lifejackets are included. Lockers are not: they are chargeable at the park at around AED 60, and we state that here because an unexpected charge at the entrance is precisely the kind of thing that sours a family day out.",
@@ -785,7 +785,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "₹2,790 all-in for two hours and dinner",
     heroSub:
       "Skyline from the water, a proper vegetarian buffet, and calm enough for anyone prone to seasickness.",
-    heroImage: "marina-dusk",
+    heroImage: "img:landing:marina-cruise-dubai:0",
     body: [
       "Dubai looks better from the water than from any observation deck, and a Marina dhow cruise is the cheapest way to find that out. Two hours, dinner included, a live tanoura performance, and the towers of Dubai Marina lit up on both sides of a sheltered waterway that barely moves.",
       "The price is ₹2,790 all-in for adults and ₹1,990 for children aged 3–11, with under-3s free. That includes the cruise, the buffet and the show. Hotel pickup is not included and costs ₹900 for the group if you want it, which is usually cheaper than two taxis from Deira.",
@@ -843,11 +843,11 @@ export const landingPages: LandingPage[] = [
     heroKicker: "Plans that work for a six-year-old and a sixty-eight-year-old",
     heroSub:
       "Child and senior pricing shown before checkout, dietary filters that mean something, and pickup you can rely on.",
-    heroImage: "family-day",
+    heroImage: "img:landing:dubai-activities-for-families:0",
     body: [
       "A family booking is not a bigger version of a solo booking. It is a different problem, with three constraints that most travel sites ignore entirely: everyone in the group has to be able to enjoy it, everyone has to be able to eat, and everyone has to get there together.",
       "Pricing comes first because it decides everything else. Almost every Dubai supplier prices children aged 3–11 at a reduced rate, infants free, and several apply a senior rate at 60. Those numbers are shown on our activity pages before you reach checkout, so a family of seven can work out a real total in a single look instead of discovering it three screens in. Global Village, to take one example, is free for anyone over 60 — we price them at zero rather than charging you and mentioning it afterwards.",
-      "Food is second, and it is the one that ruins trips. 'Vegetarian available' is not enough information when you are travelling with someone who eats Jain. On OUTLY, pure-veg, Jain and halal are filters that narrow the results to suppliers who have confirmed it with their kitchen, the requirement is attached to the booking rather than mentioned to a driver, and it is printed on the voucher so it cannot be denied at the venue.",
+      "Food is second, and it is the one that ruins trips. 'Vegetarian available' is not enough information when you are travelling with someone who eats Jain. On OUTLYY, pure-veg, Jain and halal are filters that narrow the results to suppliers who have confirmed it with their kitchen, the requirement is attached to the booking rather than mentioned to a driver, and it is printed on the voucher so it cannot be denied at the venue.",
       "Third, mobility. A desert safari with forty-five minutes of dune bashing is a poor idea for a seventy-four-year-old with a bad back, and no amount of asking the driver to slow down fixes it. The gentle safari exists as a separate bookable product for exactly this reason. More broadly, the 'senior-friendly' filter selects experiences with limited walking, seating throughout and gentle transfers — and families often split across two versions of the same evening, meeting at the same camp at the same time.",
       "Finally, booking everything at once. Families rarely buy one ticket; they buy an itinerary. Add each activity to your trip and the timeline view arranges them by day and warns you before checkout if two things clash on the same afternoon. If you would rather a person did it, send your dates and group composition on WhatsApp and we will come back with the whole plan, itemised in rupees, usually within the hour.",
     ],
@@ -903,10 +903,10 @@ export const landingPages: LandingPage[] = [
     heroKicker: "Private where it matters, timed for the right light",
     heroSub:
       "We say plainly whether an experience is private or shared, and we schedule the ones that depend on golden hour.",
-    heroImage: "yacht-deck",
+    heroImage: "img:landing:dubai-activities-for-couples:0",
     body: [
       "Two things decide whether a couple's experience in Dubai is worth what it costs: whether it is genuinely private, and whether you are in the right place when the light is good. Both are routinely misrepresented.",
-      "'Private' is the worst offender. It can mean a boat you have to yourselves, or it can mean a reserved table in a tent with two hundred other people and a PA system. On every OUTLY page, private versus shared is stated in the attributes strip near the top rather than buried in the inclusions, and where an experience is shared but genuinely small — the twenty-four-guest yacht, for instance — we tell you the guest cap rather than calling it exclusive.",
+      "'Private' is the worst offender. It can mean a boat you have to yourselves, or it can mean a reserved table in a tent with two hundred other people and a PA system. On every OUTLYY page, private versus shared is stated in the attributes strip near the top rather than buried in the inclusions, and where an experience is shared but genuinely small — the twenty-four-guest yacht, for instance — we tell you the guest cap rather than calling it exclusive.",
       "Timing is the second. A 'sunset cruise' that leaves the marina forty minutes after sunset is a common and irritating experience. Our sunset yacht departs at 17:30 specifically so you are off the Burj Al Arab at golden hour, and the desert camp's falconry demonstration is scheduled for the same reason. Where a slot exists purely because it photographs well, we say so.",
       "Occasion arrangements are handled by a person, not a form field. Cake, flowers, private décor, a photographer briefed on where to stand, a specific song at a specific moment, a proposal set up away from the main camp — all of it is arranged over WhatsApp with a coordinator, at no planning fee. It works because someone briefs the crew rather than because a note was attached to a booking record.",
       "The four that consistently work: the private desert camp with falconry and a plated dinner; the sunset yacht for the Burj Al Arab photograph; the twelve-minute helicopter flight, which is short, expensive and talked about for years afterwards; and the sunrise hot air balloon, which requires a 4:30am pickup and repays it completely. Level 148 at the Burj Khalifa is the indoor option when the weather refuses to cooperate.",
@@ -958,7 +958,7 @@ export const landingPages: LandingPage[] = [
     heroKicker: "A named coordinator, not a contact form",
     heroSub:
       "Private charters, helicopters and desert camps, arranged by someone whose phone number you have.",
-    heroImage: "luxury-night",
+    heroImage: "img:landing:luxury-experiences-in-dubai:0",
     body: [
       "At this level, the risk is not the price. It is a supplier who takes a large booking and then handles it casually — a boat that leaves late, a helicopter slot that quietly moves, a camp that seats you next to a party of thirty. Failure costs far more than money when the occasion cannot be repeated.",
       "Every experience in this category is operated by a partner we use repeatedly and monitor on a reliability score covering on-time performance, rejection rate and complaint history. Bookings above ₹1,00,000 and every private charter are assigned a named coordinator with a direct WhatsApp number and a phone number, reachable from the moment you enquire until you are back at your hotel. If your assistant is handling the booking, they deal with the same person throughout.",

@@ -64,7 +64,7 @@ export function LegalPageView({ page }: { page: LegalPage }) {
           className="mt-10"
           context={{ intent: "general", placement: `legal_${page.slug}` }}
           title="Rather just ask?"
-          body="Policies are policies. If you have a specific situation, message us and we'll tell you exactly where you stand — usually within about eight minutes."
+          body="Policies are policies. If you have a specific situation, message us and we'll tell you exactly where you stand — usually within about 30 minutes."
         />
 
         <p className="mt-8 text-sm text-ink-600">

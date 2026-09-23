@@ -20,7 +20,7 @@ import { WhatsAppButton } from "./whatsapp";
 import { track } from "@/lib/analytics";
 import { ctaFor } from "@/lib/cta";
 import { toCartItem } from "@/lib/pricing";
-import type { Activity } from "@/lib/types";
+import type { CardActivity } from "@/lib/catalog/card";
 import { addDays, cn, EMPTY_PAX, formatDuration, toDateKey } from "@/lib/utils";
 
 /**
@@ -60,7 +60,7 @@ export function ActivityCard({
   unavailable,
   unavailableReason,
 }: {
-  activity: Activity;
+  activity: CardActivity;
   layout?: Layout;
   position?: number;
   /** Where the card was rendered — flows into analytics as `source`. */
@@ -137,9 +137,6 @@ export function ActivityCard({
               {activity.title}
             </h3>
           </Link>
-          <p className="mt-1 flex items-center gap-2 text-xs text-ink-500">
-            <Rating value={activity.rating} count={activity.reviewCount} size="sm" />
-          </p>
           <div className="mt-2">
             <CardPrice band={activity.price} />
           </div>
@@ -197,12 +194,9 @@ export function ActivityCard({
       </div>
 
       <div className={cn("flex flex-1 flex-col gap-2.5", compactCard ? "p-3.5" : "p-4")}>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-2xs font-extrabold uppercase tracking-[0.1em] text-sun-600">
-            {activity.categorySlug.replace(/-/g, " ")}
-          </span>
-          <Rating value={activity.rating} count={activity.reviewCount} size="sm" />
-        </div>
+        <span className="text-2xs font-extrabold uppercase tracking-[0.1em] text-sun-600">
+          {activity.categorySlug.replace(/-/g, " ")}
+        </span>
 
         <Link href={href} onClick={onOpen} className="rounded">
           <h3
@@ -230,12 +224,6 @@ export function ActivityCard({
               {activity.pickupIncluded ? "Hotel pickup included" : activity.location.split("·")[0].trim()}
             </span>
           </li>
-          {activity.bookedThisMonth > 400 && !compactCard && (
-            <li className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5 text-ink-400" aria-hidden="true" />
-              {activity.bookedThisMonth.toLocaleString("en-IN")} booked this month
-            </li>
-          )}
         </ul>
 
         <div className="flex flex-wrap gap-1.5">
@@ -294,7 +282,7 @@ export function ActivityCard({
                 context={{
                   intent: "activity",
                   activityTitle: activity.title,
-                  activityUrl: `https://outly.in${href}`,
+                  activityUrl: `https://outlyy.com${href}`,
                   placement: source ?? "activity_card",
                 }}
               />
@@ -312,7 +300,7 @@ export function UnavailableActivityCard({
   reason,
   nextDates,
 }: {
-  activity: Activity;
+  activity: CardActivity;
   reason: string;
   nextDates?: string[];
 }) {

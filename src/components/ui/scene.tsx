@@ -1,21 +1,27 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Scene — OUTLY's illustrated media frame.
+ * Scene — OUTLYY's media frame.
  *
- * Every activity image in this build is a deterministic SVG scene rather than a
- * photograph. Three reasons, in order of importance:
+ * Renders real photography from Pexels for every catalogue image while keeping
+ * the exact component API the rest of the app uses (`src`, `alt`, `scrim`,
+ * `priority`). `src` may be:
  *
- *  1. Performance. PRD §15 sets LCP < 2.5s at p75 on mobile 4G. A hero SVG is
- *     ~2KB inline and needs no network round trip, no CDN and no layout shift.
- *  2. It never breaks. No hotlinked stock photo 404ing in a demo.
- *  3. It's ours. Photography of Dubai looks identical on every competitor site;
- *     an illustrated system is the strongest single piece of brand distinction
- *     available before a photoshoot exists.
+ *  - an image ref `img:<kind>:<slug>:<index>` (the catalogue data) — resolved
+ *    through the curated manifest in `src/lib/images/manifest.ts`
+ *  - a bare scene key ("dune-sunset") — legacy; mapped to a matching photo
+ *  - an http(s) URL — rendered as-is
  *
- * Production swap: when `src` starts with "http", Scene renders next/image
- * instead. Real photography drops in per-SKU without touching any consumer.
+ * Delivery: curated Pexels photo ids are served straight from the Pexels
+ * image CDN (responsive `srcset`, `fit=crop` at the frame ratio, lazy by
+ * default, `fetchpriority=high` when `priority`). Anything without a curated
+ * id goes through `/api/images/...`, which resolves and caches a Pexels
+ * search server-side once `PEXELS_API_KEY` is set and otherwise serves the
+ * illustrated fallback — so nothing ever renders broken.
+ *
+ * No captions, credits or overlays are ever drawn inside the frame.
  */
+import { FRAME_RATIO, SRCSET_WIDTHS, imageSpecFor, parseImageRef, pexelsCdnUrl } from "@/lib/images/manifest";
 
 type Motif =
   | "skyline"
@@ -271,20 +277,67 @@ export interface SceneProps {
   priority?: boolean;
 }
 
+const SIZES = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw";
+
+function Photo({ srcFor, alt, className, scrim, priority }: { srcFor: (w: number) => string } & Omit<SceneProps, "src">) {
+  const img = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={srcFor(800)}
+      srcSet={SRCSET_WIDTHS.map((w) => `${srcFor(w)} ${w}w`).join(", ")}
+      sizes={SIZES}
+      alt={alt}
+      width={800}
+      height={Math.round(800 * FRAME_RATIO)}
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : "auto"}
+      decoding="async"
+      className={cn("h-full w-full object-cover", className)}
+    />
+  );
+  if (!scrim) return img;
+  return (
+    <span className="relative block h-full w-full">
+      {img}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(20,16,31,0)_35%,rgba(20,16,31,0.72)_100%)]"
+      />
+    </span>
+  );
+}
+
 export function Scene({ src, alt, className, scrim, priority }: SceneProps) {
   if (src.startsWith("http")) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return (
-      <img
-        src={src}
-        alt={alt}
-        loading={priority ? "eager" : "lazy"}
-        decoding="async"
-        className={cn("h-full w-full object-cover", className)}
-      />
-    );
+    return <Photo srcFor={() => src} alt={alt} className={className} scrim={scrim} priority={priority} />;
   }
 
+  const resolved = imageSpecFor(src);
+  if (resolved) {
+    const { spec, ref } = resolved;
+    const photoId = spec.photos[ref.index];
+    if (photoId) {
+      return <Photo srcFor={(w) => pexelsCdnUrl(photoId, w)} alt={alt} className={className} scrim={scrim} priority={priority} />;
+    }
+    // No curated id for this index: the API route resolves a Pexels search
+    // (cached) and falls back to the illustration when it cannot.
+    const base = `/api/images/${ref.kind}/${encodeURIComponent(ref.slug)}/${ref.index}`;
+    return <Photo srcFor={(w) => `${base}?w=${w}`} alt={alt} className={className} scrim={scrim} priority={priority} />;
+  }
+
+  // An `img:` ref with no curated manifest entry (a listing created in the
+  // admin console): the API route searches Pexels by the product title.
+  const ref = parseImageRef(src);
+  if (ref && ref.kind !== "scene") {
+    const base = `/api/images/${ref.kind}/${encodeURIComponent(ref.slug)}/${ref.index}`;
+    return <Photo srcFor={(w) => `${base}?w=${w}`} alt={alt} className={className} scrim={scrim} priority={priority} />;
+  }
+
+  return <SceneIllustration src={src} alt={alt} className={className} scrim={scrim} />;
+}
+
+/** The illustrated fallback — used by the API route and for unknown keys. */
+export function SceneIllustration({ src, alt, className, scrim }: Omit<SceneProps, "priority">) {
   const def = SCENES[src] ?? FALLBACK;
   const id = src.replace(/[^a-z0-9]/gi, "");
 
@@ -295,6 +348,7 @@ export function Scene({ src, alt, className, scrim, priority }: SceneProps) {
       role="img"
       aria-label={alt}
       className={cn("h-full w-full", className)}
+      xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
         <linearGradient id={`sky-${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -316,3 +370,14 @@ export function Scene({ src, alt, className, scrim, priority }: SceneProps) {
 }
 
 export const sceneKeys = Object.keys(SCENES);
+
+/** Colours for a scene key — used by the API route to build the last-resort SVG without React. */
+export function sceneDef(key: string): SceneDef {
+  return SCENES[key] ?? FALLBACK;
+}
+
+/** Minimal SVG string (gradient sky, sun, dune silhouette) for the image API fallback. */
+export function sceneSvgString(key: string): string {
+  const d = sceneDef(key);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" role="img" aria-label=""><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${d.sky[0]}"/><stop offset="100%" stop-color="${d.sky[1]}"/></linearGradient></defs><rect width="400" height="260" fill="url(#s)"/><circle cx="300" cy="86" r="34" fill="${d.accent}" opacity="0.9"/><path d="M0 172c60-30 104 10 158-4s96-46 152-26 90 14 90 14v104H0z" fill="${d.mid}"/><path d="M0 214c72-34 118 6 176-8s104-32 164-14 60 12 60 12v56H0z" fill="${d.fg}" opacity="0.88"/></svg>`;
+}

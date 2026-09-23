@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { siteConfig } from "@/lib/site-config";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronDown, Send } from "lucide-react";
 import { useApp } from "@/components/providers/app-provider";
@@ -14,6 +16,8 @@ import { track } from "@/lib/analytics";
 import { BUDGET_BANDS, SLA } from "@/lib/inquiry";
 import type { BudgetBand, CartItem, Dietary, PaxCount } from "@/lib/types";
 import { cn, EMPTY_PAX, formatDateKey, paxLabel, paxTotal, priceIn, toDateKey } from "@/lib/utils";
+import { normalisePhone } from "@/lib/phone";
+import { transactionCurrency } from "@/lib/currency";
 
 /**
  * INQUIRY FORM — the most important conversion surface in inquiry mode.
@@ -26,7 +30,7 @@ import { cn, EMPTY_PAX, formatDateKey, paxLabel, paxTotal, priceIn, toDateKey } 
  *  - 21st.dev "Centered Contact Form" (@ln-dev7/contact-16): the swap-in-place
  *    submitted state — here routed to /inquiry/confirmation so it survives a
  *    refresh and carries the reference.
- * Reimplemented on OUTLY tokens with CSS-only motion and 44px targets.
+ * Reimplemented on OUTLYY tokens with CSS-only motion and 44px targets.
  *
  * FIELD JUSTIFICATION — every field must earn its place by making the agent's
  * first reply materially better (pivot §3.3). Two are required.
@@ -81,7 +85,10 @@ export function InquiryForm({
   const [hotel, setHotel] = useState("");
   const [budget, setBudget] = useState<BudgetBand | undefined>(undefined);
   const [notes, setNotes] = useState("");
-  const [consent, setConsent] = useState(true);
+  // Unticked by default: WhatsApp messaging is a separate, affirmative
+  // choice, not something bundled into sending the form. A pre-ticked box is
+  // not consent under the GDPR, the UAE PDPL or India's DPDP Act.
+  const [consent, setConsent] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
@@ -112,8 +119,9 @@ export function InquiryForm({
   const validate = () => {
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = "So we know who to reply to.";
-    if (!/^\d{7,12}$/.test(phone.replace(/\s/g, "")))
-      next.phone = "We reply on WhatsApp — this is the one thing we genuinely need.";
+    const parsed = normalisePhone(phone, countryCode);
+    if (!phone.trim()) next.phone = "We reply on WhatsApp — this is the one thing we genuinely need.";
+    else if (!parsed.valid) next.phone = parsed.reason ?? "That doesn't look like a valid WhatsApp number.";
     setErrors(next);
     Object.keys(next).forEach((field) =>
       track("inquiry_field_error", { field, failure_reason: next[field] }),
@@ -140,7 +148,9 @@ export function InquiryForm({
         dietary,
         specialRequests: notes.trim() || undefined,
         budgetBand: budget,
-        currency,
+        // The enquiry is recorded in a currency the back office quotes in; a
+        // visitor browsing in USD has theirs written in AED.
+        currency: transactionCurrency(currency),
         source,
         whatsappConsent: consent,
         honeypot: honeypot.current,
@@ -159,7 +169,7 @@ export function InquiryForm({
       });
 
       sessionStorage.setItem(
-        "outly.lastInquiry",
+        "outlyy.lastInquiry",
         JSON.stringify({
           ...result,
           items,
@@ -175,7 +185,23 @@ export function InquiryForm({
       clearCart();
       router.push(`/inquiry/confirmation?ref=${result.reference}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err : null);
+      const apiErr = err instanceof ApiError ? err : null;
+      // Field-level server errors land at the field (audit S10), not in the page alert.
+      const fields = apiErr?.fields ?? {};
+      const fieldErrors: Record<string, string> = {};
+      if (fields.phone) fieldErrors.phone = fields.phone;
+      if (fields.name) fieldErrors.name = fields.name;
+      if (fields.email) fieldErrors.email = fields.email;
+      if (Object.keys(fieldErrors).length) {
+        setErrors(fieldErrors);
+        Object.keys(fieldErrors).forEach((field) =>
+          track("inquiry_field_error", { field, failure_reason: fieldErrors[field], source: "server" }),
+        );
+        setState("idle");
+        document.getElementById(fieldErrors.phone ? "iq-phone" : fieldErrors.name ? "iq-name" : "iq-email")?.focus();
+        return;
+      }
+      setError(apiErr);
       setState("error");
     }
   };
@@ -411,10 +437,28 @@ export function InquiryForm({
           className="mt-0.5 h-4.5 w-4.5 rounded accent-ink-900"
         />
         <span>
-          Reply to me on WhatsApp about this trip.{" "}
-          <span className="text-ink-500">Untick and we&apos;ll use email instead — slower.</span>
+          Message me on WhatsApp about this trip.{" "}
+          <span className="text-ink-500">
+            {siteConfig.legalName ?? siteConfig.name} will use your number to answer this enquiry
+            and nothing else — no marketing. Reply STOP any time to stop. Leave it unticked and
+            we&apos;ll reply by email instead, which is slower.
+          </span>
         </span>
       </label>
+
+      {/* Contract terms are accepted by sending, and said so before the button, not after. */}
+      <p className="text-xs leading-relaxed text-ink-500">
+        By sending this enquiry you agree to our{" "}
+        <Link href="/terms" className="font-semibold underline underline-offset-2 hover:text-ink-700">
+          Terms
+        </Link>{" "}
+        and confirm you have read the{" "}
+        <Link href="/privacy" className="font-semibold underline underline-offset-2 hover:text-ink-700">
+          Privacy Policy
+        </Link>
+        , which explains what we do with your name, number and trip details, and how to have them
+        deleted.
+      </p>
 
       {state === "error" && (
         <Alert tone="danger" title="That didn't send">

@@ -9,8 +9,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { track } from "@/lib/analytics";
-import type { CartItem, Currency } from "@/lib/types";
+import { ensureClientContext, track } from "@/lib/analytics";
+import { onConsentChange } from "@/lib/consent";
+import {
+  DEFAULT_CURRENCY,
+  currencyFromCookieString,
+  isDisplayCurrency,
+  writeCurrencyCookie,
+  type DisplayCurrency,
+} from "@/lib/currency";
+import type { CartItem } from "@/lib/types";
 import { PRICE_LOCK_MINUTES } from "@/lib/pricing";
 
 /**
@@ -23,11 +31,11 @@ import { PRICE_LOCK_MINUTES } from "@/lib/pricing";
  */
 
 const KEYS = {
-  cart: "outly.cart.v1",
-  wishlist: "outly.wishlist.v1",
-  compare: "outly.compare.v1",
-  currency: "outly.currency.v1",
-  lock: "outly.pricelock.v1",
+  cart: "outlyy.cart.v1",
+  wishlist: "outlyy.wishlist.v1",
+  compare: "outlyy.compare.v1",
+  currency: "outlyy.currency.v1",
+  lock: "outlyy.pricelock.v1",
 };
 
 export interface Toast {
@@ -41,9 +49,10 @@ export interface Toast {
 interface AppState {
   hydrated: boolean;
 
-  currency: Currency;
-  setCurrency: (c: Currency) => void;
-  /** True when the visitor is (mock-)geolocated in the UAE — expat defaults. */
+  /** What the visitor sees. Storage stays INR+AED; USD is derived for display only. */
+  currency: DisplayCurrency;
+  setCurrency: (c: DisplayCurrency) => void;
+  /** True when the edge geo put this visitor in the UAE — expat defaults. */
   inUAE: boolean;
 
   cart: CartItem[];
@@ -81,6 +90,15 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
+/**
+ * Flip the CSS switch that decides which of the three rendered prices is
+ * visible. Touching one attribute on <html> is the whole cost of a currency
+ * change: no re-render of any price, no reflow beyond the number itself.
+ */
+function applyCurrencyAttribute(currency: DisplayCurrency) {
+  if (typeof document !== "undefined") document.documentElement.setAttribute("data-ccy", currency);
+}
+
 function write(key: string, value: unknown) {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
@@ -91,7 +109,7 @@ function write(key: string, value: unknown) {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
-  const [currency, setCurrencyState] = useState<Currency>("INR");
+  const [currency, setCurrencyState] = useState<DisplayCurrency>(DEFAULT_CURRENCY);
   const [inUAE, setInUAE] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
@@ -108,15 +126,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCompare(read<string[]>(KEYS.compare, []));
     setLockStartedAt(read<number | null>(KEYS.lock, null));
 
-    const stored = read<Currency | null>(KEYS.currency, null);
-    // MOCK geo-detection (PRD REQ: UAE visitors see AED and today/tomorrow
-    // defaults). Real implementation reads an edge geo header.
-    const uae =
-      typeof Intl !== "undefined" &&
-      Intl.DateTimeFormat().resolvedOptions().timeZone === "Asia/Dubai";
-    setInUAE(uae);
-    setCurrencyState(stored ?? (uae ? "AED" : "INR"));
+    // Currency comes from the `outlyy_ccy` cookie, which the middleware
+    // stamps from the edge geo header and the switcher overwrites. It is
+    // already reflected in the DOM by the pre-paint script, so this is only
+    // syncing React state to what the visitor is already looking at — no
+    // flash, no second paint. The old timezone sniff is gone: it called every
+    // Indian traveller sitting in a Dubai hotel a local.
+    const fromCookie = currencyFromCookieString(typeof document !== "undefined" ? document.cookie : null);
+    const stored = read<string | null>(KEYS.currency, null);
+    const active: DisplayCurrency = fromCookie ?? (isDisplayCurrency(stored) ? stored : DEFAULT_CURRENCY);
+    setInUAE(active === "AED");
+    setCurrencyState(active);
+    if (!fromCookie) writeCurrencyCookie(active);
+    applyCurrencyAttribute(active);
     setHydrated(true);
+  }, []);
+
+  // First-party analytics identity + attribution cookies (outlyy_sid / outlyy_aid /
+  // outlyy_attr). `submitInquiry` reads them back via `getClientContext()`.
+  // Consent-gated inside `ensureClientContext`: before the visitor chooses,
+  // this writes nothing. Re-run on a consent change so a fresh Accept captures
+  // the landing URL immediately rather than on the next navigation.
+  useEffect(() => {
+    ensureClientContext();
+    return onConsentChange(() => ensureClientContext());
   }, []);
 
   // Price-lock ticker. Only runs while a cart exists.
@@ -126,9 +159,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(t);
   }, [lockStartedAt, cart.length]);
 
-  const setCurrency = useCallback((c: Currency) => {
+  const setCurrency = useCallback((c: DisplayCurrency) => {
     setCurrencyState(c);
+    setInUAE(c === "AED");
     write(KEYS.currency, c);
+    // The cookie is the source of truth the server and the pre-paint script
+    // both read, so it must be written before the attribute flips.
+    writeCurrencyCookie(c);
+    applyCurrencyAttribute(c);
     track("filter_applied", { filters: `currency:${c}` });
   }, []);
 

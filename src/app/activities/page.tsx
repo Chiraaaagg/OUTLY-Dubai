@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { CompareTray } from "@/components/commerce/compare";
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Breadcrumbs, Prose, SectionHeading } from "@/components/ui/primitives";
-import { activities } from "@/lib/data/activities";
-import { categories } from "@/lib/data/categories";
+import { getActivities, getCategories } from "@/lib/catalog/server";
 
 export const metadata: Metadata = {
-  title: "All Dubai Experiences — The Full OUTLY Catalogue",
+  title: "All Dubai Experiences — The Full OUTLYY Catalogue",
   description:
-    "Every Dubai experience we sell, in one list. Around 26 curated activities with all-in rupee pricing, dietary filters and instant WhatsApp vouchers.",
+    "Every Dubai experience we sell, in one list. Around 26 curated activities with all-in pricing, dietary filters and instant WhatsApp vouchers.",
   alternates: { canonical: "/activities" },
 };
 
@@ -23,7 +23,10 @@ export const metadata: Metadata = {
  * buys nothing." A short, honest catalogue is a positioning statement against
  * the OTAs, not a limitation to apologise for.
  */
-export default function ActivitiesIndexPage() {
+export const revalidate = 60;
+
+export default async function ActivitiesIndexPage() {
+  const [activities, categories] = await Promise.all([getActivities(), getCategories()]);
   const grouped = categories.map((c) => ({
     category: c,
     items: activities.filter((a) => a.categorySlug === c.slug),
@@ -86,7 +89,7 @@ export default function ActivitiesIndexPage() {
                 {items.map((a, i) => (
                   <ActivityCard
                     key={a.slug}
-                    activity={a}
+                    activity={toCard(a)}
                     position={i + 1}
                     source="activities_index"
                     showCompare

@@ -196,27 +196,58 @@ export function SkeletonGrid({ count = 6 }: { count?: number }) {
   );
 }
 
+/** The brand pack's empty-state illustrations (brand/10-empty-states). */
+export type EmptyIllustration =
+  | "saved"
+  | "bookings"
+  | "inquiries"
+  | "search"
+  | "filters"
+  | "cart"
+  | "offline"
+  | "notifications";
+
 export function EmptyState({
   title,
   body,
   action,
   secondary,
   icon,
+  illustration,
 }: {
   title: string;
   body: string;
   action?: ReactNode;
   secondary?: ReactNode;
   icon?: ReactNode;
+  /**
+   * Brand illustration to show instead of the icon disc. Decorative
+   * (`alt=""`) — the heading and body already carry the meaning. Fixed
+   * intrinsic size so it reserves its space and never shifts the layout.
+   */
+  illustration?: EmptyIllustration;
 }) {
   return (
     <div className="rounded-[var(--radius-tile)] border border-dashed border-ink-300 bg-shell/60 px-6 py-12 text-center">
-      <div
-        className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-sun-100 text-sun-600"
-        aria-hidden="true"
-      >
-        {icon ?? <Info className="h-6 w-6" />}
-      </div>
+      {illustration ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/brand/empty/outlyy-empty-${illustration}.svg`}
+          alt=""
+          width={320}
+          height={200}
+          loading="lazy"
+          decoding="async"
+          className="mx-auto mb-4 h-auto w-[min(320px,80%)]"
+        />
+      ) : (
+        <div
+          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-sun-100 text-sun-600"
+          aria-hidden="true"
+        >
+          {icon ?? <Info className="h-6 w-6" />}
+        </div>
+      )}
       <h3 className="text-lg">{title}</h3>
       <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-ink-600">{body}</p>
       {(action || secondary) && (

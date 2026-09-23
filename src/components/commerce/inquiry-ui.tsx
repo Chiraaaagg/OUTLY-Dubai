@@ -3,9 +3,21 @@
 import Link from "next/link";
 import { CheckCircle2, Clock, MessageCircle, ShieldCheck } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
-import { CONFIRM_FIRST, formatDeadline, isWithinBusinessHours, SLA } from "@/lib/inquiry";
-import type { Agent } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/primitives";
+import { AgentFrame } from "@/components/ui/brand";
+import { Scene } from "@/components/ui/scene";
+import { WhatsAppButton } from "@/components/commerce/whatsapp";
+import { CONFIRM_FIRST, formatDeadline, isWithinBusinessHours, SLA, SLA_TZ_LABEL } from "@/lib/inquiry";
+import {
+  STAGES,
+  inquiryStatusLabel,
+  inquiryStatusTone,
+  isClosedStatus,
+  stageIndex,
+} from "@/lib/inquiry-stages";
+import type { Agent, Currency, InquiryStatus, Money, PaxCount } from "@/lib/types";
+import { cn, formatDateKey, paxLabel, priceIn } from "@/lib/utils";
 
 /**
  * Inquiry-mode UI primitives shared across ADP, cart, form and confirmation.
@@ -53,7 +65,7 @@ export function ResponsePromise({
       <Clock className="h-3.5 w-3.5 shrink-0 text-sun-500" aria-hidden="true" />
       {open
         ? `${prefix} · reply in ~${SLA.responseMinutes} min`
-        : `${prefix} · team offline now, first reply after 9 am IST`}
+        : `${prefix} · team offline now, first reply when we open (${SLA.businessStart} ${SLA_TZ_LABEL})`}
     </p>
   );
 }
@@ -61,7 +73,7 @@ export function ResponsePromise({
 /* ---------------------------------------------------------------------------
  * Named agent — the trust element an OTA structurally cannot copy (§3.5).
  * Adapted from the 21st.dev "Profile Card" (@waleedkibhen/profile-card) —
- * avatar, name, role, activity line, single action — rebuilt on OUTLY tokens
+ * avatar, name, role, activity line, single action — rebuilt on OUTLYY tokens
  * with an initials avatar until real photos exist.
  * ------------------------------------------------------------------------ */
 
@@ -81,12 +93,14 @@ export function AgentCard({
         className,
       )}
     >
-      <span
-        aria-hidden="true"
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-sun-100 font-display text-lg font-bold text-sun-700 ring-2 ring-sun-200"
-      >
-        {agent.initials}
-      </span>
+      <AgentFrame size={56} status="online" className="text-ink-900" title={agent.name}>
+        <span
+          aria-hidden="true"
+          className="flex h-full w-full items-center justify-center rounded-full bg-sun-100 font-display text-base font-bold text-sun-700"
+        >
+          {agent.initials}
+        </span>
+      </AgentFrame>
       <div className="min-w-0 flex-1">
         <p className="text-[0.95rem] font-bold leading-tight text-ink-900">{agent.name}</p>
         <p className="text-xs text-ink-600">
@@ -114,7 +128,7 @@ export function AgentCard({
 const STEPS = [
   {
     title: "Pick what you like",
-    body: "Browse all-in rupee prices. Add one experience or a whole week.",
+    body: "Browse all-in prices in your own currency. Add one experience or a whole week.",
   },
   {
     title: "Tell us your dates",
@@ -142,7 +156,7 @@ export function HowItWorks({
     >
       <div className={cn("mb-5 text-center", compact && "mb-4")}>
         <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-sun-600">
-          How OUTLY works
+          How OUTLYY works
         </p>
         <h2 id="how-it-works" className={cn("mt-1", compact ? "text-xl" : "text-2xl sm:text-[1.75rem]")}>
           Nothing is charged until the operator confirms
@@ -244,6 +258,218 @@ export function NextSteps({
         </li>
       ))}
     </ol>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Customer inquiry status — shared by /account, /account/inquiries and the
+ * guest tracker at /inquiry/track so one status never reads differently on
+ * two pages.
+ *
+ * The 4-stage progress track is the already-adapted 21st.dev "Order History"
+ * (@kavikatiyar/order-history) pattern: a horizontal set of stages from
+ * placed to delivered with the current one highlighted. Stage definitions
+ * live in `src/lib/inquiry-stages.ts` (pure, server-safe).
+ * ------------------------------------------------------------------------ */
+
+export function InquiryStatusBadge({
+  status,
+  size = "sm",
+}: {
+  status: InquiryStatus;
+  size?: "sm" | "md";
+}) {
+  return (
+    <Badge tone={inquiryStatusTone(status)} size={size}>
+      {inquiryStatusLabel(status)}
+    </Badge>
+  );
+}
+
+export function InquiryTrack({ status, className }: { status: InquiryStatus; className?: string }) {
+  const current = stageIndex(status);
+  return (
+    <ol className={cn("grid grid-cols-4 gap-1", className)} aria-label="Inquiry progress">
+      {STAGES.map((s, i) => (
+        <li key={s.id} className="min-w-0">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "block h-1.5 rounded-full",
+              i <= current ? "bg-[var(--color-success)]" : "bg-ink-200",
+            )}
+          />
+          <span
+            className={cn(
+              "mt-1.5 block truncate text-2xs font-bold",
+              i === current ? "text-ink-900" : i < current ? "text-[var(--color-success)]" : "text-ink-400",
+            )}
+            aria-current={i === current ? "step" : undefined}
+          >
+            {s.label}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * The fields a customer inquiry card needs. Structural on purpose: both the
+ * `InquiryLookupResult` returned by `lookupInquiry` and the server's
+ * `customerService.listInquiries` projection satisfy it without adapters.
+ */
+export interface CustomerInquiryLike {
+  reference: string;
+  status: InquiryStatus;
+  currency: Currency;
+  indicativeTotal: Money;
+  datesFlexible: boolean;
+  travelDateFrom?: string;
+  pax?: PaxCount;
+  agent?: Agent;
+  slaDueAt?: string;
+  firstResponseAt?: string;
+  convertedOrderReference?: string;
+  items: Array<{
+    id: string;
+    title: string;
+    image?: string;
+    date?: string;
+    time?: string;
+    pax?: PaxCount;
+    indicativeTotal?: Money;
+    confirmedTotal?: Money;
+  }>;
+}
+
+/**
+ * One inquiry, customer view: status pill, reference, what was asked for,
+ * the 4-stage track, the named agent with a concrete deadline while the
+ * first reply is still owed, and the WhatsApp follow-up carrying the
+ * reference (intent `inquiry_followup`). `detailed` adds the item list — the
+ * tracker shows it, the account list keeps rows short.
+ */
+export function CustomerInquiryCard({
+  inquiry,
+  placement,
+  detailed,
+  className,
+}: {
+  inquiry: CustomerInquiryLike;
+  placement: string;
+  detailed?: boolean;
+  className?: string;
+}) {
+  const closed = isClosedStatus(inquiry.status);
+  const first = inquiry.items[0];
+  const extra = inquiry.items.length - 1;
+  const agentFirstName = inquiry.agent?.name.split(" ")[0];
+
+  // Only promise a time while the first reply is still owed and the deadline is ahead of us.
+  const due = inquiry.slaDueAt ? new Date(inquiry.slaDueAt) : undefined;
+  const deadline =
+    due && !inquiry.firstResponseAt && !closed && due.getTime() > Date.now() ? due : undefined;
+
+  const when = inquiry.datesFlexible
+    ? "dates flexible"
+    : inquiry.travelDateFrom
+      ? formatDateKey(inquiry.travelDateFrom)
+      : "";
+
+  return (
+    <Card className={cn("p-4 sm:p-5", className)}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <InquiryStatusBadge status={inquiry.status} />
+            <span className="text-xs font-bold tnum text-ink-500">{inquiry.reference}</span>
+            {(when || inquiry.pax) && (
+              <span className="text-xs text-ink-500">
+                {when ? `· ${when}` : ""}
+                {inquiry.pax ? ` · ${paxLabel(inquiry.pax)}` : ""}
+              </span>
+            )}
+          </div>
+          <h3 className="mt-1.5 text-[1.02rem] leading-snug text-ink-900">
+            {first ? first.title : "Trip planning request"}
+            {extra > 0 && (
+              <span className="font-sans text-sm font-semibold text-ink-500"> + {extra} more</span>
+            )}
+          </h3>
+          <p className="mt-0.5 text-sm text-ink-600">
+            Indicative {priceIn(inquiry.indicativeTotal, inquiry.currency)}
+            {inquiry.convertedOrderReference && (
+              <>
+                {" "}
+                · booking <span className="font-bold tnum text-ink-900">{inquiry.convertedOrderReference}</span>
+              </>
+            )}
+          </p>
+        </div>
+        {first?.image && (
+          <span className="hidden h-16 w-20 shrink-0 overflow-hidden rounded-lg sm:block">
+            <Scene src={first.image} alt="" />
+          </span>
+        )}
+      </div>
+
+      {!closed && <InquiryTrack status={inquiry.status} className="mt-4" />}
+
+      {inquiry.agent && !closed && (
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <AgentCard agent={inquiry.agent} deadline={deadline} className="flex-1 border-0 bg-shell p-3" />
+          <WhatsAppButton
+            size="md"
+            context={{ intent: "inquiry_followup", inquiryReference: inquiry.reference, placement }}
+            label={detailed ? `Message ${agentFirstName} on WhatsApp` : `Message ${agentFirstName}`}
+          />
+        </div>
+      )}
+
+      {!inquiry.agent && !closed && (
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-ink-600">
+            Not yet assigned — the next free specialist picks it up.
+          </p>
+          <WhatsAppButton
+            size="md"
+            context={{ intent: "inquiry_followup", inquiryReference: inquiry.reference, placement }}
+            label="Message us on WhatsApp"
+          />
+        </div>
+      )}
+
+      {detailed && inquiry.items.length > 0 && (
+        <ul className="mt-4 divide-y divide-ink-200 border-t border-ink-200">
+          {inquiry.items.map((item) => (
+            <li key={item.id} className="flex gap-3 py-3">
+              {item.image && (
+                <span className="h-14 w-16 shrink-0 overflow-hidden rounded-lg">
+                  <Scene src={item.image} alt="" />
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold leading-snug text-ink-900">{item.title}</p>
+                <p className="text-xs text-ink-500">
+                  {[item.date ? formatDateKey(item.date) : null, item.time, item.pax ? paxLabel(item.pax) : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+              {(item.confirmedTotal ?? item.indicativeTotal) && (
+                <p className="shrink-0 text-right text-sm font-bold tnum">
+                  {priceIn((item.confirmedTotal ?? item.indicativeTotal) as Money, inquiry.currency)}
+                  {item.confirmedTotal && (
+                    <span className="block text-2xs font-semibold text-[var(--color-success)]">confirmed</span>
+                  )}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 

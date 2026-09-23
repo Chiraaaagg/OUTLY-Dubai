@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Loading">
+<style>
+.o{fill:none;stroke:#FFFFFF;stroke-width:10;stroke-linecap:round;stroke-dasharray:90;stroke-dashoffset:90;animation:o 1.4s cubic-bezier(.22,1,.36,1) infinite}
+.s{fill:#FF6A13;transform-origin:49px 15px;transform:scale(0);animation:s 1.4s cubic-bezier(.34,1.56,.64,1) infinite}
+@keyframes o{0%{stroke-dashoffset:90}55%,100%{stroke-dashoffset:0}}
+@keyframes s{0%,50%{transform:scale(0)}70%{transform:scale(1.18)}85%,100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.o{animation:none;stroke-dashoffset:0}.s{animation:p 1.6s ease-in-out infinite;transform:none}}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.45}}
+</style>
+<path class="o" d="M49 34A19 19 0 1 1 30 15"/><circle class="s" cx="49" cy="15" r="9"/></svg>

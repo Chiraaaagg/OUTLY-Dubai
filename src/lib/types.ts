@@ -1,5 +1,5 @@
 /**
- * OUTLY domain model.
+ * OUTLYY domain model.
  *
  * One `Activity` type normalises all three supply sources described in PRD §11
  * (direct contracted, Rayna API, official trade portals). The storefront never
@@ -98,21 +98,21 @@ export interface Faq {
   a: string;
 }
 
-export interface Review {
-  id: string;
-  activitySlug: string;
+/**
+ * A Google review of **Holiday Planner**, the sister company in the same
+ * group. Deliberately has no `activitySlug`, no `id` and no `verified` flag:
+ * it can never be attached to an OUTLYY listing, counted into a rating, or
+ * presented as a review of something OUTLYY sold. See `data/sister-reviews.ts`.
+ */
+export interface SisterReview {
+  /** First name + surname initial. Full names are stripped by the generator. */
   author: string;
-  city: string;
-  travellerType: "family" | "couple" | "solo" | "friends" | "business";
+  /** Which Holiday Planner office the review was left for. */
+  branch: string;
   rating: number;
-  date: string;
-  title: string;
+  /** Approximate "YYYY-MM" — Google only exposes a relative date. */
+  month: string;
   body: string;
-  photos?: string[];
-  dietaryMet?: boolean;
-  verified: true;
-  subRatings?: { value: number; guide: number; food?: number; transport?: number };
-  helpfulCount?: number;
 }
 
 export interface Supplier {
@@ -365,6 +365,8 @@ export interface Agent {
   role: string;
   languages: string[];
   shift: "IST" | "GST";
+  /** Set when the agent has a real photo (`admin_users.photo_url`); the UI falls back to initials. */
+  photoUrl?: string;
 }
 
 export interface Inquiry {

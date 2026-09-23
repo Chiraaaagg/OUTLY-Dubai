@@ -75,9 +75,9 @@ always tied to real inventory.
 4. Post-booking cross-sell at the confirmation step, when intent is highest.
 5. Skeletons matched to the real layout so lists don't jump.
 
-### Where OUTLY deliberately differs
+### Where OUTLYY deliberately differs
 
-| Competitor norm | OUTLY |
+| Competitor norm | OUTLYY |
 |---|---|
 | Price + "taxes calculated at checkout" | All-in price, with the tax line stated as a promise |
 | Dietary needs as a free-text note | Dietary as a **primary search facet**, confirmed with the supplier and printed on the voucher |

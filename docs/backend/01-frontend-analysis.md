@@ -6,7 +6,7 @@
 
 ## 1. What was reviewed
 
-`D:\Programs\OUTLY` — Next.js 15.5.4 (App Router), React 19, Tailwind v4, TypeScript 5.7. Three runtime dependencies total (`clsx`, `lucide-react`, `tailwind-merge`). **No `app/api` directory exists. There is no backend of any kind.**
+`D:\Programs\OUTLYY` — Next.js 15.5.4 (App Router), React 19, Tailwind v4, TypeScript 5.7. Three runtime dependencies total (`clsx`, `lucide-react`, `tailwind-merge`). **No `app/api` directory exists. There is no backend of any kind.**
 
 | Area | Files |
 |---|---|
@@ -205,7 +205,7 @@ Full taxonomy in §11.
 | R1 | **Client-side price authority** | Fraud; `AC-CO-02` unenforceable | Server quotes (§06). Frontend never sends an amount |
 | R2 | **Deterministic order reference from phone + items** | Reference collisions; two real bookings could share one | Server-generated reference from a sequence + checksum |
 | R3 | **`/design-system` exposes a live event tail and every internal state** | Information disclosure | Block by env in `middleware.ts` |
-| R4 | **`window.__outlyEvents` ring buffer in production** | Minor leakage of user journey to any script on the page | Dev-only guard |
+| R4 | **`window.__outlyyEvents` ring buffer in production** | Minor leakage of user journey to any script on the page | Dev-only guard |
 | R5 | **`localStorage` cart, no server copy** | No abandoned-cart recovery — a PRD V1 revenue mechanic (`AC-CO-06`) is impossible | Server cart, cookie-keyed |
 | R6 | **Currency chosen by browser timezone** | Wrong-currency pricing; a real revenue/compliance issue | Edge geo header + explicit user override, stored server-side |
 | R7 | **No rate limiting anywhere** | Booking-lookup endpoint (`ref` + phone) is a brute-force enumeration target | §13 |

@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { DateField, DatePickerSheet, GuestField, GuestSheet } from "./pickers";
 import { track } from "@/lib/analytics";
 import { POPULAR_SEARCHES, suggest, type Suggestion } from "@/lib/search";
+import { useSlimCatalog } from "@/lib/catalog/client";
 import type { PaxCount } from "@/lib/types";
 import { EMPTY_PAX, cn, paxTotal, toDateKey } from "@/lib/utils";
 
-const RECENT_KEY = "outly.recent-searches.v1";
+const RECENT_KEY = "outlyy.recent-searches.v1";
 
 function readRecent(): string[] {
   if (typeof window === "undefined") return [];
@@ -38,6 +39,7 @@ function pushRecent(q: string) {
 
 export function HeaderSearch({ className }: { className?: string }) {
   const router = useRouter();
+  const { activities: catalogue } = useSlimCatalog();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
@@ -54,14 +56,14 @@ export function HeaderSearch({ className }: { className?: string }) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const suggestions: Suggestion[] = q.trim() ? suggest(q) : POPULAR_SEARCHES;
+  const suggestions: Suggestion[] = q.trim() ? suggest(q, 7, catalogue) : POPULAR_SEARCHES;
 
   const submit = (value = q) => {
     if (!value.trim()) return;
     pushRecent(value);
     setRecent(readRecent());
     setOpen(false);
-    track("search_submitted", { filters: value, result_count: suggest(value).length });
+    track("search_submitted", { filters: value, result_count: suggest(value, 7, catalogue).length });
     router.push(`/search?q=${encodeURIComponent(value)}`);
   };
 
@@ -241,7 +243,7 @@ export function HeroSearch({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="grid gap-2 sm:grid-cols-[1.1fr_1.3fr_auto]">
+      <div className="grid grid-safe gap-2 sm:grid-cols-[1.1fr_1.3fr_auto]">
         <DateField value={date} onClick={() => setDateOpen(true)} label="When" />
         <GuestField value={pax} onClick={() => setGuestOpen(true)} />
         <Button size="lg" onClick={go} className="sm:min-w-[9rem]">

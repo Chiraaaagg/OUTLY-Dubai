@@ -3,13 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Ticket } from "lucide-react";
+import { Search } from "lucide-react";
 import { WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Alert, Breadcrumbs, Card } from "@/components/ui/primitives";
 import { ApiError, fetchBooking } from "@/lib/api";
 import { track } from "@/lib/analytics";
-import { bookings } from "@/lib/data/bookings";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,7 +29,7 @@ export default function ManageBookingPage() {
   const lookup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reference.trim()) {
-      setError("Enter the booking reference from your confirmation — it looks like OUT-482913.");
+      setError("Enter the booking reference from your confirmation — it looks like OUT-123456.");
       setState("error");
       return;
     }
@@ -60,7 +59,7 @@ export default function ManageBookingPage() {
         <h1 className="text-[1.75rem] sm:text-3xl">Find your booking</h1>
         <p className="mt-1.5 text-[0.95rem] text-ink-600">
           No account needed. Your reference is in the WhatsApp message and email we sent when you
-          booked — it looks like OUT-482913.
+          booked — it looks like OUT-123456.
         </p>
 
         <Card className="mt-6 p-5">
@@ -73,7 +72,7 @@ export default function ManageBookingPage() {
                 id="ref"
                 value={reference}
                 onChange={(e) => setReference(e.target.value.toUpperCase())}
-                placeholder="OUT-482913"
+                placeholder="OUT-123456"
                 autoComplete="off"
                 aria-invalid={state === "error"}
                 aria-describedby={state === "error" ? "lookup-error" : undefined}
@@ -91,7 +90,7 @@ export default function ManageBookingPage() {
                 id="contact"
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
-                placeholder="rajesh.patel@example.com"
+                placeholder="Email or WhatsApp number you booked with"
                 autoComplete="email"
                 className="min-h-12 w-full rounded-[var(--radius-control)] border border-ink-200 bg-paper px-3 text-[0.95rem] outline-none focus:border-ink-900"
               />
@@ -111,32 +110,6 @@ export default function ManageBookingPage() {
               Find my booking
             </Button>
           </form>
-        </Card>
-
-        <Card className="mt-4 p-5">
-          <h2 className="flex items-center gap-2 text-lg">
-            <Ticket className="h-5 w-5 text-sun-500" aria-hidden="true" />
-            Demo references
-          </h2>
-          <p className="mt-1 text-sm text-ink-600">
-            This build runs on mock data. Any of these will open a real booking screen:
-          </p>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {bookings.map((b) => (
-              <li key={b.reference}>
-                <button
-                  type="button"
-                  onClick={() => setReference(b.reference)}
-                  className="rounded-full border border-ink-300 bg-paper px-3 py-1.5 text-xs font-bold tnum text-ink-700 hover:border-ink-900"
-                >
-                  {b.reference}{" "}
-                  <span className="font-normal text-ink-500">
-                    ({b.status.replace(/_/g, " ")})
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
         </Card>
 
         <WhatsAppCard

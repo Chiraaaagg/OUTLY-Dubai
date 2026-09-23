@@ -21,10 +21,11 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Alert, Card, Skeleton } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
 import { track } from "@/lib/analytics";
-import { activities } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
 import { resendVoucher } from "@/lib/api";
 import type { CartItem, Traveller } from "@/lib/types";
 import { formatDateLong, paxLabel } from "@/lib/utils";
+import { Amount } from "@/components/commerce/price";
 
 interface StoredOrder {
   reference: string;
@@ -58,6 +59,7 @@ export default function ConfirmationPage() {
 
 function ConfirmationInner() {
   const params = useSearchParams();
+  const { activities } = useCatalog();
   const { toast } = useApp();
   const [order, setOrder] = useState<StoredOrder | null>(null);
   const [sending, setSending] = useState(false);
@@ -68,7 +70,7 @@ function ConfirmationInner() {
 
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("outly.lastOrder");
+      const raw = sessionStorage.getItem("outlyy.lastOrder");
       if (raw) setOrder(JSON.parse(raw) as StoredOrder);
     } catch {
       /* the page still works from URL params alone */
@@ -174,15 +176,13 @@ function ConfirmationInner() {
                       </p>
                       <p className="text-xs text-ink-500">{paxLabel(item.pax)}</p>
                     </div>
-                    <p className="shrink-0 font-bold tnum">
-                      ₹{item.total.inr.toLocaleString("en-IN")}
-                    </p>
+                    <Amount money={item.total} className="shrink-0 font-bold" />
                   </li>
                 ))}
               </ul>
               <div className="mt-3 flex justify-between border-t border-ink-200 pt-3 font-bold">
                 <span>Paid</span>
-                <span className="tnum">₹{order.total.inr.toLocaleString("en-IN")}</span>
+                <Amount money={order.total} />
               </div>
               <p className="mt-1 text-xs text-ink-500">
                 Paid by {order.method.toUpperCase()} · GST invoice emailed to {order.traveller.email}
@@ -226,9 +226,9 @@ function ConfirmationInner() {
               If something goes wrong
             </h2>
             <p className="text-sm leading-relaxed text-ink-600">
-              Your voucher carries a 24/7 emergency number that a person answers, plus the
-              supplier&apos;s own contact. If a pickup is more than 30 minutes late we dispatch
-              another vehicle or refund the booking in full.
+              Your confirmation carries our contact details and the operator&apos;s own. Message us
+              as soon as something looks wrong — while it is still fixable — and we take it up with
+              the operator for you under the terms shown on your booking.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <ButtonLink href="/manage-booking" variant="outline" size="sm">

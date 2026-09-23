@@ -71,7 +71,7 @@ export default function ReviewPage({ params }: { params: Promise<{ booking: stri
         <div className="mx-auto max-w-2xl">
           <Alert tone="info" title="We can't find that booking">
             Reviews can only be written against a completed booking — that&apos;s what makes every
-            review on OUTLY verified. Check the link in your review request message, or find your
+            review on OUTLYY verified. Check the link in your review request message, or find your
             booking first.
             <div className="mt-3">
               <ButtonLink href="/manage-booking" size="sm">

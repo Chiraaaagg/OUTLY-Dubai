@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["bom1"],
+  "crons": [
+    {
+      "path": "/api/jobs/inquiry-sweep",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/jobs/offline-conversions",
+      "schedule": "30 3 * * *"
+    }
+  ]
+}

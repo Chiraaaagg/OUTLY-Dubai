@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { track } from "@/lib/analytics";
 import { hasInstantProducts } from "@/lib/data/activities";
-import { categories } from "@/lib/data/categories";
+import { useSlimCatalog } from "@/lib/catalog/client";
 import { cn } from "@/lib/utils";
 import type { SortKey } from "@/lib/types";
 
@@ -125,6 +125,7 @@ export function activeFilterCount(params: URLSearchParams): number {
  * ------------------------------------------------------------------------ */
 
 function FilterBody() {
+  const { categories } = useSlimCatalog();
   const { params, set, toggleMulti } = useFilterParams();
   const dietary = (params.get("dietary") ?? "").split(",").filter(Boolean);
   const suitability = (params.get("suitability") ?? "").split(",").filter(Boolean);
@@ -328,40 +329,48 @@ export function FilterSidebar({ resultCount }: { resultCount: number }) {
 
   return (
     <aside className="hidden lg:block" aria-label="Filters">
-      <div className="sticky top-32 max-h-[calc(100vh-9rem)] overflow-y-auto rounded-[var(--radius-tile)] border border-ink-200 bg-paper p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg">Filters</h2>
-          {count > 0 && (
-            <button
-              type="button"
-              onClick={() =>
-                set(
-                  Object.fromEntries(
-                    [
-                      "category",
-                      "dietary",
-                      "suitability",
-                      "instant",
-                      "freeCancellation",
-                      "pickup",
-                      "privateOnly",
-                      "duration",
-                      "maxPrice",
-                      "rating",
-                      "when",
-                    ].map((k) => [k, null]),
-                  ),
-                  "clear_all",
-                )
-              }
-              className="text-xs font-bold text-sun-700 underline underline-offset-2"
-            >
-              Clear all ({count})
-            </button>
-          )}
+      {/*
+       * Sticky wrapper scrolls only when the filter card is taller than the
+       * viewport, and never shows a scrollbar track (Windows paints one
+       * permanently on `overflow-y: auto` boxes). The card itself is natural
+       * height so short lists sit in a plain bordered box.
+       */}
+      <div className="no-scrollbar sticky top-32 max-h-[calc(100vh-9rem)] overflow-y-auto overscroll-contain">
+        <div className="rounded-[var(--radius-tile)] border border-ink-200 bg-paper p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg">Filters</h2>
+            {count > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  set(
+                    Object.fromEntries(
+                      [
+                        "category",
+                        "dietary",
+                        "suitability",
+                        "instant",
+                        "freeCancellation",
+                        "pickup",
+                        "privateOnly",
+                        "duration",
+                        "maxPrice",
+                        "rating",
+                        "when",
+                      ].map((k) => [k, null]),
+                    ),
+                    "clear_all",
+                  )
+                }
+                className="text-xs font-bold text-sun-700 underline underline-offset-2"
+              >
+                Clear all ({count})
+              </button>
+            )}
+          </div>
+          <p className="mb-4 text-xs text-ink-500 tnum">{resultCount} experiences match</p>
+          <FilterBody />
         </div>
-        <p className="mb-4 text-xs text-ink-500 tnum">{resultCount} experiences match</p>
-        <FilterBody />
       </div>
     </aside>
   );

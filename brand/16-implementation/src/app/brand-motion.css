@@ -1,0 +1,15 @@
+/* OUTLYY brand motion — append to src/app/globals.css (after @layer base).
+   Uses the existing --ease-spring token. Reduced motion is already handled
+   globally in globals.css, which zeroes transition durations. */
+
+/* "Sun out": the sun nudges up-and-out of the O on logo hover/focus. */
+.outlyy-sun {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 280ms var(--ease-spring);
+}
+@media (hover: hover) {
+  .group\/logo:hover .outlyy-sun { transform: translate(22%, -22%); }
+}
+.group\/logo:focus-visible .outlyy-sun,
+a:focus-visible .outlyy-sun { transform: translate(22%, -22%); }

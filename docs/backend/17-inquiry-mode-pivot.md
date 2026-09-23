@@ -110,7 +110,7 @@ Terminal *site* event: `inquiry_submitted`. Terminal *business* event: `booking_
 
 ## 2. Frontend Change Plan
 
-**Design rule throughout:** adapt, do not rebuild. Per `docs/21st-dev-implementation.md`, 21st.dev is the **design source, not an install path** — patterns adopted, reimplemented on OUTLY tokens, **zero new runtime dependencies** (current: `lucide-react`, `clsx`, `tailwind-merge`; ~102KB shared JS against an LCP < 2.5s budget).
+**Design rule throughout:** adapt, do not rebuild. Per `docs/21st-dev-implementation.md`, 21st.dev is the **design source, not an install path** — patterns adopted, reimplemented on OUTLYY tokens, **zero new runtime dependencies** (current: `lucide-react`, `clsx`, `tailwind-merge`; ~102KB shared JS against an LCP < 2.5s budget).
 
 **21st.dev sources for the new surfaces:**
 

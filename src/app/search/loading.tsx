@@ -11,7 +11,7 @@ export default function Loading() {
       <Skeleton className="mb-3 h-3 w-40" />
       <Skeleton className="mb-2 h-8 w-72" />
       <Skeleton className="mb-8 h-4 w-96" />
-      <div className="grid gap-8 lg:grid-cols-[17rem_1fr]">
+      <div className="grid grid-safe gap-8 lg:grid-cols-[17rem_1fr]">
         <div className="hidden lg:block">
           <Skeleton className="h-[32rem] w-full rounded-[var(--radius-tile)]" />
         </div>

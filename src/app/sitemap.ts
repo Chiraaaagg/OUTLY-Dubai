@@ -1,11 +1,10 @@
 import type { MetadataRoute } from "next";
-import { activities } from "@/lib/data/activities";
-import { categories } from "@/lib/data/categories";
+import { getActivities, getCategories } from "@/lib/catalog/server";
 import { attractions, collections } from "@/lib/data/collections";
 import { combos } from "@/lib/data/combos";
 import { landingPages } from "@/lib/data/landing-pages";
 
-const BASE = "https://outly.in";
+const BASE = "https://outlyy.com";
 
 /**
  * XML sitemap (PRD §7).
@@ -18,8 +17,9 @@ const BASE = "https://outly.in";
  * Priorities express the take-rate ladder rather than a guess: attraction hubs
  * and landing pages rank, category and combo pages convert.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const [activities, categories] = await Promise.all([getActivities(), getCategories()]);
 
   const statics: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: now, changeFrequency: "daily", priority: 1 },

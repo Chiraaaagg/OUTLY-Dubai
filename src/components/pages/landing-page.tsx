@@ -2,22 +2,21 @@ import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { BenefitCard, ComboCard } from "@/components/commerce/cards";
 import { ComparisonTable } from "@/components/commerce/compare";
 import { CompareTray } from "@/components/commerce/compare";
 import { StickyLandingCTA } from "@/components/commerce/sticky-cta";
 import { ConfirmFirstNote, ResponsePromise } from "@/components/commerce/inquiry-ui";
-import { SocialProofStrip, WhyOutly } from "@/components/commerce/trust";
+import { SisterBrandReviews } from "@/components/commerce/sister-reviews";
+import { SocialProofStrip, WhyOutlyy } from "@/components/commerce/trust";
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Accordion } from "@/components/ui/accordion";
 import { ButtonLink } from "@/components/ui/button";
 import { Breadcrumbs, Prose, SectionHeading } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
-import { activitiesBySlugs } from "@/lib/data/activities";
-import { categoryBySlug } from "@/lib/data/categories";
+import { getActivitiesBySlugs, getCategories } from "@/lib/catalog/server";
 import { combos } from "@/lib/data/combos";
-import { featuredReviews } from "@/lib/data/reviews";
-import { ReviewCard } from "@/components/commerce/cards";
 import { Rail, RailItem } from "@/components/ui/rail";
 import type { LandingPage } from "@/lib/data/landing-pages";
 
@@ -37,12 +36,13 @@ import type { LandingPage } from "@/lib/data/landing-pages";
  *   hero (answers the query) → benefits (why us) → activities (the goods)
  *   → comparison (the decision) → proof → FAQs (objections) → internal links
  */
-export function LandingPageView({ page }: { page: LandingPage }) {
-  const activities = activitiesBySlugs(page.activitySlugs);
-  const comparison = page.comparison ? activitiesBySlugs(page.comparison.slugs) : [];
+export async function LandingPageView({ page }: { page: LandingPage }) {
+  const activities = await getActivitiesBySlugs(page.activitySlugs);
+  const comparison = page.comparison ? await getActivitiesBySlugs(page.comparison.slugs) : [];
   const pageCombos = combos.filter((c) => page.comboSlugs?.includes(c.slug));
+  const allCategories = await getCategories();
   const related = page.relatedCategories
-    .map(categoryBySlug)
+    .map((s) => allCategories.find((c) => c.slug === s))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
 
   const cheapest = activities.reduce(
@@ -93,7 +93,7 @@ export function LandingPageView({ page }: { page: LandingPage }) {
       <section className="container-page py-10" aria-labelledby="benefits">
         <SectionHeading
           id="benefits"
-          kicker="Why book this with OUTLY"
+          kicker="Why book this with OUTLYY"
           title="Four things we do differently"
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -107,7 +107,7 @@ export function LandingPageView({ page }: { page: LandingPage }) {
       <section className="container-page pb-10" id="experiences" aria-labelledby="experiences-h">
         <SectionHeading
           id="experiences-h"
-          kicker="All-in rupee pricing"
+          kicker="All-in pricing"
           title="Recommended experiences"
           sub="Curated rather than catalogued — these are the ones we'd book ourselves."
         />
@@ -115,7 +115,7 @@ export function LandingPageView({ page }: { page: LandingPage }) {
           {activities.map((a, i) => (
             <ActivityCard
               key={a.slug}
-              activity={a}
+              activity={toCard(a)}
               position={i + 1}
               source={`landing_${page.slug}`}
               showCompare
@@ -171,23 +171,11 @@ export function LandingPageView({ page }: { page: LandingPage }) {
       </section>
 
       {/* TRUST + PROOF */}
-      <section className="container-page py-12" aria-labelledby="proof">
-        <SectionHeading
-          id="proof"
-          kicker="Verified bookings only"
-          title="What travellers say"
-          sub="Only customers who completed a booking can review."
-        />
-        <SocialProofStrip className="mb-6" />
-        <Rail ariaLabel="Traveller reviews">
-          {featuredReviews.slice(0, 6).map((r) => (
-            <RailItem key={r.id}>
-              <ReviewCard review={r} layout="rail" showActivity />
-            </RailItem>
-          ))}
-        </Rail>
+      <section className="container-page py-12">
+        <SocialProofStrip className="mb-8" />
+        <SisterBrandReviews limit={3} />
         <div className="mt-8">
-          <WhyOutly />
+          <WhyOutlyy />
         </div>
       </section>
 
@@ -204,7 +192,7 @@ export function LandingPageView({ page }: { page: LandingPage }) {
         <WhatsAppCard
           context={{ intent: "general", placement: `landing_${page.slug}` }}
           title={page.whatsappPrompt}
-          body="A real person replies in about eight minutes between 9am and 11pm IST, and can book the whole thing for you with a payment link if you'd rather not use the website."
+          body="A real person replies in about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday), and can book the whole thing for you with a payment link if you'd rather not use the website."
         />
       </section>
 
@@ -280,7 +268,7 @@ export function LandingPageView({ page }: { page: LandingPage }) {
                 itemListElement: activities.map((a, i) => ({
                   "@type": "ListItem",
                   position: i + 1,
-                  url: `https://outly.in/activities/${a.slug}`,
+                  url: `https://outlyy.com/activities/${a.slug}`,
                   name: a.title,
                 })),
               },

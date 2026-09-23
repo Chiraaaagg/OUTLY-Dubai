@@ -1,6 +1,9 @@
 import type { Activity, AddOn, CartItem, Money, PaxCount, Variant } from "./types";
 import { ZERO, addMoney, scaleMoney } from "./utils";
 
+/** The fields pricing reads — a full `Activity` or the card projection both satisfy it. */
+export type PricedActivity = Pick<Activity, "slug" | "title" | "images" | "price" | "variants" | "addOns" | "quoteOnly" | "confirmation" | "fulfilmentMode" | "freeCancellationHours" | "durationMinutes">;
+
 /**
  * Price computation.
  *
@@ -26,12 +29,12 @@ export interface PriceBreakdown {
   savings?: Money;
 }
 
-export function variantById(activity: Activity, id?: string): Variant | undefined {
+export function variantById(activity: PricedActivity, id?: string): Variant | undefined {
   if (!id) return activity.variants.find((v) => v.recommended) ?? activity.variants[0];
   return activity.variants.find((v) => v.id === id);
 }
 
-function unitFor(activity: Activity, variant: Variant | undefined, type: keyof PaxCount): Money {
+function unitFor(activity: PricedActivity, variant: Variant | undefined, type: keyof PaxCount): Money {
   const band = activity.price;
   const base =
     type === "adult"
@@ -46,7 +49,7 @@ function unitFor(activity: Activity, variant: Variant | undefined, type: keyof P
 }
 
 export function computeBreakdown(
-  activity: Activity,
+  activity: PricedActivity,
   pax: PaxCount,
   variantId?: string,
   addOnIds: string[] = [],
@@ -112,7 +115,7 @@ export function computeBreakdown(
 }
 
 export function toCartItem(
-  activity: Activity,
+  activity: PricedActivity,
   opts: { date: string; time: string; pax: PaxCount; variantId?: string; addOnIds?: string[] },
 ): CartItem {
   const variant = variantById(activity, opts.variantId);

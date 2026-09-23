@@ -63,12 +63,12 @@ Customer accounts are **not** in Inquiry Mode scope — there is no login, no OT
 | Name | Purpose | When | Env var | Priority |
 |---|---|---|---|---|
 | Resend API key | Inquiry acknowledgement to customer; inquiry alert to ops | Now | `RESEND_API_KEY` | 🔴 **P0** |
-| Transactional from-address | Sender identity, e.g. `hello@outly.in` | Now | `EMAIL_FROM_TRANSACTIONAL` | 🔴 **P0** |
+| Transactional from-address | Sender identity, e.g. `hello@outlyy.com` | Now | `EMAIL_FROM_TRANSACTIONAL` | 🔴 **P0** |
 | Ops alert recipients | Comma-separated list of ops inboxes for new-inquiry alerts | Now | `EMAIL_OPS_ALERT_TO` | 🔴 **P0** |
 | Reply-to address | Where customer replies land | Now | `EMAIL_REPLY_TO` | 🟠 P1 |
 | **DNS records** — SPF, DKIM, DMARC | Deliverability. Without these, acknowledgement emails go to spam, and the acknowledgement is the backbone of the 30-minute promise | Now | *(DNS, not env)* | 🔴 **P0** |
 
-**Notes.** Use a **subdomain** for transactional mail (`mail.outly.in`) so that any future marketing sending cannot damage transactional deliverability. Resend's free tier is generally sufficient at launch volumes **[verify current limits]**.
+**Notes.** Use a **subdomain** for transactional mail (`mail.outlyy.com`) so that any future marketing sending cannot damage transactional deliverability. Resend's free tier is generally sufficient at launch volumes **[verify current limits]**.
 
 ### 1.4 WhatsApp
 
@@ -241,12 +241,12 @@ These are genuinely blocking or near-blocking. I have not assumed answers.
 
 **This is the most blocking item on the page**, because it determines whether your chosen payment gateway can onboard you at all.
 
-**Razorpay is an Indian payment gateway and requires an Indian registered entity with an Indian current account.** If the contracting entity for OUTLY is a **Dubai** company, Razorpay India will not onboard it, and the payment plan in §17 needs rethinking before Phase C.
+**Razorpay is an Indian payment gateway and requires an Indian registered entity with an Indian current account.** If the contracting entity for OUTLYY is a **Dubai** company, Razorpay India will not onboard it, and the payment plan in §17 needs rethinking before Phase C.
 
 Options as I understand them:
 - **Holiday Chacha Private Limited** (India) — existing entity, existing GST, probably existing banking. Fastest path. May already have a Razorpay account you can reuse
-- **A new Indian entity for OUTLY** — cleanest separation, slowest
-- **OUTLY (Dubai)** — cannot use Razorpay India; would need a UAE gateway, which changes currency, settlement and the whole payment section
+- **A new Indian entity for OUTLYY** — cleanest separation, slowest
+- **OUTLYY (Dubai)** — cannot use Razorpay India; would need a UAE gateway, which changes currency, settlement and the whole payment section
 
 The same answer drives **WhatsApp Business verification**, which requires legal documents matching the business name you register.
 
@@ -254,7 +254,7 @@ The same answer drives **WhatsApp Business verification**, which requires legal 
 
 ### 🔴 Q2 — Domain and DNS
 
-- Which domain is launching — `outly.in`, `outly.ae`, something else?
+- Which domain is launching — `outlyy.com`, `outlyy.ae`, something else?
 - Is it registered, and do you control DNS?
 - Is the site already live on it via Netlify?
 
@@ -268,8 +268,8 @@ Blocks SPF/DKIM/DMARC, which blocks reliable acknowledgement email, which is the
 
 ### 🟠 Q4 — Meta Business Manager
 
-- Is there an existing Business Manager for OUTLY, or would this use TripNavigate's / Holiday Chacha's?
-- **Recommendation: a separate Pixel/dataset for OUTLY even if the Business Manager is shared**, so OUTLY's CAC is measurable independently of TripNavigate's. Mixing them makes the §11 CAC guardrail meaningless
+- Is there an existing Business Manager for OUTLYY, or would this use TripNavigate's / Holiday Chacha's?
+- **Recommendation: a separate Pixel/dataset for OUTLYY even if the Business Manager is shared**, so OUTLYY's CAC is measurable independently of TripNavigate's. Mixing them makes the §11 CAC guardrail meaningless
 
 ### 🟠 Q5 — Ops team specifics
 

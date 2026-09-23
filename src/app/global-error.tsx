@@ -1,10 +1,14 @@
 "use client";
 
+import { emergencyDisplay, emergencyHref, siteConfig, whatsappDisplay } from "@/lib/site-config";
+
 /**
  * Root error boundary. Replaces the entire document when the layout itself
  * fails, so it deliberately carries no imports from the design system — if the
  * failure is in a shared component, importing it here would fail too. Inline
- * styles only, and the emergency number is on the page.
+ * styles only. The one import is `site-config`, which is a dependency-free
+ * module of environment reads, so the emergency number on the page is the
+ * real one (audit X03) — and the line is dropped entirely when none is set.
  */
 export default function GlobalError({
   error,
@@ -13,6 +17,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const wa = whatsappDisplay();
+  const phone = emergencyDisplay();
+  const phoneHref = emergencyHref();
+
   return (
     <html lang="en-IN">
       <body
@@ -39,7 +47,7 @@ export default function GlobalError({
               margin: 0,
             }}
           >
-            OUTLY
+            OUTLYY
           </p>
           <h1 style={{ fontSize: "1.75rem", lineHeight: 1.2, margin: "12px 0" }}>
             The site has fallen over
@@ -64,16 +72,33 @@ export default function GlobalError({
           >
             Reload the page
           </button>
-          <p style={{ marginTop: "24px", fontSize: "0.875rem", color: "#574a71" }}>
-            Need help now? WhatsApp{" "}
-            <a href="https://wa.me/919000000000" style={{ color: "#bd4102", fontWeight: 700 }}>
-              +91 90000 00000
-            </a>{" "}
-            · In Dubai:{" "}
-            <a href="tel:+97140000000" style={{ color: "#bd4102", fontWeight: 700 }}>
-              +971 4 000 0000
-            </a>
-          </p>
+          {(wa || phone) && (
+            <p style={{ marginTop: "24px", fontSize: "0.875rem", color: "#574a71" }}>
+              Need help now?
+              {wa && (
+                <>
+                  {" "}
+                  WhatsApp{" "}
+                  <a
+                    href={`https://wa.me/${siteConfig.whatsappNumber}`}
+                    style={{ color: "#bd4102", fontWeight: 700 }}
+                  >
+                    {wa}
+                  </a>
+                </>
+              )}
+              {wa && phone && " ·"}
+              {phone && phoneHref && (
+                <>
+                  {" "}
+                  In Dubai:{" "}
+                  <a href={phoneHref} style={{ color: "#bd4102", fontWeight: 700 }}>
+                    {phone}
+                  </a>
+                </>
+              )}
+            </p>
+          )}
           {error.digest && (
             <p style={{ marginTop: "16px", fontSize: "0.75rem", color: "#a79eb8" }}>
               Reference: {error.digest}

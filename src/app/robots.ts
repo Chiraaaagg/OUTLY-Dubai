@@ -29,11 +29,14 @@ export default function robots(): MetadataRoute.Robots {
           "/signup",
           "/maintenance",
           "/design-system",
+          "/admin",
+          "/admin/",
+          "/api/",
           "/*?mock=",
         ],
       },
     ],
-    sitemap: "https://outly.in/sitemap.xml",
-    host: "https://outly.in",
+    sitemap: "https://outlyy.com/sitemap.xml",
+    host: "https://outlyy.com",
   };
 }

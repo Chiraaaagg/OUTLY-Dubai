@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { SearchX } from "lucide-react";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { CompareTray } from "@/components/commerce/compare";
 import {
   ActiveFilterPills,
@@ -13,14 +14,14 @@ import {
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { ButtonLink } from "@/components/ui/button";
 import { Alert, Breadcrumbs, EmptyState } from "@/components/ui/primitives";
-import { categories } from "@/lib/data/categories";
+import { getActivities, getCategories } from "@/lib/catalog/server";
 import { PAGE_SIZE, searchActivities } from "@/lib/search";
 import type { Dietary, SearchFilters, SortKey, Suitability } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Search Dubai Experiences",
   description:
-    "Search 26 curated Dubai experiences by date, price, dietary needs, suitability and booking convenience. All-in rupee pricing with instant WhatsApp vouchers.",
+    "Search 26 curated Dubai experiences by date, price, dietary needs, suitability and booking convenience. All-in pricing with instant WhatsApp vouchers.",
   robots: { index: false, follow: true },
 };
 
@@ -66,7 +67,8 @@ export default async function SearchPage({
 }) {
   const sp = await searchParams;
   const filters = parse(sp);
-  const result = searchActivities(filters);
+  const [allActivities, categories] = await Promise.all([getActivities(), getCategories()]);
+  const result = searchActivities(filters, allActivities);
 
   const page = filters.page ?? 1;
   const start = (page - 1) * PAGE_SIZE;
@@ -101,12 +103,12 @@ export default async function SearchPage({
         <Breadcrumbs items={[{ label: "Dubai", href: "/" }, { label: "Search" }]} className="mb-3" />
         <h1 className="text-[1.75rem] sm:text-3xl">{heading}</h1>
         <p className="mt-1.5 text-[0.95rem] text-ink-600">
-          {result.total} {result.total === 1 ? "experience" : "experiences"} · all-in rupee pricing ·
+          {result.total} {result.total === 1 ? "experience" : "experiences"} · all-in pricing ·
           confirmed with the operator before you pay
         </p>
       </div>
 
-      <div className="container-page grid gap-8 pb-16 lg:grid-cols-[17rem_1fr]">
+      <div className="container-page grid grid-safe gap-8 pb-16 lg:grid-cols-[17rem_1fr]">
         <Suspense fallback={<div className="hidden lg:block" />}>
           <FilterSidebar resultCount={result.total} />
         </Suspense>
@@ -124,7 +126,7 @@ export default async function SearchPage({
                 {pageItems.map((a, i) => (
                   <ActivityCard
                     key={a.slug}
-                    activity={a}
+                    activity={toCard(a)}
                     position={start + i + 1}
                     source="search"
                     showCompare
@@ -177,7 +179,7 @@ export default async function SearchPage({
                 {result.relaxed.activities.map((a, i) => (
                   <ActivityCard
                     key={a.slug}
-                    activity={a}
+                    activity={toCard(a)}
                     position={i + 1}
                     source="search_relaxed"
                     showCompare
@@ -190,6 +192,7 @@ export default async function SearchPage({
           {/* True empty state — only reachable when nothing at all matches */}
           {pageItems.length === 0 && !result.relaxed && (
             <EmptyState
+          illustration="search"
               icon={<SearchX className="h-6 w-6" />}
               title="Nothing matched that search"
               body="We keep a deliberately small catalogue — around 26 experiences we'd book ourselves — so some searches come up empty. Tell us what you're after on WhatsApp and we'll almost certainly be able to arrange it."
@@ -210,7 +213,7 @@ export default async function SearchPage({
               placement: "search_results",
             }}
             title="Can't find the right thing?"
-            body="Send us your dates, group size and what you're hoping to do. We'll come back with three options, priced in rupees, usually within the hour."
+            body="Send us your dates, group size and what you're hoping to do. We'll come back with three options, priced all-in, usually within the hour."
           />
 
           {/* Internal linking — keeps crawl paths short and helps undecided users */}

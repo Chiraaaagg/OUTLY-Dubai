@@ -1,7 +1,7 @@
-# OUTLY — Backend Architecture & Implementation Blueprint
+# OUTLYY — Backend Architecture & Implementation Blueprint
 
 **Version:** 1.0 · **Date:** 9 September 2026 · **Status:** For approval — do not begin implementation until §Approval Gate is signed off
-**Inputs:** Feasibility Report (3 Sep 2026) · PRD v1.0 (4 Sep 2026) · Business Model & Unit Economics (4 Sep 2026) · `Rathin API Flow 2.pdf` · the frontend codebase at `D:\Programs\OUTLY`
+**Inputs:** Feasibility Report (3 Sep 2026) · PRD v1.0 (4 Sep 2026) · Business Model & Unit Economics (4 Sep 2026) · `Rathin API Flow 2.pdf` · the frontend codebase at `D:\Programs\OUTLYY`
 
 ---
 
@@ -25,6 +25,13 @@
 | 13 | `13-security.md` | Phase 14 |
 | 14 | `14-deployment.md` | Phase 15 — environments, CI/CD, DR, costs |
 | 15 | `15-roadmap.md` | Phase 16 — phased plan with approval gates |
+| 16 | `16-rathin-api-validation.md` | Rathin API validation — NOT READY, blocking questions |
+| 17 | `17-inquiry-mode-pivot.md` | Inquiry Mode pivot plan (approved) |
+| 18 | `18-preflight-audit.md` | Backend dependency audit |
+| 19 | `19-implementation-conventions.md` | **Binding conventions for backend code** |
+| 20 | `20-backend-implementation.md` | **Implementation record — what shipped, routes, tables, env, deviations** |
+| impl/customer-auth | `impl/customer-auth-contract.md`, `impl/customer-auth.md` | Customer phone-OTP sign-in + account APIs (added 19 Sep 2026) |
+| impl/ | `impl/*.md` | Per-area working notes: inquiry engine, admin, agent console, notifications, analytics, database, rathin, security, whatsapp templates |
 
 **Accuracy convention used throughout.** Anything I could verify from a primary source is cited. Anything modelled, estimated, or inferred is marked **[ASSUMPTION]** or **[VERIFY]**. Commercial rates, supplier terms and tax treatment are *not* things I can confirm for you — they are marked as blockers, not filled in with plausible numbers.
 

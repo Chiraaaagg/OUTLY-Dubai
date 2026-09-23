@@ -6,14 +6,16 @@ import { ButtonLink } from "@/components/ui/button";
 import { ConfirmFirstNote } from "@/components/commerce/inquiry-ui";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { ComboCard } from "@/components/commerce/cards";
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Accordion } from "@/components/ui/accordion";
 import { Breadcrumbs, Card, Prose, SectionHeading } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
-import { activitiesBySlugs } from "@/lib/data/activities";
+import { getActivitiesBySlugs } from "@/lib/catalog/server";
 import { attractions, attractionBySlug } from "@/lib/data/collections";
 import { combos } from "@/lib/data/combos";
+import { Amount } from "@/components/commerce/price";
 
 export function generateStaticParams() {
   return attractions.map((a) => ({ slug: a.slug }));
@@ -47,7 +49,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
   const attraction = attractionBySlug(slug);
   if (!attraction) notFound();
 
-  const tickets = activitiesBySlugs(attraction.activitySlugs);
+  const tickets = await getActivitiesBySlugs(attraction.activitySlugs);
   const linkedCombos = combos.filter((c) =>
     c.includedSlugs.some((s) => attraction.activitySlugs.includes(s)),
   );
@@ -97,7 +99,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
                 <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-700">
                   One inquiry, one reply, one confirmed price — and{" "}
                   <strong className="font-bold">
-                    ₹{(linkedCombos[0].separatePrice.inr - linkedCombos[0].bundlePrice.inr).toLocaleString("en-IN")} per adult
+                    <Amount money={{ inr: linkedCombos[0].separatePrice.inr - linkedCombos[0].bundlePrice.inr, aed: linkedCombos[0].separatePrice.aed - linkedCombos[0].bundlePrice.aed }} /> per adult
                   </strong>{" "}
                   less than the same things separately. Single tickets are below if that&apos;s all you need.
                 </p>
@@ -120,7 +122,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
       <section className="container-page py-10" aria-labelledby="tickets">
         <SectionHeading
           id="tickets"
-          kicker="All-in rupee pricing"
+          kicker="All-in pricing"
           title={`${attraction.name} tickets`}
           sub="Every ticket type we sell for this attraction, with the real difference between them explained."
         />
@@ -128,7 +130,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
           {tickets.map((a, i) => (
             <ActivityCard
               key={a.slug}
-              activity={a}
+              activity={toCard(a)}
               position={i + 1}
               source={`attraction_${attraction.slug}`}
               showCompare

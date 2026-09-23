@@ -5,6 +5,10 @@ import { Footer } from "@/components/layout/footer";
 import { AppProvider } from "@/components/providers/app-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { CookieBanner } from "@/components/layout/cookie-banner";
+import { StorefrontOnly } from "@/components/layout/storefront-only";
+import { CURRENCY_BOOTSTRAP_SCRIPT } from "@/lib/currency";
 
 /**
  * Type pairing:
@@ -15,29 +19,29 @@ import "./globals.css";
  * Both are variable fonts loaded with `display: swap`, subset to latin.
  */
 const display = Bricolage_Grotesque({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-bricolage",
   display: "swap",
   weight: ["600", "700", "800"],
 });
 
 const body = Plus_Jakarta_Sans({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-jakarta",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://outly.in"),
+  metadataBase: new URL("https://outlyy.com"),
   title: {
-    default: "OUTLY — Dubai Experiences for Indian Travellers, Priced in Rupees",
-    template: "%s | OUTLY",
+    default: "OUTLYY — Dubai Experiences, One All-In Price",
+    template: "%s | OUTLYY",
   },
   description:
-    "Book Dubai activities in all-in rupee pricing with UPI, pure-veg and Jain food options, hotel pickup and WhatsApp support in about 8 minutes. No fees added at checkout.",
+    "Book Dubai activities at one all-in price in your own currency, with pure-veg and Jain food options, hotel pickup and WhatsApp support in about 30 minutes. No fees added at checkout.",
   openGraph: {
     type: "website",
-    siteName: "OUTLY",
+    siteName: "OUTLYY",
     locale: "en_IN",
   },
   alternates: {
@@ -57,11 +61,25 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-IN" className={`${display.variable} ${body.variable}`}>
+      <head>
+        {/*
+          Sets data-ccy from the currency cookie before the first paint, so a
+          statically prerendered page shows the visitor's currency with no
+          flash and no layout shift. It only writes an attribute, so React's
+          hydration never sees a mismatch. See src/lib/currency.ts.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: CURRENCY_BOOTSTRAP_SCRIPT }} />
+      </head>
       <body>
         <AppProvider>
           <Header />
           <main id="main">{children}</main>
           <Footer />
+          <CookieBanner />
+          {/* Storefront only: staff screens carry customer PII and are never measured. */}
+          <StorefrontOnly>
+            <GoogleAnalytics />
+          </StorefrontOnly>
           <Toaster />
         </AppProvider>
       </body>

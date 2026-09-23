@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =============================================================================
-   OUTLY DESIGN SYSTEM — TOKENS
+   OUTLYY DESIGN SYSTEM — TOKENS
    Brand: playful, sun-warm, trustworthy. Dubai sunshine + desert + marina water
    + Indian marigold. Light-mode-only by design decision (see docs/design-system.md).
    ============================================================================= */
@@ -180,6 +180,21 @@
 }
 
 /* Horizontal snap rail used by every carousel. Scrollbar hidden, keyboard intact. */
+/*
+ * grid-safe — every fr-sized grid column that can hold intrinsic content
+ * (horizontal rails, long unbroken strings) MUST use this. CSS `1fr` is
+ * `minmax(auto, 1fr)`: a child's min-content width can force its column
+ * wide and crush its siblings (audit S08 — the ADP main column collapsed to
+ * 99px because the date strip in the aside was 870px wide). Forcing
+ * min-width:0 on direct children restores the intended ratios.
+ */
+@utility grid-safe {
+  display: grid;
+  & > * {
+    min-width: 0;
+  }
+}
+
 @utility rail {
   display: flex;
   gap: 1rem;
@@ -269,4 +284,49 @@
   background:
     linear-gradient(100deg, rgba(20, 16, 31, 0.78) 0%, rgba(20, 16, 31, 0.5) 42%, rgba(20, 16, 31, 0.12) 78%),
     linear-gradient(180deg, rgba(20, 16, 31, 0.35) 0%, transparent 45%);
+}
+
+/* OUTLYY brand motion — append to src/app/globals.css (after @layer base).
+   Uses the existing --ease-spring token. Reduced motion is already handled
+   globally in globals.css, which zeroes transition durations. */
+
+/* "Sun out": the sun nudges up-and-out of the O on logo hover/focus. */
+.outlyy-sun {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 280ms var(--ease-spring);
+}
+@media (hover: hover) {
+  .group\/logo:hover .outlyy-sun { transform: translate(22%, -22%); }
+}
+.group\/logo:focus-visible .outlyy-sun,
+a:focus-visible .outlyy-sun { transform: translate(22%, -22%); }
+
+/* =============================================================================
+   DISPLAY CURRENCY
+
+   Storefront pages are statically prerendered, so the server cannot bake a
+   per-visitor currency into the HTML. Every price therefore ships all three
+   renderings and CSS reveals exactly one, keyed off `data-ccy` on <html>,
+   which the pre-paint script in layout.tsx sets from the `outlyy_ccy` cookie.
+
+   Consequences, which are the point: no flash of the wrong currency, no
+   layout shift (only one child is ever in flow), no hydration mismatch (React
+   renders the same three children on the server and the client), no
+   currency-specific URLs and therefore no duplicate pages for Google.
+
+   The hidden variants are `display:none`, so assistive tech announces one
+   price, not three.
+   ========================================================================== */
+.ccy > .ccy-v {
+  display: none;
+  font-style: inherit;
+}
+/* Before the script runs — and if it is blocked entirely — show the default,
+   AED: the currency the catalogue is sold in, so it is never a conversion. */
+:root:not([data-ccy]) .ccy > .ccy-aed,
+:root[data-ccy="INR"] .ccy > .ccy-inr,
+:root[data-ccy="AED"] .ccy > .ccy-aed,
+:root[data-ccy="USD"] .ccy > .ccy-usd {
+  display: inline;
 }

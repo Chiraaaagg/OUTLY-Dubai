@@ -3,14 +3,16 @@ import Link from "next/link";
 import { ArrowRight, Clock3, Sparkles } from "lucide-react";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
-import { CategoryCard, CollectionCard, ComboCard, ReviewCard } from "@/components/commerce/cards";
+import { toCard } from "@/lib/catalog/card";
+import { CategoryCard, CollectionCard, ComboCard } from "@/components/commerce/cards";
 import { QuickChips } from "@/components/commerce/quick-chips";
 import { HeroSearch } from "@/components/commerce/search-box";
 import { HowItWorks } from "@/components/commerce/inquiry-ui";
+import { SisterBrandReviews } from "@/components/commerce/sister-reviews";
 import {
   SocialProofStrip,
   TrustMarquee,
-  WhyOutly,
+  WhyOutlyy,
 } from "@/components/commerce/trust";
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Accordion } from "@/components/ui/accordion";
@@ -20,17 +22,15 @@ import { SectionHeading } from "@/components/ui/primitives";
 import { Rail, RailItem } from "@/components/ui/rail";
 import { Scene } from "@/components/ui/scene";
 import { getAvailability, today, tomorrow } from "@/lib/availability";
-import { activities, activitiesBySlugs } from "@/lib/data/activities";
-import { categories } from "@/lib/data/categories";
+import { getActivities, getCategories } from "@/lib/catalog/server";
 import { collections } from "@/lib/data/collections";
 import { combos } from "@/lib/data/combos";
-import { featuredReviews } from "@/lib/data/reviews";
 import type { Faq } from "@/lib/types";
 
 export const metadata: Metadata = {
-  title: "OUTLY — Dubai Experiences for Indian Travellers, Priced in Rupees",
+  title: "OUTLYY — Dubai Experiences, One All-In Price",
   description:
-    "Curated Dubai activities with all-in rupee pricing, UPI, pure-veg and Jain food options, hotel pickup and WhatsApp help in about 8 minutes. Instant vouchers, no hidden fees.",
+    "Curated Dubai activities at one all-in price in your own currency, with pure-veg and Jain food options, hotel pickup and WhatsApp help in about 30 minutes. Instant vouchers, no hidden fees.",
   alternates: { canonical: "/" },
 };
 
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
 const HOME_FAQS: Faq[] = [
   {
     q: "Is the price I see the price I pay?",
-    a: "Yes. Every price on OUTLY includes taxes and booking fees, and it is the amount charged to your card or UPI. The only things that change your total are optional extras you deliberately add — hotel pickup, a cake, a photographer.",
+    a: "Yes. Every price on OUTLYY includes taxes and booking fees, and it is the amount charged to your card or UPI. The only things that change your total are optional extras you deliberately add — hotel pickup, a cake, a photographer.",
   },
   {
     q: "Can I pay with UPI?",
@@ -68,7 +68,7 @@ const HOME_FAQS: Faq[] = [
   },
   {
     q: "What if I'd rather just talk to someone?",
-    a: "Tap any WhatsApp button and a real person replies in about 30 minutes between 9am and 11pm IST. They can see which activity and dates you were looking at, and can plan and confirm the whole trip in one conversation — the form is there for people who prefer it, not a toll gate.",
+    a: "Tap any WhatsApp button and a real person replies in about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday). They can see which activity and dates you were looking at, and can plan and confirm the whole trip in one conversation — the form is there for people who prefer it, not a toll gate.",
   },
   {
     q: "Can my elderly parents do a desert safari?",
@@ -76,7 +76,11 @@ const HOME_FAQS: Faq[] = [
   },
 ];
 
-export default function HomePage() {
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const [activities, categories] = await Promise.all([getActivities(), getCategories()]);
+  const activitiesBySlugs = (slugs: string[]) => slugs.map((s) => activities.find((a) => a.slug === s)).filter((a): a is NonNullable<typeof a> => Boolean(a));
   const todayKey = today();
   const tomorrowKey = tomorrow();
 
@@ -126,7 +130,7 @@ export default function HomePage() {
         Primary CTA: Find things to do. Secondary: quick-intent chips.
       ------------------------------------------------------------------ */}
       <section className="sun-wash relative overflow-hidden border-b border-ink-200">
-        <div className="container-page relative grid gap-8 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-16">
+        <div className="container-page relative grid grid-safe gap-8 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-16">
           <div className="relative z-10 min-w-0">
             <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-ink-900/10 bg-white/70 px-3 py-1.5 text-xs font-bold text-ink-800 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-sun-600" aria-hidden="true" />
@@ -135,13 +139,13 @@ export default function HomePage() {
 
             <h1 className="text-[2.25rem] leading-[1.05] sm:text-5xl lg:text-[3.4rem]">
               Dubai, planned properly.
-              <span className="mt-1 block text-sun-600">In rupees. Confirmed by a human in 30 minutes.</span>
+              <span className="mt-1 block text-sun-600">One all-in price. Confirmed by a human in 30 minutes.</span>
             </h1>
 
             <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-ink-700">
               All-in prices with nothing added later. Pure-veg and Jain food you can filter for.
               Pick what you like, tell us your dates, and a named person confirms availability with
-              the operator before you pay a rupee.
+              the operator before you pay anything.
             </p>
 
             <div className="mt-6">
@@ -202,7 +206,7 @@ export default function HomePage() {
         <Rail ariaLabel="Activities available today and tomorrow">
           {lastMinute.map((a, i) => (
             <RailItem key={a.slug}>
-              <ActivityCard activity={a} layout="rail" position={i + 1} source="home_last_minute" />
+              <ActivityCard activity={toCard(a)} layout="rail" position={i + 1} source="home_last_minute" />
             </RailItem>
           ))}
         </Rail>
@@ -223,7 +227,7 @@ export default function HomePage() {
           {topExperiences.map((a, i) => (
             <RailItem key={a.slug}>
               <ActivityCard
-                activity={a}
+                activity={toCard(a)}
                 layout="rail"
                 position={i + 1}
                 source="home_top"
@@ -284,7 +288,7 @@ export default function HomePage() {
       ------------------------------------------------------------------ */}
       <section className="container-page py-12" aria-labelledby="desert">
         <div className="overflow-hidden rounded-[var(--radius-tile)] border border-ink-200 bg-paper">
-          <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="grid grid-safe lg:grid-cols-[0.9fr_1.1fr]">
             <div className="relative min-h-[15rem]">
               <Scene src="dune-sunset" alt="Convoy of 4x4s on the Al Lahbab dunes at sunset" />
             </div>
@@ -310,7 +314,7 @@ export default function HomePage() {
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {desertPicks.slice(0, 2).map((a, i) => (
-                  <ActivityCard key={a.slug} activity={a} layout="compact" position={i + 1} source="home_desert" />
+                  <ActivityCard key={a.slug} activity={toCard(a)} layout="compact" position={i + 1} source="home_desert" />
                 ))}
               </div>
             </div>
@@ -353,7 +357,7 @@ export default function HomePage() {
         <Rail ariaLabel="Family-friendly activities">
           {familyPicks.map((a, i) => (
             <RailItem key={a.slug}>
-              <ActivityCard activity={a} layout="rail" position={i + 1} source="home_family" />
+              <ActivityCard activity={toCard(a)} layout="rail" position={i + 1} source="home_family" />
             </RailItem>
           ))}
         </Rail>
@@ -388,7 +392,7 @@ export default function HomePage() {
           <Rail ariaLabel="Cruises and yacht experiences">
             {waterPicks.map((a, i) => (
               <RailItem key={a.slug}>
-                <ActivityCard activity={a} layout="rail" position={i + 1} source="home_water" />
+                <ActivityCard activity={toCard(a)} layout="rail" position={i + 1} source="home_water" />
               </RailItem>
             ))}
           </Rail>
@@ -407,7 +411,7 @@ export default function HomePage() {
         <Rail ariaLabel="Couple and honeymoon experiences">
           {couplePicks.map((a, i) => (
             <RailItem key={a.slug}>
-              <ActivityCard activity={a} layout="rail" position={i + 1} source="home_couples" />
+              <ActivityCard activity={toCard(a)} layout="rail" position={i + 1} source="home_couples" />
             </RailItem>
           ))}
         </Rail>
@@ -424,7 +428,7 @@ export default function HomePage() {
         <Rail ariaLabel="Luxury experiences">
           {luxuryPicks.map((a, i) => (
             <RailItem key={a.slug}>
-              <ActivityCard activity={a} layout="rail" position={i + 1} source="home_luxury" />
+              <ActivityCard activity={toCard(a)} layout="rail" position={i + 1} source="home_luxury" />
             </RailItem>
           ))}
         </Rail>
@@ -516,46 +520,34 @@ export default function HomePage() {
       {/* ------------------------------------------------------------------
         SOCIAL PROOF
       ------------------------------------------------------------------ */}
-      <section className="bg-shell py-12" aria-labelledby="reviews">
+      <section className="bg-shell py-12">
         <div className="container-page">
-          <SectionHeading
-            id="reviews"
-            kicker="Verified bookings only"
-            title="What Indian travellers say"
-            sub="Only customers with a completed booking can review. Every one of these is attached to an order."
-          />
-          <SocialProofStrip className="mb-6" />
-          <Rail ariaLabel="Traveller reviews">
-            {featuredReviews.slice(0, 8).map((r) => (
-              <RailItem key={r.id}>
-                <ReviewCard review={r} layout="rail" showActivity />
-              </RailItem>
-            ))}
-          </Rail>
+          <SocialProofStrip className="mb-8" />
+          <SisterBrandReviews limit={6} />
         </div>
       </section>
 
       {/* ------------------------------------------------------------------
-        WHY OUTLY + FAQ + WHATSAPP
+        WHY OUTLYY + FAQ + WHATSAPP
       ------------------------------------------------------------------ */}
-      <section className="container-page py-12" aria-labelledby="why-outly">
+      <section className="container-page py-12" aria-labelledby="why-outlyy">
         <SectionHeading
-          id="why-outly"
+          id="why-outlyy"
           kicker="What makes us different"
           title="Four promises, all of them checkable"
           sub="We're not trying to be a better Klook. We're trying to beat the travel agent you'd otherwise use — a human who confirms before you pay, at a price you can see."
         />
-        <WhyOutly />
+        <WhyOutlyy />
       </section>
 
       <section className="container-page pb-12" aria-labelledby="faq">
-        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid grid-safe gap-8 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <SectionHeading
               id="faq"
               kicker="Before you book"
               title="Questions we get asked most"
-              sub="If yours isn't here, ask on WhatsApp — a person answers in about eight minutes."
+              sub="If yours isn't here, ask on WhatsApp — a person answers in about 30 minutes."
             />
             <WhatsAppCard
               context={{ intent: "general", placement: "homepage_faq" }}
@@ -581,10 +573,10 @@ export default function HomePage() {
             "@graph": [
               {
                 "@type": "Organization",
-                name: "OUTLY",
-                url: "https://outly.in",
+                name: "OUTLYY",
+                url: "https://outlyy.com",
                 description:
-                  "Curated Dubai activities for Indian travellers with all-in rupee pricing, UPI payments and WhatsApp support.",
+                  "Curated Dubai activities at one all-in price, with WhatsApp support and a human confirming every booking before payment.",
                 areaServed: ["IN", "AE"],
                 contactPoint: {
                   "@type": "ContactPoint",

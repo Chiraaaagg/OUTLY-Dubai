@@ -173,7 +173,7 @@ export function ComboBooking({ combo }: { combo: Combo }) {
             context={{
               intent: "combo",
               comboName: combo.name,
-              activityUrl: `https://outly.in/combos/${combo.slug}`,
+              activityUrl: `https://outlyy.com/combos/${combo.slug}`,
               date: formatDateKey(date),
               pax,
               priceLabel: priceIn(total, currency),

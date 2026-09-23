@@ -13,7 +13,7 @@ export const categories: Category[] = [
     tagline: "The icons, skip the queue",
     intro:
       "Every Dubai first-timer's list starts here: Burj Khalifa, the Dubai Frame, the Museum of the Future, the Dubai Aquarium. We publish the all-in rupee price for each of them, including the taxes and booking fees that other sites add at the last screen. Tickets arrive on WhatsApp as a scannable mobile voucher, usually inside a minute, so you can book from the taxi on the way over. Where a timed slot matters — and at Burj Khalifa it matters a great deal — we tell you which slot is genuinely worth the extra money instead of quietly upselling you to the priciest one.",
-    heroImage: "skyline-gold",
+    heroImage: "img:category:dubai-attractions:0",
     featuredSlugs: [
       "burj-khalifa-124-125",
       "museum-of-the-future",
@@ -48,7 +48,7 @@ export const categories: Category[] = [
     tagline: "Dunes, dinner and the bit everyone photographs",
     intro:
       "The desert safari is the single most-booked experience by Indian families in Dubai — and the one most likely to go wrong. The complaints are always the same: a pickup that never arrived, dune bashing that terrified an elderly parent, and a 'vegetarian' buffet that turned out to be paneer and nothing else. So we filter for what actually decides it. Pure-veg and Jain camps (no onion, no garlic) are a filter, not a footnote. Gentle safaris that skip dune bashing entirely are their own variant, clearly labelled, for travellers with parents, back trouble or motion sickness. Pickup zones are published per SKU so you know before you pay whether your hotel is covered.",
-    heroImage: "dune-sunset",
+    heroImage: "img:category:desert-safari:0",
     featuredSlugs: [
       "evening-desert-safari-veg-jain",
       "gentle-desert-safari-seniors",
@@ -83,7 +83,7 @@ export const categories: Category[] = [
     tagline: "One long day, many very happy children",
     intro:
       "IMG Worlds, Motiongate, Global Village, AYA Universe — Dubai's parks are mostly indoors or air-conditioned, which is exactly why they work as a summer plan when the temperature makes anything outdoors unpleasant. The maths matters here: a family of four visiting two parks usually saves ₹4,000–₹7,000 on a combo rather than separate tickets, and transfers can cost more than the ticket if you leave them to a taxi meter. We show the combo saving next to the single-park price so the comparison is honest, and we mark which parks realistically need a full day and which fit into a half.",
-    heroImage: "park-neon",
+    heroImage: "img:category:theme-parks:0",
     featuredSlugs: [
       "img-worlds-of-adventure",
       "motiongate-dubai",
@@ -114,7 +114,7 @@ export const categories: Category[] = [
     tagline: "The skyline, from the water, at golden hour",
     intro:
       "Dubai looks better from the water than from any observation deck, and this is where the price difference between 'shared' and 'private' is largest — and most often hidden. We label it plainly. A dhow dinner cruise in Marina is a relaxed shared evening with a buffet and a show for a couple of thousand rupees a head. A yacht is a different product: fewer people, open deck, and a photo set your friends will ask about. Private charters are priced per boat per hour, not per person, so we quote them that way rather than fabricating a per-person figure that only works if you fill every seat.",
-    heroImage: "marina-dusk",
+    heroImage: "img:category:cruises-yachts:0",
     featuredSlugs: [
       "dhow-cruise-marina-dinner",
       "luxury-yacht-tour-90min",
@@ -145,7 +145,7 @@ export const categories: Category[] = [
     tagline: "Waterparks, jet skis and the Arabian Gulf",
     intro:
       "Aquaventure at Atlantis is the biggest waterpark in the region and needs a full day; jet skis off Marina buy you the Burj Al Arab photograph in half an hour. Between May and September the water is warm enough to be a relief rather than a shock, which makes this the one category that works better in summer than in winter. We flag height limits, swimming ability requirements and what's covered by the price — lockers and towels are the two charges that most often appear at the gate elsewhere, so we state them up front.",
-    heroImage: "water-splash",
+    heroImage: "img:category:water-activities:0",
     featuredSlugs: [
       "atlantis-aquaventure",
       "jet-ski-burj-al-arab",
@@ -172,7 +172,7 @@ export const categories: Category[] = [
     tagline: "Works for a six-year-old and a sixty-eight-year-old",
     intro:
       "Booking for a family is a different problem from booking for yourself. You need one plan that a child, a parent and a grandparent can all enjoy, food that everyone can eat, and a pickup that doesn't require herding seven people into two taxis. Everything in this category has been checked against those three questions. Child and senior pricing is shown before checkout, not discovered at it. Where an experience genuinely doesn't suit an older traveller, we say so on the page rather than letting you find out at a dune.",
-    heroImage: "family-day",
+    heroImage: "img:category:family-activities:0",
     featuredSlugs: [
       "evening-desert-safari-veg-jain",
       "dhow-cruise-marina-dinner",
@@ -203,7 +203,7 @@ export const categories: Category[] = [
     tagline: "Private, arranged properly, no queues",
     intro:
       "At this end of the market the question is never price — it is whether the thing will be handled properly. A private yacht with a crew that knows the route. A helicopter slot that actually departs on time. A desert camp where you are the only party. Every experience here is operated by a supplier we have used repeatedly, and each booking is assigned a named coordinator who is reachable on WhatsApp and on the phone from the moment you pay until the moment you land back at your hotel. Charters and bespoke itineraries are quoted rather than listed, because an honest number depends on your date, your group and your route.",
-    heroImage: "luxury-night",
+    heroImage: "img:category:luxury-experiences:0",
     featuredSlugs: [
       "private-yacht-charter-sunset",
       "helicopter-tour-12min",
@@ -234,7 +234,7 @@ export const categories: Category[] = [
     tagline: "Get your bearings on day one",
     intro:
       "A guided half-day is the most useful thing a first-time visitor can do on their first morning: you see the old Creek, the souks, Jumeirah and Downtown in one loop, and you leave knowing which parts of the city you want to go back to. From Dubai, Abu Dhabi is an easy day trip — the Sheikh Zayed Grand Mosque and Ferrari World in a single run — provided you leave early and dress appropriately. Our tours run in English and Hindi, and the Hindi-speaking guide is a filter on the page rather than a request you have to make and hope for.",
-    heroImage: "city-tour",
+    heroImage: "img:category:dubai-city-tours:0",
     featuredSlugs: [
       "dubai-city-tour-half-day",
       "abu-dhabi-city-tour-grand-mosque",

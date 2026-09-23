@@ -85,7 +85,7 @@ a sticky bar so the CTA is always one thumb away.
 | Surface | Form |
 |---|---|
 | Header trust bar | "Human reply in 30 minutes" |
-| Trust marquee, footer stat, WhyOutly, TrustSummary | 30-minute promise (was 8-min WhatsApp SLA) |
+| Trust marquee, footer stat, WhyOutlyy, TrustSummary | 30-minute promise (was 8-min WhatsApp SLA) |
 | ADP beside CTA | `ResponsePromise` — "Free to ask · reply in ~30 min", switches to "team offline now, first reply after 9 am IST" out of hours |
 | Inquiry form submit | "Send inquiry — we reply in ~30 min" |
 | **Confirmation** | Named agent + **concrete timestamp** ("Will message you by 5:09 pm IST"), computed by `computeSlaDueAt()` with 9am–11pm IST business hours |

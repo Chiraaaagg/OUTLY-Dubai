@@ -1,28 +1,183 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { KeyRound, Smartphone } from "lucide-react";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Alert, Breadcrumbs, Card } from "@/components/ui/primitives";
+import { Button } from "@/components/ui/button";
+import { Alert, Breadcrumbs, Card, Skeleton } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
+import { ApiError, requestOtp, verifyOtp } from "@/lib/api";
+import { track } from "@/lib/analytics";
+import { normalisePhone } from "@/lib/phone";
+import { safeNext } from "@/lib/safe-next";
+import { serverErrorCode } from "@/lib/server-error";
 import { cn } from "@/lib/utils";
 
 /**
- * LOGIN — phone OTP primary, email secondary (AC-ACC-01).
+ * SIGN IN — phone + one-time code, nothing else (customer-auth contract §1, §4).
  *
- * Phone-first because that is how this audience authenticates everywhere else,
- * and because the phone number is already the key we deliver vouchers to.
- * MOCK: no auth backend in this build; the OTP step is rendered so the flow and
- * its states are reviewable.
+ * Identity is the WhatsApp number we already reply on. No passwords, no
+ * email step, no "create an account" — the account exists the first time a
+ * code is verified, and every inquiry made with that number is linked then.
+ *
+ * Two steps on one card: number → code. The code field auto-submits at six
+ * digits, resend unlocks after 30 s, and "wrong number?" goes back without
+ * losing the country code. `?next=` is honoured only for storefront paths
+ * (`safeNext`). When the API says sign-in is not configured for this
+ * environment (503 NOT_CONFIGURED) the page says so and points at the guest
+ * tracker instead of pretending.
+ *
+ * Layout pattern: single-column auth card, the same shell as the admin
+ * sign-in — kept deliberately plain; there is nothing to sell here.
  */
+
+const RESEND_AFTER_SECONDS = 30;
+const CODE_LENGTH = 6;
+
+const INPUT =
+  "min-h-12 w-full rounded-[var(--radius-control)] border bg-paper px-3 text-[0.95rem] text-ink-900 outline-none focus:border-ink-900 disabled:opacity-60";
+
+type Step = "phone" | "code" | "disabled";
+
+interface Challenge {
+  challengeId: string;
+  expiresInSeconds: number;
+  phoneMasked: string;
+}
+
 export default function LoginPage() {
-  const [mode, setMode] = useState<"phone" | "email">("phone");
-  const [step, setStep] = useState<"identify" | "otp">("identify");
+  return (
+    <Suspense
+      fallback={
+        <div className="container-page py-8">
+          <Skeleton className="mx-auto h-96 max-w-md rounded-[var(--radius-tile)]" />
+        </div>
+      }
+    >
+      <LoginInner />
+    </Suspense>
+  );
+}
+
+function LoginInner() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+
+  const [step, setStep] = useState<Step>("phone");
+  const [countryCode, setCountryCode] = useState("+91");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+  const codeRef = useRef<HTMLInputElement>(null);
+  const submittedCode = useRef<string | null>(null);
+
+  useEffect(() => {
+    track("page_view", { page_type: "login" });
+  }, []);
+
+  // Resend countdown.
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = window.setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [resendIn]);
+
+  useEffect(() => {
+    if (step === "code") codeRef.current?.focus();
+  }, [step]);
+
+  const sendCode = async (): Promise<boolean> => {
+    const parsed = normalisePhone(phone, countryCode);
+    if (!phone.trim()) {
+      setPhoneError("Enter the WhatsApp number you used for your inquiry.");
+      return false;
+    }
+    if (!parsed.valid) {
+      setPhoneError(parsed.reason ?? "That doesn't look like a valid mobile number.");
+      return false;
+    }
+    setPhoneError(null);
+    setNotice(null);
+    setSending(true);
+    try {
+      const result = await requestOtp({ phone: parsed.national, countryCode: parsed.countryCode });
+      setChallenge(result);
+      setCode("");
+      setCodeError(null);
+      submittedCode.current = null;
+      setResendIn(RESEND_AFTER_SECONDS);
+      setStep("code");
+      return true;
+    } catch (err) {
+      const serverCode = serverErrorCode(err);
+      if (serverCode === "NOT_CONFIGURED") {
+        setStep("disabled");
+      } else if (serverCode === "RATE_LIMITED") {
+        setPhoneError(
+          "Too many codes requested for this number. Wait fifteen minutes and try again, or track your inquiry with the reference instead.",
+        );
+      } else if (err instanceof ApiError) {
+        setPhoneError(err.fields?.phone ?? err.recovery);
+      } else {
+        setPhoneError("We couldn't send the code. Try again in a moment.");
+      }
+      return false;
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const verify = async (value: string) => {
+    if (!challenge || verifying) return;
+    if (value.length !== CODE_LENGTH) {
+      setCodeError("Enter all six digits.");
+      return;
+    }
+    submittedCode.current = value;
+    setVerifying(true);
+    setCodeError(null);
+    try {
+      await verifyOtp({ challengeId: challenge.challengeId, code: value });
+      router.replace(next);
+      router.refresh();
+    } catch (err) {
+      const serverCode = serverErrorCode(err);
+      if (serverCode === "NOT_FOUND" || serverCode === "UNAUTHORIZED") {
+        // The challenge expired or was used up — start over rather than let them keep typing.
+        setCodeError("That code has expired. Request a new one.");
+        setResendIn(0);
+      } else if (serverCode === "RATE_LIMITED") {
+        setCodeError("Too many attempts. Wait a few minutes and request a fresh code.");
+      } else if (err instanceof ApiError) {
+        setCodeError(err.fields?.code ?? err.recovery);
+      } else {
+        setCodeError("We couldn't check that code. Try again.");
+      }
+      setVerifying(false);
+    }
+  };
+
+  const onCodeChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, CODE_LENGTH);
+    setCode(digits);
+    if (codeError) setCodeError(null);
+    // Auto-submit once, on the first time six digits appear.
+    if (digits.length === CODE_LENGTH && submittedCode.current !== digits) void verify(digits);
+  };
+
+  const resend = async () => {
+    if (resendIn > 0 || sending) return;
+    const ok = await sendCode();
+    if (ok) setNotice("A new code is on its way. The old one no longer works.");
+  };
 
   return (
     <div className="container-page py-8 pb-20">
@@ -32,182 +187,204 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <Breadcrumbs items={[{ label: "Dubai", href: "/" }, { label: "Log in" }]} className="mb-3" />
-          <h1 className="text-[1.75rem] sm:text-3xl">Log in</h1>
+          <Breadcrumbs items={[{ label: "Dubai", href: "/" }, { label: "Sign in" }]} className="mb-3" />
+          <h1 className="text-[1.75rem] sm:text-3xl">Sign in</h1>
           <p className="mt-1.5 text-[0.95rem] text-ink-600">
-            An account keeps your vouchers in one place and lets you cancel or change dates yourself.
-            You don&apos;t need one to book.
+            Use the WhatsApp number from your inquiry. We send a one-time code — no password, and
+            nothing to set up. You never need to sign in to ask us about a trip.
           </p>
 
           <Card className="mt-6 p-5">
-            {step === "identify" ? (
-              <>
-                <div
-                  className="mb-4 flex rounded-full bg-ink-100 p-1"
-                  role="group"
-                  aria-label="Login method"
-                >
-                  {(["phone", "email"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      aria-pressed={mode === m}
-                      onClick={() => setMode(m)}
-                      className={cn(
-                        "min-h-10 flex-1 rounded-full text-sm font-bold transition-colors",
-                        mode === m ? "bg-paper text-ink-900 shadow-[var(--shadow-soft)]" : "text-ink-600",
-                      )}
-                    >
-                      {m === "phone" ? "Phone" : "Email"}
-                    </button>
-                  ))}
-                </div>
+            {step === "disabled" && <DisabledState />}
 
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (mode === "phone" && !/^\d{10}$/.test(phone.replace(/\s/g, ""))) {
-                      setError("Enter the 10-digit number you booked with.");
-                      return;
-                    }
-                    setError(null);
-                    setSending(true);
-                    window.setTimeout(() => {
-                      setSending(false);
-                      setStep("otp");
-                    }, 700);
-                  }}
-                  className="space-y-4"
-                >
-                  {mode === "phone" ? (
-                    <div>
-                      <label htmlFor="login-phone" className="mb-1 block text-sm font-bold text-ink-900">
-                        Mobile number
-                      </label>
-                      <div className="flex gap-2">
-                        <select
-                          aria-label="Country code"
-                          className="min-h-12 rounded-[var(--radius-control)] border border-ink-200 bg-paper px-2 text-sm font-semibold"
-                        >
-                          <option>+91</option>
-                          <option>+971</option>
-                        </select>
-                        <input
-                          id="login-phone"
-                          type="tel"
-                          inputMode="numeric"
-                          autoComplete="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          aria-invalid={Boolean(error)}
-                          className={cn(
-                            "min-h-12 w-full rounded-[var(--radius-control)] border bg-paper px-3 text-[0.95rem] outline-none focus:border-ink-900",
-                            error ? "border-[var(--color-danger)]" : "border-ink-200",
-                          )}
-                        />
-                      </div>
-                      {error && (
-                        <p className="mt-1 text-xs font-semibold text-[var(--color-danger)]">{error}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <label htmlFor="login-email" className="mb-1 block text-sm font-bold text-ink-900">
-                        Email address
-                      </label>
-                      <input
-                        id="login-email"
-                        type="email"
-                        autoComplete="email"
-                        className="min-h-12 w-full rounded-[var(--radius-control)] border border-ink-200 bg-paper px-3 text-[0.95rem] outline-none focus:border-ink-900"
-                      />
-                    </div>
-                  )}
-
-                  <Button type="submit" block size="lg" loading={sending}>
-                    <Smartphone className="h-[1.15rem] w-[1.15rem]" />
-                    Send me a code
-                  </Button>
-                </form>
-              </>
-            ) : (
+            {step === "phone" && (
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  setError(otp === "000000" ? null : "That code doesn't match. Codes expire after 10 minutes.");
+                  void sendCode();
                 }}
                 className="space-y-4"
+                noValidate
               >
                 <div>
-                  <label htmlFor="otp" className="mb-1 block text-sm font-bold text-ink-900">
-                    Enter the 6-digit code
+                  <label htmlFor="login-phone" className="mb-1 block text-sm font-bold text-ink-900">
+                    WhatsApp number
                   </label>
-                  <p className="mb-2 text-xs text-ink-500">
-                    Sent to {phone || "your number"} on WhatsApp and SMS.
-                  </p>
-                  <input
-                    id="otp"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    aria-invalid={Boolean(error)}
-                    className={cn(
-                      "min-h-14 w-full rounded-[var(--radius-control)] border bg-paper px-3 text-center font-display text-2xl font-bold tracking-[0.4em] tnum outline-none focus:border-ink-900",
-                      error ? "border-[var(--color-danger)]" : "border-ink-200",
-                    )}
-                  />
-                  {error && (
-                    <p className="mt-1 text-xs font-semibold text-[var(--color-danger)]">{error}</p>
+                  <div className="flex gap-2">
+                    <select
+                      aria-label="Country code"
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="min-h-12 rounded-[var(--radius-control)] border border-ink-200 bg-paper px-2 text-sm font-semibold"
+                    >
+                      <option value="+91">+91</option>
+                      <option value="+971">+971</option>
+                    </select>
+                    <input
+                      id="login-phone"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        if (phoneError) setPhoneError(null);
+                      }}
+                      aria-invalid={Boolean(phoneError)}
+                      aria-describedby={phoneError ? "login-phone-err" : "login-phone-hint"}
+                      className={cn(INPUT, phoneError ? "border-[var(--color-danger)]" : "border-ink-200")}
+                    />
+                  </div>
+                  {phoneError ? (
+                    <p id="login-phone-err" className="mt-1 text-xs font-semibold text-[var(--color-danger)]">
+                      {phoneError}
+                    </p>
+                  ) : (
+                    <p id="login-phone-hint" className="mt-1 text-xs text-ink-500">
+                      The code goes to this number. We don&apos;t use it for anything else.
+                    </p>
                   )}
                 </div>
 
-                <Alert tone="info">
-                  This build has no auth backend. Use <strong className="font-bold">000000</strong> to
-                  see the success path.
-                </Alert>
-
-                <Button type="submit" block size="lg">
-                  <KeyRound className="h-[1.15rem] w-[1.15rem]" />
-                  Log in
+                <Button type="submit" block size="lg" loading={sending} loadingLabel="Sending the code…">
+                  <Smartphone className="h-[1.15rem] w-[1.15rem]" />
+                  Send me a code
                 </Button>
-                <button
-                  type="button"
-                  onClick={() => setStep("identify")}
-                  className="w-full text-sm font-bold text-sun-700 underline underline-offset-2"
-                >
-                  Use a different number
-                </button>
+
+                {/* Creating an account is a contract; the terms are named before it happens. */}
+                <p className="text-xs leading-relaxed text-ink-500">
+                  Signing in creates your OUTLYY account if you don&apos;t have one. By continuing you
+                  agree to our{" "}
+                  <Link href="/terms" className="font-semibold underline underline-offset-2 hover:text-ink-700">
+                    Terms
+                  </Link>{" "}
+                  and confirm you have read the{" "}
+                  <Link href="/privacy" className="font-semibold underline underline-offset-2 hover:text-ink-700">
+                    Privacy Policy
+                  </Link>
+                  . We send the code by SMS or WhatsApp to verify it is you — never for marketing.
+                </p>
+              </form>
+            )}
+
+            {step === "code" && challenge && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void verify(code);
+                }}
+                className="space-y-4"
+                noValidate
+              >
+                <div>
+                  <label htmlFor="login-code" className="mb-1 block text-sm font-bold text-ink-900">
+                    Enter the 6-digit code
+                  </label>
+                  <p className="mb-2 text-xs text-ink-500">
+                    Sent to <span className="font-semibold tnum text-ink-700">{challenge.phoneMasked}</span>.
+                    It works for {Math.max(1, Math.round(challenge.expiresInSeconds / 60))} minutes.
+                  </p>
+                  <input
+                    ref={codeRef}
+                    id="login-code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]*"
+                    maxLength={CODE_LENGTH}
+                    value={code}
+                    disabled={verifying}
+                    onChange={(e) => onCodeChange(e.target.value)}
+                    aria-invalid={Boolean(codeError)}
+                    aria-describedby={codeError ? "login-code-err" : undefined}
+                    className={cn(
+                      "min-h-14 w-full rounded-[var(--radius-control)] border bg-paper px-3 text-center font-display text-2xl font-bold tracking-[0.4em] tnum text-ink-900 outline-none focus:border-ink-900 disabled:opacity-60",
+                      codeError ? "border-[var(--color-danger)]" : "border-ink-200",
+                    )}
+                  />
+                  {codeError && (
+                    <p id="login-code-err" className="mt-1 text-xs font-semibold text-[var(--color-danger)]" role="alert">
+                      {codeError}
+                    </p>
+                  )}
+                </div>
+
+                {notice && <Alert tone="success">{notice}</Alert>}
+
+                <Button type="submit" block size="lg" loading={verifying} loadingLabel="Checking…">
+                  <KeyRound className="h-[1.15rem] w-[1.15rem]" />
+                  Sign in
+                </Button>
+
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => void resend()}
+                    disabled={resendIn > 0 || sending}
+                    className="min-h-11 font-bold text-sun-700 underline underline-offset-2 disabled:no-underline disabled:opacity-60"
+                  >
+                    {sending ? "Sending…" : resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("phone");
+                      setCode("");
+                      setCodeError(null);
+                      setNotice(null);
+                    }}
+                    className="min-h-11 font-bold text-ink-700 underline underline-offset-2"
+                  >
+                    Wrong number?
+                  </button>
+                </div>
               </form>
             )}
           </Card>
 
-          <div className="mt-4 space-y-2 text-sm">
-            <p className="text-ink-600">
-              No account?{" "}
-              <Link href="/signup" className="font-bold text-sun-700 underline underline-offset-2">
-                Create one
+          <div className="mt-4 space-y-2 text-sm text-ink-600">
+            <p>
+              Just checking on one inquiry?{" "}
+              <Link href="/inquiry/track" className="font-bold text-sun-700 underline underline-offset-2">
+                Track it with your reference
+              </Link>{" "}
+              — no sign-in needed.
+            </p>
+            <p>
+              Have a paid booking?{" "}
+              <Link href="/manage-booking" className="font-bold text-sun-700 underline underline-offset-2">
+                Find it by reference
               </Link>
               .
             </p>
-            <p className="text-ink-600">
-              Just want your voucher?{" "}
-              <Link
-                href="/manage-booking"
-                className="font-bold text-sun-700 underline underline-offset-2"
-              >
-                Find a booking by reference
-              </Link>{" "}
-              — no account needed.
-            </p>
-          </div>
-
-          <div className="mt-6">
-            <ButtonLink href="/account" variant="outline" block>
-              Skip — view the demo account
-            </ButtonLink>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Honest state when no SMS provider is configured (contract §1). Never fakes a code. */
+function DisabledState() {
+  return (
+    <div>
+      <Alert tone="info" title="Sign-in is coming soon">
+        We haven&apos;t switched on one-time codes for this site yet. Track your inquiry with its
+        reference and the phone number you used instead — it shows the same status, agent and next
+        step.
+      </Alert>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link
+          href="/inquiry/track"
+          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-[var(--radius-control)] bg-sun-500 px-4 text-[0.95rem] font-semibold text-white shadow-[0_2px_0_var(--color-sun-700)] hover:bg-sun-600"
+        >
+          Track my inquiry
+        </Link>
+        <Link
+          href="/search"
+          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-[var(--radius-control)] border border-ink-300 bg-white px-4 text-[0.95rem] font-semibold text-ink-900 hover:bg-shell"
+        >
+          Browse experiences
+        </Link>
       </div>
     </div>
   );

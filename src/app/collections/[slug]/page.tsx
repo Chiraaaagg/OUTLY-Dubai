@@ -3,13 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageView } from "@/components/analytics/page-view";
 import { ActivityCard } from "@/components/commerce/activity-card";
+import { toCard } from "@/lib/catalog/card";
 import { CollectionCard } from "@/components/commerce/cards";
 import { CompareTray } from "@/components/commerce/compare";
 import { FloatingWhatsApp, WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Accordion } from "@/components/ui/accordion";
 import { Breadcrumbs, Prose, SectionHeading } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
-import { activitiesBySlugs } from "@/lib/data/activities";
+import { getActivitiesBySlugs } from "@/lib/catalog/server";
 import { collections, collectionBySlug } from "@/lib/data/collections";
 
 export function generateStaticParams() {
@@ -43,7 +44,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   const collection = collectionBySlug(slug);
   if (!collection) notFound();
 
-  const items = activitiesBySlugs(collection.activitySlugs);
+  const items = await getActivitiesBySlugs(collection.activitySlugs);
   const others = collections.filter((c) => c.slug !== collection.slug).slice(0, 3);
   const dark = collection.tone === "premium";
 
@@ -94,7 +95,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
           {items.map((a, i) => (
             <ActivityCard
               key={a.slug}
-              activity={a}
+              activity={toCard(a)}
               position={i + 1}
               source={`collection_${collection.slug}`}
               showCompare
@@ -121,7 +122,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
           body={
             dark
               ? "A trip designer will build the itinerary around your dates, brief every supplier and stay reachable on WhatsApp and by phone throughout your trip."
-              : "Tell us who's travelling — ages, dietary needs, how much walking is realistic — and we'll build the plan and price it in rupees."
+              : "Tell us who's travelling — ages, dietary needs, how much walking is realistic — and we'll build the plan and price it all-in."
           }
         />
 

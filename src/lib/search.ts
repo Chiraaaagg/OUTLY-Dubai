@@ -1,4 +1,4 @@
-import { activities } from "./data/activities";
+import { activities as fixtureActivities } from "./data/activities";
 import { getAvailability, today, tomorrow } from "./availability";
 import type { Activity, SearchFilters, SearchResult, SortKey } from "./types";
 
@@ -26,7 +26,9 @@ const DURATION_BUCKETS: Record<string, (m: number) => boolean> = {
   any: () => true,
 };
 
-function textScore(a: Activity, q?: string): number {
+export type SuggestSource = Pick<Activity, "slug" | "title" | "subtitle" | "location" | "categorySlug" | "collectionSlugs"> & { price: { adult: Activity["price"]["adult"] }; seo: { keywords: string[] } };
+
+function textScore(a: SuggestSource, q?: string): number {
   if (!q) return 0.5;
   const needle = q.trim().toLowerCase();
   if (!needle) return 0.5;
@@ -151,11 +153,11 @@ const RELAXATION_ORDER: {
   { key: "freeCancellation", describe: () => "No free-cancellation options here. Showing the rest — each card states its policy." },
 ];
 
-function relax(f: SearchFilters): { message: string; activities: Activity[] } | undefined {
+function relax(f: SearchFilters, list: Activity[]): { message: string; activities: Activity[] } | undefined {
   for (const step of RELAXATION_ORDER) {
     if (f[step.key] == null) continue;
     const next: SearchFilters = { ...f, [step.key]: undefined };
-    const hits = activities.filter((a) => matches(a, next));
+    const hits = list.filter((a) => matches(a, next));
     if (hits.length) {
       return {
         message: step.describe(f),
@@ -168,13 +170,17 @@ function relax(f: SearchFilters): { message: string; activities: Activity[] } | 
 
 export const PAGE_SIZE = 12;
 
-export function searchActivities(filters: SearchFilters): SearchResult {
-  const hits = activities.filter((a) => matches(a, filters));
+/**
+ * `list` is the catalogue to search — server pages pass the DB-backed
+ * snapshot (src/lib/catalog/server.ts); client callers default to fixtures.
+ */
+export function searchActivities(filters: SearchFilters, list: Activity[] = fixtureActivities): SearchResult {
+  const hits = list.filter((a) => matches(a, filters));
   const sorted = sortActivities(hits, filters.sort ?? "recommended", filters);
   return {
     activities: sorted,
     total: sorted.length,
-    relaxed: sorted.length === 0 ? relax(filters) : undefined,
+    relaxed: sorted.length === 0 ? relax(filters, list) : undefined,
     appliedFilters: filters,
   };
 }
@@ -196,10 +202,10 @@ export const POPULAR_SEARCHES: Suggestion[] = [
   { label: "Things to do with kids", sub: "Curated for families", href: "/collections/dubai-with-kids", kind: "intent" },
 ];
 
-export function suggest(query: string, limit = 7): Suggestion[] {
+export function suggest(query: string, limit = 7, list: readonly SuggestSource[] = fixtureActivities): Suggestion[] {
   const q = query.trim().toLowerCase();
   if (!q) return POPULAR_SEARCHES.slice(0, limit);
-  return activities
+  return list
     .map((a) => ({ a, score: textScore(a, q) }))
     .filter((x) => x.score > 0)
     .sort((x, y) => y.score - x.score)

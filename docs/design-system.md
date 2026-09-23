@@ -134,7 +134,7 @@ until hover.
 | `Gallery` | Mobile snap rail / desktop mosaic / keyboard lightbox |
 | `ReviewsSection` | Filter by traveller type; dietary-met summary |
 | `WhatsAppButton`, `WhatsAppCard`, `FloatingWhatsApp`, `PhoneEscalation` | Rail B |
-| `TrustMarquee`, `WhyOutly`, `SocialProofStrip`, `TrustSummary`, `PaymentMethods` | Trust modules |
+| `TrustMarquee`, `WhyOutlyy`, `SocialProofStrip`, `TrustSummary`, `PaymentMethods` | Trust modules |
 | `VoucherActions`, `VoucherCode` | Voucher delivery and QR |
 | `BookingDetail` | Management, cancellation quote, date change |
 | `StickyLandingCTA`, `QuickChips` | Landing conversion |

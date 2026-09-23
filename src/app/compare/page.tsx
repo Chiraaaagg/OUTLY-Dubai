@@ -8,7 +8,7 @@ import { ComparisonTable } from "@/components/commerce/compare";
 import { WhatsAppCard } from "@/components/commerce/whatsapp";
 import { ButtonLink } from "@/components/ui/button";
 import { Breadcrumbs, EmptyState } from "@/components/ui/primitives";
-import { activities, activityBySlug } from "@/lib/data/activities";
+import { useCatalog } from "@/lib/catalog/client";
 import type { Activity } from "@/lib/types";
 
 /**
@@ -20,6 +20,8 @@ import type { Activity } from "@/lib/types";
  */
 export default function ComparePage() {
   const { compare, toggleCompare, clearCompare, hydrated } = useApp();
+  const { activities } = useCatalog();
+  const activityBySlug = (slug: string) => activities.find((a) => a.slug === slug);
   const items = compare.map(activityBySlug).filter((a): a is Activity => Boolean(a));
 
   const suggestions = activities
@@ -52,6 +54,7 @@ export default function ComparePage() {
         <div className="skeleton h-96 w-full rounded-[var(--radius-tile)]" />
       ) : items.length === 0 ? (
         <EmptyState
+          illustration="filters"
           icon={<Scale className="h-6 w-6" />}
           title="Nothing to compare yet"
           body="Tick Compare on any two or three activity cards in search or a category page, and they'll appear here side by side."

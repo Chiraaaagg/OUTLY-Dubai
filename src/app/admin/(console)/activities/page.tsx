@@ -125,7 +125,7 @@ export default async function ActivitiesPage({ searchParams }: { searchParams: P
         can={can}
         filters={filters}
         total={list.total}
-        emptyMessage={q || status || tier || category ? "No activities match these filters." : "No activities yet — create one or import a sheet."}
+        emptyMessage={q || status || tier || category ? "No activities match these filters." : "No activities yet, create one or import a sheet."}
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-600">

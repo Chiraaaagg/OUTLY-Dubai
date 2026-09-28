@@ -12,6 +12,16 @@ import { DateField, DatePickerSheet, GuestField, GuestSheet } from "./pickers";
 import { WhatsAppButton } from "./whatsapp";
 import { ConfirmFirstNote, ResponsePromise } from "./inquiry-ui";
 import { ApiError, submitInquiry } from "@/lib/api";
+import { InquiryVerify } from "./inquiry-verify";
+import {
+  CAPTCHA_ELEMENT_ID,
+  CaptchaPendingError,
+  startOtp,
+  widgetConfigured,
+  type OtpAttempt,
+} from "@/lib/otp-flow";
+import { useCustomerHint } from "@/lib/use-customer-hint";
+import { serverErrorCode } from "@/lib/server-error";
 import { track } from "@/lib/analytics";
 import { BUDGET_BANDS, SLA } from "@/lib/inquiry";
 import type { BudgetBand, CartItem, Dietary, PaxCount } from "@/lib/types";
@@ -60,6 +70,17 @@ const DIETARY_OPTIONS: { id: Dietary; label: string }[] = [
 
 const NOTES_MAX = 500;
 
+/**
+ * A key for one filled-in form. Passed to `useState` as a lazy initialiser so
+ * it is generated once rather than on every render — the value is only kept
+ * from the first call, and re-deriving it would be both wasted work and an
+ * impure expression in the render body.
+ */
+function newIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return `iq-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
+
 export function InquiryForm({
   items,
   source = "inquiry_form",
@@ -98,12 +119,31 @@ export function InquiryForm({
   const honeypot = useRef("");
   const startedAt = useRef(Date.now());
 
+  // Verification. A visitor who is already signed in never sees any of this;
+  // for everyone else the code step opens in place, over the filled-in form.
+  const { signedIn, refresh: refreshSession } = useCustomerHint();
+  const [attempt, setAttempt] = useState<OtpAttempt | null>(null);
+  /**
+   * One key for the life of this form, not per submission.
+   *
+   * It has to survive the code step: the guest flow sends the same payload
+   * twice, once before verifying (rejected) and once after. Regenerating it
+   * would let a double tap on the second send create two inquiries, which is
+   * precisely what it exists to prevent.
+   */
+  const [idempotencyKey] = useState(newIdempotencyKey);
+
   useEffect(() => {
     track("inquiry_started", {
       item_count: items.length,
       value: items.reduce((s, i) => s + i.total.inr, 0),
       inquiry_source: source,
     });
+    // Nothing is preloaded here any more. The widget is only needed if the
+    // server asks for verification, which it does not while
+    // FEATURE_VERIFIED_INQUIRIES is off — and loading a third-party script on
+    // every inquiry view for a step most visitors never reach is a cost with no
+    // return. `beginVerification` loads it on demand if that changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -120,7 +160,7 @@ export function InquiryForm({
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = "So we know who to reply to.";
     const parsed = normalisePhone(phone, countryCode);
-    if (!phone.trim()) next.phone = "We reply on WhatsApp — this is the one thing we genuinely need.";
+    if (!phone.trim()) next.phone = "We reply on WhatsApp, this is the one thing we genuinely need.";
     else if (!parsed.valid) next.phone = parsed.reason ?? "That doesn't look like a valid WhatsApp number.";
     setErrors(next);
     Object.keys(next).forEach((field) =>
@@ -129,9 +169,56 @@ export function InquiryForm({
     return Object.keys(next).length === 0;
   };
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  /**
+   * Send a code and open the verification step in place.
+   *
+   * The form stays mounted underneath, so nothing typed is lost and "change
+   * number" is a step back rather than a restart.
+   */
+  const beginVerification = async () => {
+    const parsed = normalisePhone(phone, countryCode);
+    if (!parsed.valid) {
+      setErrors({ phone: parsed.reason ?? "That doesn't look like a valid WhatsApp number." });
+      setState("idle");
+      return;
+    }
+    setState("sending");
+    setError(null);
+    try {
+      const next = await startOtp({
+        e164: parsed.e164,
+        national: parsed.national,
+        countryCode: parsed.countryCode,
+      });
+      track("otp_sent", { context: "inquiry", resend: false });
+      setAttempt(next);
+      setState("idle");
+    } catch (err) {
+      // Fixable in one click, so it belongs at the checkbox, not in the
+      // page-level "something failed" alert.
+      if (err instanceof CaptchaPendingError) {
+        setErrors({ captcha: "Tick the box above to confirm you're not a robot, then send again." });
+        setState("idle");
+        return;
+      }
+      if (serverErrorCode(err) === "RATE_LIMITED") {
+        setErrors({
+          phone: "Too many codes requested for this number. Wait fifteen minutes, or send it on WhatsApp instead.",
+        });
+        setState("idle");
+        return;
+      }
+      setError(err instanceof ApiError ? err : null);
+      setState("error");
+    }
+  };
+
+  /**
+   * Create the inquiry. Only ever reached with a verified session behind it,
+   * either because the visitor was already signed in or because the code step
+   * just finished. The server enforces that independently.
+   */
+  const createInquiry = async () => {
     setState("sending");
     setError(null);
     try {
@@ -155,6 +242,7 @@ export function InquiryForm({
         whatsappConsent: consent,
         honeypot: honeypot.current,
         startedAt: startedAt.current,
+        idempotencyKey,
       });
 
       track("inquiry_submitted", {
@@ -201,9 +289,32 @@ export function InquiryForm({
         document.getElementById(fieldErrors.phone ? "iq-phone" : fieldErrors.name ? "iq-name" : "iq-email")?.focus();
         return;
       }
+      // The session lapsed between the hint cookie and this request landing.
+      // That is recoverable in one step, so ask for a code instead of showing
+      // a failure the visitor cannot act on.
+      if (serverErrorCode(err) === "VERIFICATION_REQUIRED") {
+        await beginVerification();
+        return;
+      }
+
       setError(apiErr);
       setState("error");
     }
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // The code step owns the flow once it is open; its own button submits.
+    if (attempt || state === "sending") return;
+    if (!validate()) return;
+
+    // Always try to send. The server decides whether verification is required
+    // and answers VERIFICATION_REQUIRED if so, which `createInquiry` handles by
+    // opening the code step. Branching on `signedIn` here would duplicate that
+    // decision on the client, where it can disagree with the server — and did,
+    // which is how guests ended up funnelled into a code flow that could not
+    // complete.
+    await createInquiry();
   };
 
   const whatsappContext = {
@@ -217,7 +328,7 @@ export function InquiryForm({
 
   return (
     <form id="inquiry-form" onSubmit={submit} className={cn("space-y-4", className)} noValidate>
-      {/* Honeypot — invisible to humans, filled by bots (pivot §9 #1). */}
+      {/* Honeypot, invisible to humans, filled by bots (pivot §9 #1). */}
       <div aria-hidden="true" className="absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden">
         <label>
           Leave this empty
@@ -291,7 +402,7 @@ export function InquiryForm({
         </div>
       </div>
 
-      {/* ---- Dates + guests — pre-filled, editable, flexible allowed --------- */}
+      {/* ---- Dates + guests, pre-filled, editable, flexible allowed --------- */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           {flexible ? (
@@ -316,13 +427,13 @@ export function InquiryForm({
               onChange={(e) => setFlexible(e.target.checked)}
               className="h-4 w-4 rounded accent-ink-900"
             />
-            Not sure yet — my dates are flexible
+            Not sure yet, my dates are flexible
           </label>
         </div>
         <GuestField value={pax} onClick={() => setGuestOpen(true)} />
       </div>
 
-      {/* ---- Dietary — the wedge, one tap ---------------------------------- */}
+      {/* ---- Dietary, the wedge, one tap ---------------------------------- */}
       <fieldset>
         <legend className="mb-1.5 text-sm font-bold text-ink-900">Food requirement</legend>
         <div className="flex flex-wrap gap-2">
@@ -345,7 +456,7 @@ export function InquiryForm({
         </div>
       </fieldset>
 
-      {/* ---- Optional details, collapsed — one screen on 360×640 ---------- */}
+      {/* ---- Optional details, collapsed, one screen on 360×640 ---------- */}
       <div className="rounded-[var(--radius-control)] border border-ink-200">
         <button
           type="button"
@@ -440,7 +551,7 @@ export function InquiryForm({
           Message me on WhatsApp about this trip.{" "}
           <span className="text-ink-500">
             {siteConfig.legalName ?? siteConfig.name} will use your number to answer this enquiry
-            and nothing else — no marketing. Reply STOP any time to stop. Leave it unticked and
+            and nothing else, no marketing. Reply STOP any time to stop. Leave it unticked and
             we&apos;ll reply by email instead, which is slower.
           </span>
         </span>
@@ -463,37 +574,86 @@ export function InquiryForm({
       {state === "error" && (
         <Alert tone="danger" title="That didn't send">
           {error?.recovery ??
-            "Something failed at our end. Nothing you typed is lost — try again, or send it on WhatsApp instead."}
+            "Something failed at our end. Nothing you typed is lost, try again, or send it on WhatsApp instead."}
         </Alert>
+      )}
+
+      {/*
+        hCaptcha's render target, and the reason it lives here rather than
+        inside the verification panel: MSG91 will not send a code until the
+        challenge is cleared, so it has to be on screen *before* the visitor
+        presses send, not after. It is also mounted for the whole flow, because
+        a resend can be challenged too and two elements with this id would be
+        invalid and ambiguous to the widget.
+
+        Hidden until hCaptcha actually draws an iframe — most visitors never see
+        it, and an empty bordered box above the CTA would be a needless worry.
+      */}
+      {widgetConfigured() && !signedIn && (
+        <div>
+          <div id={CAPTCHA_ELEMENT_ID} className="[&:not(:has(iframe))]:hidden" />
+          {errors.captcha && (
+            <p className="mt-2 text-sm text-[var(--color-danger)]" role="alert">
+              {errors.captcha}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ---- Verification, for visitors who are not signed in yet. Replaces the
+              send buttons rather than sitting beside them, so there is exactly
+              one thing to do next. */}
+      {attempt && (
+        <InquiryVerify
+          attempt={attempt}
+          onAttemptChange={setAttempt}
+          sending={state === "sending"}
+          onVerified={async () => {
+            // The session cookies exist now; keep the header in step with them.
+            refreshSession();
+            await createInquiry();
+          }}
+          onCancel={() => {
+            setAttempt(null);
+            setState("idle");
+            document.getElementById("iq-phone")?.focus();
+          }}
+        />
       )}
 
       {/* ---- Both rails, equal weight (pivot §4.2). On mobile the submit is a
               sticky bar so the CTA is always one thumb away (§4.2 "sticky submit"). */}
-      <div className="space-y-2">
-        <div className="hidden sm:block">
-          <Button type="submit" block size="lg" loading={state === "sending"} loadingLabel="Sending…">
+      {!attempt && (
+        <div className="space-y-2">
+          <div className="hidden sm:block">
+            <Button type="submit" block size="lg" loading={state === "sending"} loadingLabel="Sending…">
+              <Send className="h-[1.15rem] w-[1.15rem]" />
+              Send inquiry, we reply in ~{SLA.responseMinutes} min
+            </Button>
+          </div>
+          <WhatsAppButton block size="lg" context={whatsappContext} />
+          <ResponsePromise className="justify-center pt-1" prefix="Free to ask" />
+          <ConfirmFirstNote className="justify-center text-center" />
+        </div>
+      )}
+
+      {/* Hidden during verification: the code step carries its own button, and a
+          second sticky CTA underneath would be the wrong thing to tap. */}
+      {!attempt && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-200 bg-paper/97 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-sticky)] backdrop-blur sm:hidden">
+          <Button
+            type="submit"
+            form="inquiry-form"
+            block
+            size="lg"
+            loading={state === "sending"}
+            loadingLabel="Sending…"
+          >
             <Send className="h-[1.15rem] w-[1.15rem]" />
-            Send inquiry — we reply in ~{SLA.responseMinutes} min
+            Send inquiry, reply in ~{SLA.responseMinutes} min
           </Button>
         </div>
-        <WhatsAppButton block size="lg" context={whatsappContext} />
-        <ResponsePromise className="justify-center pt-1" prefix="Free to ask" />
-        <ConfirmFirstNote className="justify-center text-center" />
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-200 bg-paper/97 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-sticky)] backdrop-blur sm:hidden">
-        <Button
-          type="submit"
-          form="inquiry-form"
-          block
-          size="lg"
-          loading={state === "sending"}
-          loadingLabel="Sending…"
-        >
-          <Send className="h-[1.15rem] w-[1.15rem]" />
-          Send inquiry — reply in ~{SLA.responseMinutes} min
-        </Button>
-      </div>
+      )}
 
       <DatePickerSheet
         open={dateOpen}

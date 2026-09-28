@@ -9,6 +9,7 @@ import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { CookieBanner } from "@/components/layout/cookie-banner";
 import { StorefrontOnly } from "@/components/layout/storefront-only";
 import { CURRENCY_BOOTSTRAP_SCRIPT } from "@/lib/currency";
+import { googleTagBootstrap, googleTagSrc } from "@/lib/google-tag";
 
 /**
  * Type pairing:
@@ -34,7 +35,7 @@ const body = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://outlyy.com"),
   title: {
-    default: "OUTLYY — Dubai Experiences, One All-In Price",
+    default: "OUTLYY: Dubai Experiences, One All-In Price",
     template: "%s | OUTLYY",
   },
   description:
@@ -58,17 +59,39 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${display.variable} ${body.variable}`}>
+    // `suppressHydrationWarning` covers this element's own attributes and nothing
+    // else — children still report mismatches normally. It is required because
+    // the script below writes `data-ccy` here before React hydrates, so the
+    // server HTML and the live DOM genuinely differ by that one attribute.
+    <html lang="en-IN" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <head>
         {/*
           Sets data-ccy from the currency cookie before the first paint, so a
           statically prerendered page shows the visitor's currency with no
-          flash and no layout shift. It only writes an attribute, so React's
-          hydration never sees a mismatch. See src/lib/currency.ts.
+          flash and no layout shift. React diffs attributes on the hydration
+          root, so this is the mismatch `suppressHydrationWarning` above exists
+          to allow. See src/lib/currency.ts.
         */}
         <script dangerouslySetInnerHTML={{ __html: CURRENCY_BOOTSTRAP_SCRIPT }} />
+
+        {/*
+          Google tag (gtag.js) — one per page, in the head, on every page, which
+          is both what Google's instructions say and what their verifier looks
+          for. The consent defaults are queued first and deliberately so; see
+          src/lib/google-tag.ts for why the gate moved from "do not load" to
+          "load denied". No measurement id configured means no tag at all,
+          rather than a preview deployment polluting production analytics.
+        */}
+        {GA_ID && (
+          <>
+            <script dangerouslySetInnerHTML={{ __html: googleTagBootstrap(GA_ID) }} />
+            <script async src={googleTagSrc(GA_ID)} />
+          </>
+        )}
       </head>
       <body>
         <AppProvider>

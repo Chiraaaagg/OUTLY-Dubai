@@ -147,7 +147,7 @@ export function ActivitiesTable({
           <p className="font-mono text-2xs text-ink-500">
             {r.slug} · {r.categorySlug}
             {!r.categoryPublished && (
-              <span className="ml-1 font-sans font-semibold text-[var(--color-warning)]" title="This category is not published — the listing will have no category page">
+              <span className="ml-1 font-sans font-semibold text-[var(--color-warning)]" title="This category is not published, the listing will have no category page">
                 category draft
               </span>
             )}
@@ -254,7 +254,7 @@ function summary(d: { changed: number; skipped: number; invalid: number; remaini
   const verb = d.status === "published" ? "published" : d.status === "archived" ? "archived" : "moved to draft";
   const parts = [`${d.changed.toLocaleString("en-IN")} ${verb}`];
   if (d.skipped) parts.push(`${d.skipped} already there`);
-  if (d.invalid) parts.push(`${d.invalid} skipped — content needs fixing`);
-  if (d.remaining) parts.push(`${d.remaining} still matching — run it again`);
+  if (d.invalid) parts.push(`${d.invalid} skipped, content needs fixing`);
+  if (d.remaining) parts.push(`${d.remaining} still matching, run it again`);
   return parts.join(" · ");
 }

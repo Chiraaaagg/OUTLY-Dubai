@@ -8,7 +8,7 @@ import type { Faq } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
   description:
-    "How OUTLYY pricing, UPI payments, Jain and pure-veg food, hotel pickup, vouchers, cancellations and refunds work — answered plainly.",
+    "How OUTLYY pricing, UPI payments, Jain and pure-veg food, hotel pickup, vouchers, cancellations and refunds work, answered plainly.",
   alternates: { canonical: "/faq" },
 };
 
@@ -20,15 +20,15 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
     faqs: [
       {
         q: "Why can't I just book instantly?",
-        a: "Because we confirm with the operator before you pay — so you never get a voucher that fails at the gate. Wrong tickets, rejected vouchers and 'sold out' after payment are the most common complaints on the big booking sites. We take the 30 minutes to avoid them, and nothing is charged until availability is confirmed.",
+        a: "Because we confirm with the operator before you pay, so you never get a voucher that fails at the gate. Wrong tickets, rejected vouchers and 'sold out' after payment are the most common complaints on the big booking sites. We take the 30 minutes to avoid them, and nothing is charged until availability is confirmed.",
       },
       {
         q: "How fast will I hear back?",
-        a: "A named specialist replies on WhatsApp within about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday) — the confirmation page and your acknowledgement message both show the exact time, not a vague 'soon'. Out of hours, your inquiry is queued for the first shift and the time shown adjusts to the real one.",
+        a: "A named specialist replies on WhatsApp within about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday), the confirmation page and your acknowledgement message both show the exact time, not a vague 'soon'. Out of hours, your inquiry is queued for the first shift and the time shown adjusts to the real one.",
       },
       {
         q: "Does the price change?",
-        a: "The price on the site is the all-in price we expect to confirm, and it is right the large majority of the time. If the operator's rate has moved — peak dates, a supplement for your pickup area — we tell you the old and new figure and why, before you pay anything. We never quietly quote higher.",
+        a: "The price on the site is the all-in price we expect to confirm, and it is right the large majority of the time. If the operator's rate has moved, peak dates, a supplement for your pickup area, we tell you the old and new figure and why, before you pay anything. We never quietly quote higher.",
       },
       {
         q: "How do I pay?",
@@ -43,7 +43,7 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
     faqs: [
       {
         q: "Is the price I see really the price I pay?",
-        a: "Yes. Every price on OUTLYY includes taxes and booking fees, and it is the amount charged. The only things that change your total are optional extras you deliberately add — hotel pickup, a cake, a photographer. If a fee ever appears that wasn't on the activity page, that is a defect on our side and we refund the difference without argument.",
+        a: "Yes. Every price on OUTLYY includes taxes and booking fees, and it is the amount charged. The only things that change your total are optional extras you deliberately add, hotel pickup, a cake, a photographer. If a fee ever appears that wasn't on the activity page, that is a defect on our side and we refund the difference without argument.",
       },
       {
         q: "Why are your prices sometimes higher than the gate price?",
@@ -51,7 +51,7 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
       },
       {
         q: "Do you show prices in AED?",
-        a: "Yes — visitors in the UAE see dirham prices automatically, and you can switch currency in the header. AED and INR prices are set independently rather than converted, so changing one never silently changes the other.",
+        a: "Yes, visitors in the UAE see dirham prices automatically, and you can switch currency in the header. AED and INR prices are set independently rather than converted, so changing one never silently changes the other.",
       },
       {
         q: "What is TCS and will I be charged it?",
@@ -74,7 +74,7 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
       },
       {
         q: "Can I pay a deposit instead of the full amount?",
-        a: "On orders above ₹25,000 for eligible experiences, yes — 30% now and the balance seven days before you travel. Your booking is confirmed either way, and we remind you on WhatsApp before the balance is due.",
+        a: "On orders above ₹25,000 for eligible experiences, yes, 30% now and the balance seven days before you travel. Your booking is confirmed either way, and we remind you on WhatsApp before the balance is due.",
       },
       {
         q: "Do you store my card details?",
@@ -89,11 +89,11 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
     faqs: [
       {
         q: "Is Jain food genuinely available?",
-        a: "On the experiences marked for it, yes — cooked to order without onion or garlic, served separately from the main buffet. It must be requested when you book, because the kitchen plans it in advance; 24 hours is the reliable minimum. The confirmation is printed on your voucher so it cannot be denied at the venue.",
+        a: "On the experiences marked for it, yes, cooked to order without onion or garlic, served separately from the main buffet. It must be requested when you book, because the kitchen plans it in advance; 24 hours is the reliable minimum. The confirmation is printed on your voucher so it cannot be denied at the venue.",
       },
       {
         q: "What if my dietary requirement isn't met on the day?",
-        a: "Message the emergency number on your voucher immediately, while you're still at the venue. We contact the supplier there and then. If the meal genuinely wasn't provided as confirmed, we refund the meal portion of your booking, and the failure is logged against that supplier's reliability score — which affects whether we keep selling them.",
+        a: "Message the emergency number on your voucher immediately, while you're still at the venue. We contact the supplier there and then. If the meal genuinely wasn't provided as confirmed, we refund the meal portion of your booking, and the failure is logged against that supplier's reliability score, which affects whether we keep selling them.",
       },
       {
         q: "Is 'vegetarian available' the same everywhere?",
@@ -116,7 +116,7 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
       },
       {
         q: "Is my hotel covered?",
-        a: "Each activity page lists its own pickup zones. Deira, Bur Dubai, Downtown, Business Bay, Dubai Marina, JBR and Al Barsha are covered on nearly all of them. Palm Jumeirah and outer areas are usually covered but add journey time, and occasionally a supplement — which we show before you pay.",
+        a: "Each activity page lists its own pickup zones. Deira, Bur Dubai, Downtown, Business Bay, Dubai Marina, JBR and Al Barsha are covered on nearly all of them. Palm Jumeirah and outer areas are usually covered but add journey time, and occasionally a supplement, which we show before you pay.",
       },
       {
         q: "Can you arrange a wheelchair-accessible vehicle?",
@@ -131,11 +131,11 @@ const SECTIONS: { id: string; title: string; kicker: string; faqs: Faq[] }[] = [
     faqs: [
       {
         q: "How quickly do I get my voucher?",
-        a: "For instant-confirmation experiences, under a minute at the median — on WhatsApp, by email and in your account. If it hasn't arrived within ten minutes the system resends automatically and alerts an agent.",
+        a: "For instant-confirmation experiences, under a minute at the median, on WhatsApp, by email and in your account. If it hasn't arrived within ten minutes the system resends automatically and alerts an agent.",
       },
       {
         q: "What does 'operator confirms within 2 hours' mean?",
-        a: "Some experiences — private camps, charters, helicopters — need the operator to confirm the slot rather than selling from live inventory. You get a status message within five minutes and the confirmed voucher within two hours. If they can't take it, you get three options — an alternative experience, an alternative date, or a full refund — within two hours, without chasing us.",
+        a: "Some experiences, private camps, charters, helicopters, need the operator to confirm the slot rather than selling from live inventory. You get a status message within five minutes and the confirmed voucher within two hours. If they can't take it, you get three options, an alternative experience, an alternative date, or a full refund, within two hours, without chasing us.",
       },
       {
         q: "Will my voucher work without internet?",
@@ -205,7 +205,7 @@ export default function FaqPage() {
           className="mt-10"
           context={{ intent: "general", placement: "faq" }}
           title="Still not answered?"
-          body="Ask us directly. A real person replies in about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday) — and if the answer is 'no, that won't work for your group', they'll say so."
+          body="Ask us directly. A real person replies in about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday), and if the answer is 'no, that won't work for your group', they'll say so."
         />
       </div>
 

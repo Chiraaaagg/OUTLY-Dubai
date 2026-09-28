@@ -166,7 +166,7 @@ export default async function InquiryDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
         {inquiry.escalatedAt && !inquiry.firstResponseAt && (
-          <Alert tone="danger" className="mt-3" title="SLA breached — escalated">
+          <Alert tone="danger" className="mt-3" title="SLA breached, escalated">
             The customer was told we are still checking. Reply now, then log the contact.
           </Alert>
         )}

@@ -20,7 +20,7 @@ export default async function CategoriesPage() {
   }));
   return (
     <>
-      <PageHeader title="Categories" sub={`${rows.length} categories · slugs are permanent URLs (PRD §4.2) — renaming one needs a redirect`} />
+      <PageHeader title="Categories" sub={`${rows.length} categories · slugs are permanent URLs (PRD §4.2), renaming one needs a redirect`} />
       <CategoriesClient rows={data} canEdit={canEdit} />
     </>
   );

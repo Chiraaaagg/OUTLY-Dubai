@@ -14,7 +14,7 @@ export const collections: Collection[] = [
     tone: "warm",
     heroImage: "img:collection:dubai-with-kids:0",
     narrative:
-      "The hard part of Dubai with children isn't finding things to do — it's finding things that work for everyone in the group at once. A theme park that thrills a twelve-year-old will bore a four-year-old and exhaust a grandparent. So this list is ordered by how well each experience holds a mixed group: short indoor attractions first, then the half-day outings, then the full-day parks that need a rested family and an early start. Every one has child pricing shown before checkout, and the ones with a vegetarian food problem have been left out entirely.",
+      "The hard part of Dubai with children isn't finding things to do, it's finding things that work for everyone in the group at once. A theme park that thrills a twelve-year-old will bore a four-year-old and exhaust a grandparent. So this list is ordered by how well each experience holds a mixed group: short indoor attractions first, then the half-day outings, then the full-day parks that need a rested family and an early start. Every one has child pricing shown before checkout, and the ones with a vegetarian food problem have been left out entirely.",
     activitySlugs: [
       "dubai-frame-tickets",
       "aya-universe",
@@ -44,7 +44,7 @@ export const collections: Collection[] = [
     tone: "premium",
     heroImage: "img:collection:dubai-honeymoon:0",
     narrative:
-      "Two things decide whether a honeymoon experience is worth its price in Dubai: whether it is genuinely private, and whether the light is right when you arrive. Both are easy to get wrong. A 'private' desert camp can mean a reserved table in a shared tent; a 'sunset' cruise can leave the marina forty minutes after the sun has gone. Everything in this collection states which it is, plainly, and the timings are set so you're in the right place at golden hour. Occasion add-ons — cake, décor, a photographer, a proposal setup — are arranged by a coordinator on WhatsApp rather than left as a note in a booking form.",
+      "Two things decide whether a honeymoon experience is worth its price in Dubai: whether it is genuinely private, and whether the light is right when you arrive. Both are easy to get wrong. A 'private' desert camp can mean a reserved table in a shared tent; a 'sunset' cruise can leave the marina forty minutes after the sun has gone. Everything in this collection states which it is, plainly, and the timings are set so you're in the right place at golden hour. Occasion add-ons, cake, décor, a photographer, a proposal setup, are arranged by a coordinator on WhatsApp rather than left as a note in a booking form.",
     activitySlugs: [
       "premium-private-desert-camp",
       "luxury-yacht-tour-90min",
@@ -56,11 +56,11 @@ export const collections: Collection[] = [
     faqs: [
       {
         q: "Can you arrange a surprise proposal?",
-        a: "Yes, and we do it often. The private desert camp and the sunset yacht are the two that work best. Message us with the date and we brief the crew, the photographer and the timing — no planning fee.",
+        a: "Yes, and we do it often. The private desert camp and the sunset yacht are the two that work best. Message us with the date and we brief the crew, the photographer and the timing, no planning fee.",
       },
       {
         q: "Is 'private' actually private?",
-        a: "Where we say private, you have the vehicle, the boat or the majlis to yourselves. Where an experience is shared but small — the 24-guest yacht, for instance — we call it shared and tell you the guest cap.",
+        a: "Where we say private, you have the vehicle, the boat or the majlis to yourselves. Where an experience is shared but small, the 24-guest yacht, for instance, we call it shared and tell you the guest cap.",
       },
     ],
   },
@@ -72,7 +72,7 @@ export const collections: Collection[] = [
     tone: "warm",
     heroImage: "img:collection:jain-veg-friendly:0",
     narrative:
-      "'Vegetarian available' means very little on its own. It can mean a separate live-cooking counter with a dozen dishes, or it can mean paneer curry at the end of a meat buffet. And Jain food — cooked without onion and garlic — is not something a camp can produce because you asked the driver on the way there. Everything in this collection has been checked directly with the kitchen. Where we say Jain is available, it is cooked to order, it must be requested at booking, and the confirmation is printed on your voucher so nobody at the venue can claim they weren't told.",
+      "'Vegetarian available' means very little on its own. It can mean a separate live-cooking counter with a dozen dishes, or it can mean paneer curry at the end of a meat buffet. And Jain food, cooked without onion and garlic, is not something a camp can produce because you asked the driver on the way there. Everything in this collection has been checked directly with the kitchen. Where we say Jain is available, it is cooked to order, it must be requested at booking, and the confirmation is printed on your voucher so nobody at the venue can claim they weren't told.",
     activitySlugs: [
       "evening-desert-safari-veg-jain",
       "gentle-desert-safari-seniors",
@@ -88,7 +88,7 @@ export const collections: Collection[] = [
       },
       {
         q: "Is Jain food available at short notice?",
-        a: "Usually not on the same day — the kitchen cooks it to order. Twenty-four hours is the reliable minimum. If you're booking for tomorrow, message us on WhatsApp and we'll tell you honestly whether the camp can do it rather than take the booking and hope.",
+        a: "Usually not on the same day, the kitchen cooks it to order. Twenty-four hours is the reliable minimum. If you're booking for tomorrow, message us on WhatsApp and we'll tell you honestly whether the camp can do it rather than take the booking and hope.",
       },
     ],
   },
@@ -100,7 +100,7 @@ export const collections: Collection[] = [
     tone: "premium",
     heroImage: "img:collection:luxury-dubai:0",
     narrative:
-      "At this end of the market the risk is not overpaying — it is a supplier who takes the booking and then handles it casually. Every experience here is operated by a partner we use repeatedly and monitor on a reliability score. Bookings above ₹1,00,000 and all private charters are assigned a named coordinator with a direct WhatsApp number and a phone number, from the moment you enquire until you are back at your hotel. Charters are quoted rather than listed, because the honest number depends on your date, your group and your route.",
+      "At this end of the market the risk is not overpaying, it is a supplier who takes the booking and then handles it casually. Every experience here is operated by a partner we use repeatedly and monitor on a reliability score. Bookings above ₹1,00,000 and all private charters are assigned a named coordinator with a direct WhatsApp number and a phone number, from the moment you enquire until you are back at your hotel. Charters are quoted rather than listed, because the honest number depends on your date, your group and your route.",
     activitySlugs: [
       "private-yacht-charter-sunset",
       "helicopter-tour-12min",
@@ -124,7 +124,7 @@ export const collections: Collection[] = [
     tone: "playful",
     heroImage: "img:collection:first-time-dubai:0",
     narrative:
-      "If this is your first trip, resist the urge to build an elaborate itinerary. Dubai rewards a simple one: get your bearings with a city tour on day one, do the desert on day two, spend an evening on the water, and use the rest for whatever caught your eye while you were here. This collection is that plan, in order. Book the Burj Khalifa and the Museum of the Future early — both are timed-entry and both sell out several days ahead through the winter.",
+      "If this is your first trip, resist the urge to build an elaborate itinerary. Dubai rewards a simple one: get your bearings with a city tour on day one, do the desert on day two, spend an evening on the water, and use the rest for whatever caught your eye while you were here. This collection is that plan, in order. Book the Burj Khalifa and the Museum of the Future early, both are timed-entry and both sell out several days ahead through the winter.",
     activitySlugs: [
       "dubai-city-tour-half-day",
       "burj-khalifa-124-125",
@@ -166,7 +166,7 @@ export const collections: Collection[] = [
     faqs: [
       {
         q: "Are wheelchairs manageable?",
-        a: "At the Dubai Frame, the Museum of the Future, AYA Universe and on the city tour, yes — all step-free. The gentle desert safari can take a wheelchair user with 48 hours' notice; message us and we get the camp's ramp access confirmed in writing before you pay.",
+        a: "At the Dubai Frame, the Museum of the Future, AYA Universe and on the city tour, yes, all step-free. The gentle desert safari can take a wheelchair user with 48 hours' notice; message us and we get the camp's ramp access confirmed in writing before you pay.",
       },
     ],
   },
@@ -213,7 +213,7 @@ export const collections: Collection[] = [
     faqs: [
       {
         q: "Do group discounts exist?",
-        a: "On most suppliers, from about eight people. It isn't automatic in self-serve — send us the group size on WhatsApp and we'll come back with a group price, usually within the hour.",
+        a: "On most suppliers, from about eight people. It isn't automatic in self-serve, send us the group size on WhatsApp and we'll come back with a group price, usually within the hour.",
       },
     ],
   },
@@ -247,7 +247,7 @@ export const attractions: Attraction[] = [
     faqs: [
       {
         q: "How much are Burj Khalifa tickets from India?",
-        a: "Level 124/125 non-prime entry is ₹3,690 all-in on OUTLYY, including taxes and booking fees. Sunset slots add about ₹1,800. Level 148 with SKY access is ₹9,450. Those are the amounts you pay — nothing is added at checkout.",
+        a: "Level 124/125 non-prime entry is ₹3,690 all-in on OUTLYY, including taxes and booking fees. Sunset slots add about ₹1,800. Level 148 with SKY access is ₹9,450. Those are the amounts you pay, nothing is added at checkout.",
       },
       {
         q: "Is level 148 worth it?",
@@ -273,14 +273,14 @@ export const attractions: Attraction[] = [
       { label: "Height limits", value: "Most headline slides need 120cm; Leap of Faith needs 120cm and confidence" },
     ],
     bestTime:
-      "Arrive at opening. The queues on the headline slides double after 12:30, and the walkways get genuinely hot underfoot between May and September — water shoes help more than you'd think.",
+      "Arrive at opening. The queues on the headline slides double after 12:30, and the walkways get genuinely hot underfoot between May and September, water shoes help more than you'd think.",
     gettingThere:
       "The Palm Monorail from Gateway Towers is the pleasant way in and gives you the Palm view on the approach. Taxis take 25 minutes from Dubai Marina and 40 from Deira. Aquaventure has its own paid parking.",
     activitySlugs: ["atlantis-aquaventure", "lost-chambers-aquarium", "jet-ski-burj-al-arab"],
     faqs: [
       {
         q: "Are lockers included?",
-        a: "No — towels are included, lockers are chargeable at the park (around AED 60). We say so here rather than letting you discover it at the gate.",
+        a: "No, towels are included, lockers are chargeable at the park (around AED 60). We say so here rather than letting you discover it at the gate.",
       },
       {
         q: "Is the combo ticket worth it?",
@@ -329,7 +329,7 @@ export const attractions: Attraction[] = [
     bestTime:
       "Weekday mornings. Slots sell out three to four days ahead year-round and considerably further in peak season, so book before you fly.",
     gettingThere:
-      "Emirates Towers metro station connects directly by footbridge — the easiest arrival of any Dubai attraction. Taxi from Downtown is under ten minutes.",
+      "Emirates Towers metro station connects directly by footbridge, the easiest arrival of any Dubai attraction. Taxi from Downtown is under ten minutes.",
     activitySlugs: ["museum-of-the-future", "burj-khalifa-124-125", "aya-universe"],
     faqs: [
       {
@@ -354,7 +354,7 @@ export const attractions: Attraction[] = [
     bestTime:
       "Weekdays. Yas Island fills up on Friday and Saturday, and Formula Rossa's queue can pass 60 minutes.",
     gettingThere:
-      "Ninety minutes from central Dubai by road. There is no practical public transport option — book transfers or pair it with a guided Abu Dhabi day trip.",
+      "Ninety minutes from central Dubai by road. There is no practical public transport option, book transfers or pair it with a guided Abu Dhabi day trip.",
     activitySlugs: ["ferrari-world-abu-dhabi", "abu-dhabi-city-tour-grand-mosque"],
     faqs: [
       {

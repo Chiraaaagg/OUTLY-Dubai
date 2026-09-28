@@ -8,6 +8,7 @@ import { defer } from "../lib/defer";
 import { uuidv7, isValidReference, normaliseReference } from "../lib/ids";
 import { hashIp, sha256Hex } from "../lib/crypto";
 import { enforceRateLimit } from "../lib/rate-limit";
+import { runOnce, sweepExpiredKeys } from "../lib/idempotency";
 import { audit } from "../lib/audit";
 import { moneyToMinor, percentDelta, toMinor } from "../lib/money";
 import { customerActor, hasPermission, requirePermission, SYSTEM_ACTOR, type Actor } from "../lib/actor";
@@ -150,16 +151,67 @@ function forActor<T extends InquirySummary>(actor: Actor, s: T): T {
   return hasPermission(actor, "customers.view_pii") ? s : redactSummary(s);
 }
 
+/** Scope for the create-inquiry idempotency rows (`src/server/lib/idempotency.ts`). */
+const INQUIRY_IDEMPOTENCY_SCOPE = "inquiry_create";
+
 export const inquiryService = {
   /* ================================================================ create */
 
-  async create(input: CreateInquiryInput, ctx: { ip?: string; userAgent?: string } = {}): Promise<CreateInquiryResult> {
+  /**
+   * Create an inquiry.
+   *
+   * `ctx.customer` is present whenever the submitter holds a verified session.
+   * Whether that is *mandatory* is the route's decision, not this service's
+   * (`FEATURE_VERIFIED_INQUIRIES`). Present, and the inquiry is linked to the
+   * account at creation; absent, and the row is created unlinked exactly as it
+   * was before verification existed, for `customerRepo.linkByPhone` to attach
+   * on a later sign-in.
+   *
+   * When a session is present the lead phone must match it. A signed-in visitor
+   * could otherwise type any number into the form and have us record it against
+   * their verified account. The body's phone is still parsed, but only to
+   * reject a mismatch loudly rather than silently overwrite what they typed.
+   */
+  async create(
+    input: CreateInquiryInput,
+    ctx: { ip?: string; userAgent?: string; customer?: { id: string; phoneE164: string } },
+  ): Promise<CreateInquiryResult> {
+    if (!input.idempotencyKey) return inquiryService.createVerified(input, ctx);
+
+    // Namespaced by whoever is submitting: the client's value alone would let
+    // someone guess a key and be handed another person's inquiry reference on
+    // replay. Without a verified account the phone is the best identity we
+    // have, hashed so the key itself carries no personal data.
+    const scopeId = ctx.customer?.id ?? `anon:${sha256Hex(`${input.countryCode}${input.leadPhone}`).slice(0, 24)}`;
+    const { value, fresh } = await runOnce({
+      key: `inquiry:${scopeId}:${input.idempotencyKey}`,
+      scope: INQUIRY_IDEMPOTENCY_SCOPE,
+      // Long enough to cover the code step, a retry after a failed send, and a
+      // customer who wanders off and comes back to the same open tab.
+      ttlMs: 6 * 60 * 60 * 1000,
+      run: () => inquiryService.createVerified(input, ctx),
+    });
+    if (fresh) sweepExpiredKeys(INQUIRY_IDEMPOTENCY_SCOPE);
+    return value;
+  },
+
+  async createVerified(
+    input: CreateInquiryInput,
+    ctx: { ip?: string; userAgent?: string; customer?: { id: string; phoneE164: string } },
+  ): Promise<CreateInquiryResult> {
     const e = env();
     const now = new Date();
 
     // 1. Identity + validation (§12.13)
     const phone = normalisePhone(input.leadPhone, input.countryCode);
     if (!phone.valid) throw Errors.validation({ phone: phone.reason ?? "That doesn't look like a valid WhatsApp number." });
+    // Only meaningful when a verified session is attached; an unverified
+    // submission has no proven number to contradict.
+    if (ctx.customer && phone.e164 !== ctx.customer.phoneE164) {
+      throw Errors.validation({
+        phone: "This inquiry goes out under the number you verified. Sign out to use a different one.",
+      });
+    }
     const leadName = cleanText(input.leadName, 120);
     if (!leadName || leadName.length < 2) throw Errors.validation({ name: "So we know who to reply to." });
     const leadEmail = input.leadEmail?.trim().toLowerCase() || undefined;
@@ -233,6 +285,10 @@ export const inquiryService = {
           reference: ref,
           status,
           source: input.source,
+          // Set at creation when the identity is already verified. Left null
+          // otherwise, for `linkByPhone` to attach on a later sign-in — the
+          // behaviour every inquiry had before verification existed.
+          customerId: ctx.customer?.id,
           leadName,
           leadPhone: phone.e164,
           leadEmail,

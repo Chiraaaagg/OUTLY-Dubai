@@ -31,7 +31,7 @@ export async function generateMetadata({
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Category not found" };
   return {
-    title: `${category.name} — All-In Pricing`,
+    title: `${category.name}. All-In Pricing`,
     description: category.intro.slice(0, 155),
     alternates: { canonical: `/categories/${category.slug}` },
   };
@@ -133,10 +133,10 @@ export default async function CategoryPage({
               <SectionHeading
                 id="top-picks"
                 kicker="Our picks"
-                title={`The ${category.shortName.toLowerCase()} we'd book ourselves`}
+                title={`Where to start with ${category.shortName.toLowerCase()}`}
                 sub="Curated first, catalogue second. These are the ones we send our own families on."
               />
-              {/* 2 × 2 of compact cards on lg — visible, stable, never dominant. */}
+              {/* 2 × 2 of compact cards on lg, visible, stable, never dominant. */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {featured.map((a, i) => (
                   <ActivityCard
@@ -190,14 +190,14 @@ export default async function CategoryPage({
             <EmptyState
           illustration="filters"
               title="Nothing matches those filters here"
-              body="Try removing a filter, or ask us — we can often arrange something that isn't in the public catalogue."
+              body="Try removing a filter, or ask us, we can often arrange something that isn't in the public catalogue."
               action={<ButtonLink href={`/categories/${category.slug}`}>Clear filters</ButtonLink>}
             />
           )}
         </div>
       </div>
 
-      {/* SEO body copy — unique, useful, ≥300 words (AC-CAT-01). Audit S05: same
+      {/* SEO body copy, unique, useful, ≥300 words (AC-CAT-01). Audit S05: same
           heading + paper surface treatment as the FAQ block below it. */}
       <section className="container-page pb-10" aria-labelledby="about">
         <div className={longIntro ? undefined : "mx-auto max-w-3xl"}>
@@ -223,7 +223,7 @@ export default async function CategoryPage({
         <WhatsAppCard
           context={{ intent: "general", placement: `category_${category.slug}` }}
           title={`Not sure which ${category.shortName.toLowerCase()} to pick?`}
-          body="Tell us who's coming — ages, dietary needs, mobility — and we'll tell you honestly which one suits your group, then book it for you if you'd like."
+          body="Tell us who's coming, ages, dietary needs, mobility, and we'll tell you honestly which one suits your group, then book it for you if you'd like."
         />
 
         <nav aria-label="Related categories" className="mt-8">

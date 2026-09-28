@@ -26,9 +26,10 @@ import { getActivities, getCategories } from "@/lib/catalog/server";
 import { collections } from "@/lib/data/collections";
 import { combos } from "@/lib/data/combos";
 import type { Faq } from "@/lib/types";
+import { Amount } from "@/components/commerce/price";
 
 export const metadata: Metadata = {
-  title: "OUTLYY — Dubai Experiences, One All-In Price",
+  title: "OUTLYY: Dubai Experiences, One All-In Price",
   description:
     "Curated Dubai activities at one all-in price in your own currency, with pure-veg and Jain food options, hotel pickup and WhatsApp help in about 30 minutes. Instant vouchers, no hidden fees.",
   alternates: { canonical: "/" },
@@ -48,11 +49,11 @@ export const metadata: Metadata = {
 const HOME_FAQS: Faq[] = [
   {
     q: "Is the price I see the price I pay?",
-    a: "Yes. Every price on OUTLYY includes taxes and booking fees, and it is the amount charged to your card or UPI. The only things that change your total are optional extras you deliberately add — hotel pickup, a cake, a photographer.",
+    a: "Yes. Every price on OUTLYY includes taxes and booking fees, and it is the amount charged to your card or UPI. The only things that change your total are optional extras you deliberately add, hotel pickup, a cake, a photographer.",
   },
   {
     q: "Can I pay with UPI?",
-    a: "UPI is the first payment option at checkout — GPay, PhonePe, Paytm or any UPI app — alongside Indian cards, netbanking, wallets and EMI on orders above ₹15,000. If you're in the UAE, prices switch to dirhams and UAE cards work normally.",
+    a: "UPI, cards, netbanking, wallets and EMI on orders above ₹15,000 are all accepted. If you're in the UAE, prices switch to dirhams and UAE cards work normally.",
   },
   {
     q: "Is pure vegetarian and Jain food actually available?",
@@ -60,19 +61,19 @@ const HOME_FAQS: Faq[] = [
   },
   {
     q: "Why can't I just book instantly?",
-    a: "Because we confirm with the operator before you pay — so you never get a voucher that fails at the gate. You pick what you want, we check availability and the exact price with the supplier, and a named person replies on WhatsApp in about 30 minutes. Only then do you pay, by UPI, card or EMI, through a secure link.",
+    a: "Because we confirm with the operator before you pay, so you never get a voucher that fails at the gate. You pick what you want, we check availability and the exact price with the supplier, and a named person replies on WhatsApp in about 30 minutes. Only then do you pay, by UPI, card or EMI, through a secure link.",
   },
   {
     q: "How quickly do I get my ticket?",
-    a: "Once you've paid, your QR voucher reaches WhatsApp within minutes for most experiences, and also lands in your email and account. The step before that — a human confirming availability — is what takes the 30 minutes, and it is the reason the voucher works when you arrive.",
+    a: "Once you've paid, your QR voucher reaches WhatsApp within minutes for most experiences, and also lands in your email and account. The step before that, a human confirming availability, is what takes the 30 minutes, and it is the reason the voucher works when you arrive.",
   },
   {
     q: "What if I'd rather just talk to someone?",
-    a: "Tap any WhatsApp button and a real person replies in about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday). They can see which activity and dates you were looking at, and can plan and confirm the whole trip in one conversation — the form is there for people who prefer it, not a toll gate.",
+    a: "Tap any WhatsApp button and a real person replies in about 30 minutes during our hours (10am–6pm Gulf Standard Time, Monday to Saturday). They can see which activity and dates you were looking at, and can plan and confirm the whole trip in one conversation, the form is there for people who prefer it, not a toll gate.",
   },
   {
     q: "Can my elderly parents do a desert safari?",
-    a: "Book the gentle safari — a separate activity with no dune bashing at any point, chairs with backs at the camp, and the same dinner and shows. It reaches the same camp at the same time as the standard tour, so families frequently split across both.",
+    a: "Book the gentle safari, a separate activity with no dune bashing at any point, chairs with backs at the camp, and the same dinner and shows. It reaches the same camp at the same time as the standard tour, so families frequently split across both.",
   },
 ];
 
@@ -80,6 +81,12 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const [activities, categories] = await Promise.all([getActivities(), getCategories()]);
+
+  // A real listing for the hero card, so the figure in the shop window is one
+  // a visitor can actually go and find. Prefers a desert safari because that is
+  // the image beside it; falls back to whatever the catalogue has.
+  const heroExample =
+    activities.find((a) => a.categorySlug === "desert-safari") ?? activities[0];
   const activitiesBySlugs = (slugs: string[]) => slugs.map((s) => activities.find((a) => a.slug === s)).filter((a): a is NonNullable<typeof a> => Boolean(a));
   const todayKey = today();
   const tomorrowKey = tomorrow();
@@ -126,7 +133,7 @@ export default async function HomePage() {
       <PageView pageType="homepage" />
 
       {/* ------------------------------------------------------------------
-        HERO — trust in 5 seconds, intent in 15.
+        HERO, trust in 5 seconds, intent in 15.
         Primary CTA: Find things to do. Secondary: quick-intent chips.
       ------------------------------------------------------------------ */}
       <section className="sun-wash relative overflow-hidden border-b border-ink-200">
@@ -134,18 +141,18 @@ export default async function HomePage() {
           <div className="relative z-10 min-w-0">
             <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-ink-900/10 bg-white/70 px-3 py-1.5 text-xs font-bold text-ink-800 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-sun-600" aria-hidden="true" />
-              Curated Dubai experiences · Built for Indian travellers
+              Dubai experiences · Built for Indian travellers
             </p>
 
             <h1 className="text-[2.25rem] leading-[1.05] sm:text-5xl lg:text-[3.4rem]">
               Dubai, planned properly.
-              <span className="mt-1 block text-sun-600">One all-in price. Confirmed by a human in 30 minutes.</span>
+              <span className="mt-1 block text-sun-600">One price, confirmed by a person before you pay.</span>
             </h1>
 
             <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-ink-700">
-              All-in prices with nothing added later. Pure-veg and Jain food you can filter for.
-              Pick what you like, tell us your dates, and a named person confirms availability with
-              the operator before you pay anything.
+              Every price here includes taxes and fees, and you can filter for pure-veg and Jain
+              food. Tell us your dates and a named person checks with the operator, then sends you
+              the real price. Nothing is charged until you say yes.
             </p>
 
             <div className="mt-6">
@@ -161,19 +168,19 @@ export default async function HomePage() {
             <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-tile)] border border-ink-900/10 shadow-[var(--shadow-pop)]">
               <Scene src="dune-sunset" alt="Sunset over the red dunes outside Dubai" priority />
             </div>
+            {heroExample && (
             <div className="absolute -bottom-5 -left-6 w-56 rounded-[var(--radius-card)] border border-ink-200 bg-paper p-3.5 shadow-[var(--shadow-lift)]">
               <p className="text-2xs font-extrabold uppercase tracking-[0.12em] text-ink-400">
-                Desert safari · 7 guests
+                {heroExample.categorySlug.replace(/-/g, " ")}
               </p>
-              <p className="mt-1 font-display text-xl font-bold tnum text-ink-900">₹20,930</p>
-              <p className="text-2xs text-ink-500">
-                Indicative, all-in. Jain thali at no extra cost.
-              </p>
+              <Amount money={heroExample.price.adult} className="mt-1 block font-display text-xl font-bold text-ink-900" />
+              <p className="text-2xs text-ink-500">Per adult, all-in. Taxes and fees included.</p>
             </div>
+            )}
             <div className="absolute -right-4 top-8 w-44 rotate-2 rounded-[var(--radius-card)] border border-ink-200 bg-paper p-3 shadow-[var(--shadow-lift)]">
-              <p className="text-2xs font-bold text-[var(--color-success)]">Jyoti replied</p>
+              <p className="text-2xs font-bold text-[var(--color-success)]">Replies on WhatsApp</p>
               <p className="mt-0.5 text-xs leading-snug text-ink-600">
-                WhatsApp · 11 minutes after inquiry
+                In about 30 minutes, from a named person
               </p>
             </div>
           </div>
@@ -183,7 +190,7 @@ export default async function HomePage() {
       <TrustMarquee />
 
       {/* ------------------------------------------------------------------
-        HOW IT WORKS — the inquiry model explained before the first CTA is met
+        HOW IT WORKS, the inquiry model explained before the first CTA is met
         (pivot §2.1). 21st.dev "How It Works Steps" (@ln-dev7/how-it-works-09).
       ------------------------------------------------------------------ */}
       <section className="container-page pt-10">
@@ -191,7 +198,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------------
-        SHORT-NOTICE RAIL (was "Available today & tomorrow") — last-minute + expat. Geo-boosted first
+        SHORT-NOTICE RAIL (was "Available today & tomorrow"), last-minute + expat. Geo-boosted first
         for UAE visitors in production; static order here.
         Primary CTA: card → ADP. Secondary: see all last-minute.
       ------------------------------------------------------------------ */}
@@ -200,7 +207,7 @@ export default async function HomePage() {
           id="last-minute"
           kicker="Travelling this week?"
           title="Good at short notice"
-          sub="Operators who usually confirm the same day. For tonight or tomorrow, message us on WhatsApp — it's faster than the form."
+          sub="Operators who usually confirm the same day. For tonight or tomorrow, message us on WhatsApp, it's faster than the form."
           href="/last-minute-dubai-activities"
         />
         <Rail ariaLabel="Activities available today and tomorrow">
@@ -213,7 +220,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------------
-        TOP EXPERIENCES — Tier B/C only (AC-HP-05). The margin engine.
+        TOP EXPERIENCES. Tier B/C only (AC-HP-05). The margin engine.
       ------------------------------------------------------------------ */}
       <section className="container-page py-12" aria-labelledby="top-experiences">
         <SectionHeading
@@ -239,7 +246,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------------
-        COMBOS — Tier C, the take-rate lever.
+        COMBOS. Tier C, the take-rate lever.
       ------------------------------------------------------------------ */}
       <section className="bg-shell py-12" aria-labelledby="combos">
         <div className="container-page">
@@ -247,7 +254,7 @@ export default async function HomePage() {
             id="combos"
             kicker="Bundles with verifiable savings"
             title="Save with our Dubai packages"
-            sub="Every package shows what the same experiences cost bought separately. Check the maths — that's the point."
+            sub="Every package shows what the same experiences cost bought separately. Check the maths, that's the point."
             href="/dubai-attraction-combos"
           />
           <Rail ariaLabel="Dubai packages and combos">
@@ -261,14 +268,14 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------------
-        CATEGORY GRID — the main navigational surface for undecided visitors.
+        CATEGORY GRID, the main navigational surface for undecided visitors.
       ------------------------------------------------------------------ */}
       <section className="container-page py-12" aria-labelledby="categories">
         <SectionHeading
           id="categories"
           kicker="Browse by what you feel like"
-          title="Every kind of Dubai day"
-          sub="Eight categories, curated rather than catalogued. Around 26 experiences in total — the ones we would book ourselves."
+          title="Pick a kind of day"
+          sub={`${categories.length} categories, ${activities.length} things to do. Every one is bookable today, at the price shown.`}
         />
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {categories.map((c) => (
@@ -283,7 +290,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------------
-        DESERT SAFARI FEATURE — highest-margin, highest-anxiety category, so
+        DESERT SAFARI FEATURE, highest-margin, highest-anxiety category, so
         it gets an editorial band rather than another rail.
       ------------------------------------------------------------------ */}
       <section className="container-page py-12" aria-labelledby="desert">
@@ -323,14 +330,14 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------------
-        AUDIENCE COLLECTIONS — family / couple / luxury routing.
+        AUDIENCE COLLECTIONS, family / couple / luxury routing.
       ------------------------------------------------------------------ */}
       <section className="container-page py-12" aria-labelledby="collections">
         <SectionHeading
           id="collections"
-          kicker="Curated, not filtered"
+          kicker="Sorted by who's coming"
           title="Who are you travelling with?"
-          sub="The same 26 experiences, ordered by what actually works for your group."
+          sub="The same catalogue, sorted by who you're bringing."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {collections
@@ -351,7 +358,7 @@ export default async function HomePage() {
           id="family"
           kicker="Works for a six-year-old and a sixty-eight-year-old"
           title="Family-friendly favourites"
-          sub="Child, infant and senior rates shown before checkout — not discovered at it."
+          sub="Child, infant and senior rates shown before checkout, not discovered at it."
           href="/collections/dubai-with-kids"
         />
         <Rail ariaLabel="Family-friendly activities">
@@ -435,7 +442,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------------
-        SEASONAL MODULE — truthful, dated, and it changes.
+        SEASONAL MODULE, truthful, dated, and it changes.
       ------------------------------------------------------------------ */}
       <section className="container-page py-12" aria-labelledby="seasonal">
         <div className="grid gap-4 lg:grid-cols-2">
@@ -444,7 +451,7 @@ export default async function HomePage() {
               <Clock3 className="h-3.5 w-3.5" /> Season starts October
             </Badge>
             <h2 id="seasonal" className="text-2xl text-white">
-              Winter in Dubai — the good months
+              Winter in Dubai, the good months
             </h2>
             <p className="mt-2 max-w-md text-[0.95rem] leading-relaxed text-white/75">
               November to March is when the desert is comfortable, Global Village is open and the
@@ -535,7 +542,7 @@ export default async function HomePage() {
           id="why-outlyy"
           kicker="What makes us different"
           title="Four promises, all of them checkable"
-          sub="We're not trying to be a better Klook. We're trying to beat the travel agent you'd otherwise use — a human who confirms before you pay, at a price you can see."
+          sub="We're not trying to be a better Klook. We're trying to beat the travel agent you'd otherwise use, a human who confirms before you pay, at a price you can see."
         />
         <WhyOutlyy />
       </section>
@@ -547,7 +554,7 @@ export default async function HomePage() {
               id="faq"
               kicker="Before you book"
               title="Questions we get asked most"
-              sub="If yours isn't here, ask on WhatsApp — a person answers in about 30 minutes."
+              sub="If yours isn't here, ask on WhatsApp, a person answers in about 30 minutes."
             />
             <WhatsAppCard
               context={{ intent: "general", placement: "homepage_faq" }}

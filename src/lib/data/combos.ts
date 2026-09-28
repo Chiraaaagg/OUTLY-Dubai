@@ -57,10 +57,10 @@ export const combos: Combo[] = [
     confirmation: "instant",
     fulfilmentMode: "inquiry",
     highlights: [
-      "One booking, three timed slots — we sequence them so nothing clashes",
+      "One booking, three timed slots, we sequence them so nothing clashes",
       "Saves ₹1,280 against booking the same three separately",
       "All three are lift-access and suit grandparents",
-      "Each ticket has its own QR — use them on different days if you prefer",
+      "Each ticket has its own QR, use them on different days if you prefer",
     ],
     upgrades: [UPGRADE.privateVehicle, UPGRADE.airportTransfer],
     cancellationPolicy:
@@ -68,17 +68,17 @@ export const combos: Combo[] = [
     faqs: [
       {
         q: "Do we have to use all three on the same day?",
-        a: "No, and we would advise against it — the Museum of the Future alone deserves two and a half hours. Each ticket carries its own timed slot and the package is valid for 30 days.",
+        a: "No, and we would advise against it, the Museum of the Future alone deserves two and a half hours. Each ticket carries its own timed slot and the package is valid for 30 days.",
       },
       {
         q: "Can we swap one out?",
-        a: "Not in self-serve, because the bundle price depends on the three. Message us on WhatsApp and we'll price an alternative combination — it usually still beats booking separately.",
+        a: "Not in self-serve, because the bundle price depends on the three. Message us on WhatsApp and we'll price an alternative combination, it usually still beats booking separately.",
       },
     ],
   },
   {
     slug: "desert-and-dhow-family",
-    name: "Desert Safari + Marina Dhow Cruise — Family Pack",
+    name: "Desert Safari + Marina Dhow Cruise. Family Pack",
     tagline: "Two evenings sorted, with veg and Jain food on both",
     heroImage: "img:combo:desert-and-dhow-family:0",
     tier: "C",
@@ -102,7 +102,7 @@ export const combos: Combo[] = [
     faqs: [
       {
         q: "Can we do both on the same day?",
-        a: "No — the safari returns around 21:45 and the cruise boards at 20:00. Book them on consecutive evenings; the package allows any two dates within 14 days.",
+        a: "No, the safari returns around 21:45 and the cruise boards at 20:00. Book them on consecutive evenings; the package allows any two dates within 14 days.",
       },
       {
         q: "Can we switch to the gentle safari?",
@@ -126,7 +126,7 @@ export const combos: Combo[] = [
     fulfilmentMode: "inquiry",
     highlights: [
       "Saves ₹2,270 per adult against separate booking",
-      "IMG is fully indoors — the reliable plan for a 45°C afternoon",
+      "IMG is fully indoors, the reliable plan for a 45°C afternoon",
       "Under-3s free at all three",
       "Senior rate applied automatically at Aquaventure and IMG",
     ],
@@ -136,7 +136,7 @@ export const combos: Combo[] = [
     faqs: [
       {
         q: "Can we do Aquaventure and Lost Chambers on one day?",
-        a: "Yes, and most families do — the aquarium is a good air-conditioned break in the middle of a waterpark day. IMG needs its own day.",
+        a: "Yes, and most families do, the aquarium is a good air-conditioned break in the middle of a waterpark day. IMG needs its own day.",
       },
     ],
   },
@@ -160,7 +160,7 @@ export const combos: Combo[] = [
     fulfilmentMode: "inquiry",
     highlights: [
       "A named coordinator handles all three bookings and your timings",
-      "Private majlis at the desert camp — nobody else at your table",
+      "Private majlis at the desert camp, nobody else at your table",
       "Cake and décor included on the experience of your choice",
       "Jain and pure-veg menus available on the desert dinner at no extra cost",
     ],
@@ -170,7 +170,7 @@ export const combos: Combo[] = [
     faqs: [
       {
         q: "Can you arrange a proposal inside this?",
-        a: "Yes — most often on the private desert camp evening or the sunset yacht. Tell your coordinator the plan on WhatsApp and they'll brief the crew, the photographer and the timing. There is no planning fee.",
+        a: "Yes, most often on the private desert camp evening or the sunset yacht. Tell your coordinator the plan on WhatsApp and they'll brief the crew, the photographer and the timing. There is no planning fee.",
       },
       {
         q: "What if the helicopter is cancelled for weather?",
@@ -224,7 +224,7 @@ export const combos: Combo[] = [
     fulfilmentMode: "inquiry",
     highlights: [
       "Saves ₹1,490 per adult",
-      "IMG indoors, Motiongate mostly outdoors — pair them by weather",
+      "IMG indoors, Motiongate mostly outdoors, pair them by weather",
       "Motiongate's Smurfs zone is the strongest Dubai option for ages 4–10",
       "Under-3s free at both",
     ],
@@ -234,7 +234,7 @@ export const combos: Combo[] = [
     faqs: [
       {
         q: "Which park should we do first?",
-        a: "Motiongate first if the weather is kind, IMG second — it is fully indoors and makes a better backup if the first day is unpleasantly hot.",
+        a: "Motiongate first if the weather is kind, IMG second, it is fully indoors and makes a better backup if the first day is unpleasantly hot.",
       },
     ],
   },

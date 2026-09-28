@@ -20,7 +20,7 @@ import type { RoutableAgent } from "@/app/admin/_components/inquiry/assign-picke
 const FIELD =
   "min-h-10 rounded-[var(--radius-control)] border border-ink-300 bg-white px-3 text-sm text-ink-900 focus:border-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-300 disabled:opacity-60";
 
-export function QueueBulkBar({ agents, enabled, total, children }: { agents: RoutableAgent[]; enabled: boolean; /** Rows on this page — the ref cannot be read during render. */ total: number; children: ReactNode }) {
+export function QueueBulkBar({ agents, enabled, total, children }: { agents: RoutableAgent[]; enabled: boolean; /** Rows on this page, the ref cannot be read during render. */ total: number; children: ReactNode }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [count, setCount] = useState(0);
@@ -89,7 +89,7 @@ export function QueueBulkBar({ agents, enabled, total, children }: { agents: Rou
         </div>
 
         {!agents.length && (
-          <p className="mt-2 text-xs text-ink-500">No agent can receive inquiries yet — an account needs to be active, hold a routing role and finish two-factor enrolment.</p>
+          <p className="mt-2 text-xs text-ink-500">No agent can receive inquiries yet, an account needs to be active, hold a routing role and finish two-factor enrolment.</p>
         )}
         {state && !state.ok && (
           <Alert tone="danger" title={state.message} className="mt-3">
@@ -98,7 +98,7 @@ export function QueueBulkBar({ agents, enabled, total, children }: { agents: Rou
         )}
         {state?.ok && (
           <Alert tone={state.data.assigned > 0 ? "success" : "info"} title={summary(state.data)} className="mt-3">
-            The agent is not messaged for a bulk assignment — the leads simply appear in their queue.
+            The agent is not messaged for a bulk assignment, the leads simply appear in their queue.
           </Alert>
         )}
       </div>
@@ -111,6 +111,6 @@ export function QueueBulkBar({ agents, enabled, total, children }: { agents: Rou
 function summary(d: { assigned: number; skipped: number; alreadyTheirs: number; agentName: string }) {
   const parts = [`${d.assigned} assigned to ${d.agentName}`];
   if (d.alreadyTheirs) parts.push(`${d.alreadyTheirs} already theirs`);
-  if (d.skipped) parts.push(`${d.skipped} skipped — won, lost or spam`);
+  if (d.skipped) parts.push(`${d.skipped} skipped, won, lost or spam`);
   return parts.join(" · ");
 }

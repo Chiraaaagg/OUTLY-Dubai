@@ -75,6 +75,11 @@ function apiErrorFromEnvelope(status: number, body: unknown): ApiError {
       );
     case "UNAUTHORIZED":
       return new ApiError(message, "error", err?.recovery || "Sign in and try again.", false, undefined, code, status);
+    // Also a 401, but it means "not verified yet", not "session expired". The
+    // inquiry form answers it by opening the code step inline, so the recovery
+    // copy must not tell anyone to go and sign in.
+    case "VERIFICATION_REQUIRED":
+      return new ApiError(message, "error", err?.recovery || "Enter the code we just sent you.", false, undefined, code, status);
     case "NOT_CONFIGURED":
       return new ApiError(message, "error", err?.recovery || "This isn't available yet. Track your inquiry with your reference instead.", false, undefined, code, status);
     case "SPAM_REJECTED":
@@ -416,6 +421,13 @@ export interface SubmitInquiryInput {
   /** Honeypot + timing check inputs (pivot §9 #1). Server enforces. */
   honeypot?: string;
   startedAt?: number;
+  /**
+   * Stable for the life of one filled-in form. The server creates at most one
+   * inquiry per value and replays the first result for any repeat, which is
+   * what makes a double tap — or a resubmit after the one-time-code step —
+   * safe rather than duplicating the inquiry.
+   */
+  idempotencyKey?: string;
 }
 
 export interface InquiryResult {
@@ -651,6 +663,18 @@ export async function requestOtp(input: { phone: string; countryCode: string }):
  */
 export async function verifyOtp(input: { challengeId: string; code: string }): Promise<{ customer: CustomerPublic; linkedInquiries: number }> {
   return postJson("/api/auth/otp/verify", { challengeId: input.challengeId, code: input.code.replace(/\D/g, "") });
+}
+
+/**
+ * POST /api/auth/otp/widget. Used only when sign-in runs through the MSG91
+ * widget: MSG91 has already verified the code in the browser and handed us a
+ * signed token, and the server exchanges it for the phone behind it.
+ *
+ * Deliberately takes no phone argument. The account opened is whichever number
+ * MSG91 says it verified, so there is nothing here for a caller to influence.
+ */
+export async function verifyOtpWidget(accessToken: string): Promise<{ customer: CustomerPublic; linkedInquiries: number }> {
+  return postJson("/api/auth/otp/widget", { accessToken });
 }
 
 /** POST /api/auth/logout — revokes the session and clears both cookies. */

@@ -99,7 +99,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
         {booking.status === "supplier_pending" && (
           <Alert tone="warning" title="Waiting on the operator">
             We&apos;re confirming this with the supplier. You&apos;ll get a WhatsApp message within
-            two hours either way — confirmed with your voucher, or with three options if they
+            two hours either way, confirmed with your voucher, or with three options if they
             can&apos;t take it. Nothing further is needed from you.
           </Alert>
         )}
@@ -248,7 +248,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
             <p className="mt-3 text-xs text-ink-500">
               {booking.items[0]?.freeCancellationHours
                 ? `Free cancellation up to ${booking.items[0].freeCancellationHours} hours before your start time. We show the exact refund before you confirm anything.`
-                : "This booking is non-refundable, but message us — we can often move a date even when we can't refund."}
+                : "This booking is non-refundable, but message us, we can often move a date even when we can't refund."}
             </p>
           </Card>
         )}
@@ -298,7 +298,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
                 OUTLYY on WhatsApp
               </dt>
               <dd className="font-semibold text-ink-900">
-                {wa ? `${wa} · replies in ~8 min` : "Replies in ~8 min"}
+                {wa ? `${wa} · replies in ~30 min` : "Replies in ~30 min"}
               </dd>
             </div>
             {emergency && emergencyTel && (
@@ -417,7 +417,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
               </p>
               <p className="mt-1 text-sm leading-relaxed text-ink-600">
                 If it&apos;s a date problem rather than a change of mind, we can usually move it
-                instead — often at no cost. Takes about five minutes on WhatsApp.
+                instead, often at no cost. Takes about five minutes on WhatsApp.
               </p>
               <div className="mt-2.5">
                 <WhatsAppButton
@@ -433,7 +433,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
           </div>
         ) : (
           <Alert tone="danger" title="We couldn't load your refund amount">
-            Don&apos;t cancel blind — message us and we&apos;ll confirm the exact figure before
+            Don&apos;t cancel blind, message us and we&apos;ll confirm the exact figure before
             anything is processed.
           </Alert>
         )}
@@ -457,7 +457,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
               toast({
                 tone: "success",
                 title: "Date change requested",
-                body: "We're confirming with the operator — you'll hear back within two hours.",
+                body: "We're confirming with the operator, you'll hear back within two hours.",
               });
             }}
           >
@@ -476,7 +476,7 @@ export function BookingDetail({ booking }: { booking: Booking }) {
           <DateStrip value={newDate} onChange={setNewDate} days={14} />
           <Alert tone="info" title="No change fee on this booking">
             This operator allows one free date change up to 24 hours before travel. If a fee ever
-            applies, we show it here before you confirm — never afterwards.
+            applies, we show it here before you confirm, never afterwards.
           </Alert>
           <p className="flex items-start gap-2 text-xs text-ink-500">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />

@@ -186,7 +186,7 @@ function CreateUserForm({ roleOptions, onDone }: { roleOptions: RoleOption[]; on
     return (
       <div className="space-y-4">
         <Alert tone="success" title="User created">
-          Share this one-time password now — it is not shown again. They will set up two-factor on first sign-in.
+          Share this one-time password now, it is not shown again. They will set up two-factor on first sign-in.
         </Alert>
         <div className="rounded-[var(--radius-control)] border border-ink-200 bg-shell/60 p-3.5">
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">Temporary password</p>
@@ -313,7 +313,7 @@ function ResetCredentialsForm({ user }: { user: UserRow }) {
     return (
       <div className="space-y-4">
         <Alert tone="success" title="Credentials reset">
-          All their sessions were signed out. Share this one-time password now — it is not shown again.
+          All their sessions were signed out. Share this one-time password now, it is not shown again.
           {state.data.resetTotp && " Two-factor was cleared; they enrol again on next sign-in."}
         </Alert>
         <div className="rounded-[var(--radius-control)] border border-ink-200 bg-shell/60 p-3.5">

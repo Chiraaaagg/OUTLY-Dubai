@@ -19,7 +19,8 @@ export type ServerErrorCode =
   | "NOT_CONFIGURED"
   | "UNAUTHORIZED"
   | "VALIDATION_FAILED"
-  | "FORBIDDEN";
+  | "FORBIDDEN"
+  | "VERIFICATION_REQUIRED";
 
 const KNOWN: ServerErrorCode[] = [
   "NOT_FOUND",
@@ -28,6 +29,7 @@ const KNOWN: ServerErrorCode[] = [
   "UNAUTHORIZED",
   "VALIDATION_FAILED",
   "FORBIDDEN",
+  "VERIFICATION_REQUIRED",
 ];
 
 export function serverErrorCode(err: unknown): ServerErrorCode | undefined {
@@ -44,6 +46,9 @@ export function serverErrorCode(err: unknown): ServerErrorCode | undefined {
     if (e.status === 404) return "NOT_FOUND";
     if (e.status === 429) return "RATE_LIMITED";
     if (e.status === 503) return "NOT_CONFIGURED";
+    // VERIFICATION_REQUIRED is also a 401 and is indistinguishable here, so it
+    // must arrive as an explicit code above. The status fallback cannot tell
+    // "your session expired" from "you have not verified yet".
     if (e.status === 401) return "UNAUTHORIZED";
     if (e.status === 422) return "VALIDATION_FAILED";
   }

@@ -103,12 +103,12 @@ function ConfirmationInner() {
             )}
           </span>
           <h1 className="text-[1.75rem] sm:text-3xl">
-            {pending ? "Payment received — confirming with the operator" : "You're booked."}
+            {pending ? "Payment received, confirming with the operator" : "You're booked."}
           </h1>
           <p className="mx-auto mt-2 max-w-xl text-[0.975rem] leading-relaxed text-ink-700">
             {pending
-              ? `This experience needs the operator to confirm. We'll message you within ${eta} minutes with the confirmed voucher. If they can't take it, you'll get three options — an alternative experience, an alternative date, or a full refund — within two hours, without chasing us.`
-              : `Your QR voucher is on its way to WhatsApp and email — usually inside a minute. It also lives in your account and works offline once you've opened it.`}
+              ? `This experience needs the operator to confirm. We'll message you within ${eta} minutes with the confirmed voucher. If they can't take it, you'll get three options, an alternative experience, an alternative date, or a full refund, within two hours, without chasing us.`
+              : `Your QR voucher is on its way to WhatsApp and email, usually inside a minute. It also lives in your account and works offline once you've opened it.`}
           </p>
 
           <div className="mt-5 inline-flex items-center gap-3 rounded-full border border-ink-200 bg-white px-4 py-2.5">
@@ -128,7 +128,7 @@ function ConfirmationInner() {
           </div>
         </div>
 
-        {/* Next actions — the obvious thing to do next */}
+        {/* Next actions, the obvious thing to do next */}
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <ButtonLink href={`/voucher/${reference}`} size="lg" block>
             <Download className="h-[1.15rem] w-[1.15rem]" />
@@ -147,7 +147,7 @@ function ConfirmationInner() {
               toast({
                 tone: "success",
                 title: "Sent to WhatsApp",
-                body: "Check your messages — it should arrive within a few seconds.",
+                body: "Check your messages, it should arrive within a few seconds.",
               });
             }}
           >
@@ -227,7 +227,7 @@ function ConfirmationInner() {
             </h2>
             <p className="text-sm leading-relaxed text-ink-600">
               Your confirmation carries our contact details and the operator&apos;s own. Message us
-              as soon as something looks wrong — while it is still fixable — and we take it up with
+              as soon as something looks wrong, while it is still fixable, and we take it up with
               the operator for you under the terms shown on your booking.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -255,29 +255,29 @@ function ConfirmationInner() {
           </Alert>
         )}
 
-        {/* Account creation — offered after payment, never before (AC-CO-01) */}
+        {/* Account creation, offered after payment, never before (AC-CO-01) */}
         <Card className="mt-6 p-5">
           <h2 className="text-lg">Save this to an account?</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
             One tap using the details you&apos;ve already given. It keeps your vouchers in one
             place, saves your traveller details for next time, and lets you cancel or change dates
-            yourself. Entirely optional — your booking works without it.
+            yourself. Entirely optional, your booking works without it.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <ButtonLink href="/signup" size="sm">
               Create my account
             </ButtonLink>
             <ButtonLink href="/manage-booking" variant="ghost" size="sm">
-              No thanks — find my booking by reference
+              No thanks, find my booking by reference
             </ButtonLink>
           </div>
         </Card>
 
-        {/* Post-booking merchandising — relevant, and clearly secondary */}
+        {/* Post-booking merchandising, relevant, and clearly secondary */}
         <section className="mt-8">
           <h2 className="mb-1 text-xl">Complete your trip</h2>
           <p className="mb-4 text-sm text-ink-600">
-            Most travellers add one of these on another day. No rush — you can book any of them from
+            Most travellers add one of these on another day. No rush, you can book any of them from
             Dubai, and we&apos;ll message you if something you looked at is about to sell out.
           </p>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -315,7 +315,7 @@ function ConfirmationInner() {
             </h2>
             <p className="text-sm leading-relaxed text-ink-600">
               Two days after your activity we&apos;ll send one short WhatsApp message. If you asked
-              for Jain or veg food, we ask specifically whether it was provided — and a &ldquo;no&rdquo;
+              for Jain or veg food, we ask specifically whether it was provided, and a &ldquo;no&rdquo;
               goes straight to that supplier&apos;s scorecard.
             </p>
           </Card>

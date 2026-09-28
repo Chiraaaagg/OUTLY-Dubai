@@ -254,12 +254,12 @@ function Field({
 const PREF_ROWS: { key: keyof ProfileFormPreferences; label: string; hint: string }[] = [
   {
     key: "whatsappTransactional",
-    label: "WhatsApp — about your trips",
+    label: "WhatsApp, about your trips",
     hint: "Replies to your inquiries, payment links, vouchers and day-of updates. Turning this off means we can only reach you by email.",
   },
   {
     key: "whatsappMarketing",
-    label: "WhatsApp — offers and ideas",
+    label: "WhatsApp, offers and ideas",
     hint: "Seasonal inventory and price drops on things you've saved. At most one message a week; one tap turns it off.",
   },
   {
@@ -374,7 +374,7 @@ function DataCard() {
       <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-600">
         Export everything we hold about you, or ask us to delete it. A person actions deletion
         requests within a few working days. Invoices and paid bookings from the last seven years are
-        kept for tax and legal reasons even after deletion — we can&apos;t remove those, and we&apos;d
+        kept for tax and legal reasons even after deletion, we can&apos;t remove those, and we&apos;d
         rather say so than pretend otherwise.
       </p>
 

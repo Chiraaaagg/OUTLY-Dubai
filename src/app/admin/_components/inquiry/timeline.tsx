@@ -46,7 +46,7 @@ function headline(e: InquiryEventDetail, agentNames: Record<string, string>): st
       if (e.meta?.availabilityChecked) parts.push("checked availability");
       if (typeof e.meta?.availabilityNote === "string") parts.push("updated the availability note");
       const tail = parts.length ? parts.join(", ") : "updated an item";
-      return `${who} ${tail}${e.meta?.toleranceExceeded ? " — above tolerance" : ""}`;
+      return `${who} ${tail}${e.meta?.toleranceExceeded ? ", above tolerance" : ""}`;
     }
     default:
       return e.note ?? `${who}: system event`;

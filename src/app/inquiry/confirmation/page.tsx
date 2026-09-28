@@ -97,7 +97,7 @@ function Inner() {
           <p className="mx-auto mt-2 max-w-xl text-[0.975rem] leading-relaxed text-ink-700">
             {outOfHours
               ? `Our team is offline right now. ${agent.name.split(" ")[0]} will message you on WhatsApp by ${formatDeadline(deadline)} with availability and the confirmed price.`
-              : `You'll hear from ${agent.name.split(" ")[0]} on WhatsApp by ${formatDeadline(deadline)} — with availability confirmed and the exact all-in price. Nothing is charged until you say yes.`}
+              : `You'll hear from ${agent.name.split(" ")[0]} on WhatsApp by ${formatDeadline(deadline)}, with availability confirmed and the exact all-in price. Nothing is charged until you say yes.`}
           </p>
 
           <div className="mt-5 inline-flex items-center gap-3 rounded-full border border-ink-200 bg-white px-4 py-2.5">
@@ -117,7 +117,7 @@ function Inner() {
           </div>
         </div>
 
-        {/* Named human + deadline — the highest-value trust element (§3.5) */}
+        {/* Named human + deadline, the highest-value trust element (§3.5) */}
         <AgentCard agent={agent} deadline={deadline} className="mt-5" />
 
         {/* Primary CTA: WhatsApp with the reference pre-filled (§4.2) */}
@@ -183,7 +183,7 @@ function Inner() {
               </>
             ) : (
               <p className="mt-3 text-sm text-ink-600">
-                No specific activities yet — {agent.name.split(" ")[0]} will suggest a plan around your
+                No specific activities yet, {agent.name.split(" ")[0]} will suggest a plan around your
                 dates and group.
               </p>
             )}
@@ -197,7 +197,7 @@ function Inner() {
             Travelling in the next 48 hours?
           </h2>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-            Message us on WhatsApp rather than waiting — it&apos;s faster
+            Message us on WhatsApp rather than waiting, it&apos;s faster
             {emergency ? ", and for anything urgent the phone line is answered by a person." : "."}
           </p>
           {emergency && emergencyTel && (
@@ -217,7 +217,7 @@ function Inner() {
         <section className="mt-8">
           <h2 className="mb-1 text-xl">While you wait</h2>
           <p className="mb-4 text-sm text-ink-600">
-            Add these to the same inquiry — {agent.name.split(" ")[0]} will price them together, which
+            Add these to the same inquiry, {agent.name.split(" ")[0]} will price them together, which
             is usually cheaper.
           </p>
           <div className="grid gap-4 sm:grid-cols-3">

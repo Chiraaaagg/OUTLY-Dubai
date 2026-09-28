@@ -168,7 +168,7 @@ export default async function ActivityPage({
             </span>
           </div>
 
-          {/* Key attributes strip — everything that decides the purchase,
+          {/* Key attributes strip, everything that decides the purchase,
               visible without scrolling (AC-ADP-04). */}
           <ul className="mt-5 grid grid-cols-2 gap-3 rounded-[var(--radius-card)] border border-ink-200 bg-paper p-4 sm:grid-cols-4">
             {attributes.map((a) => (
@@ -204,7 +204,7 @@ export default async function ActivityPage({
             {activity.fulfilmentMode !== "instant" && <IndicativePriceNote className="mt-2" />}
           </div>
 
-          {/* Meal & dietary — Persona A converts here */}
+          {/* Meal & dietary. Persona A converts here */}
           {activity.mealNote && (
             <Card className="mt-6 border-[color-mix(in_oklab,var(--color-success)_25%,white)] bg-[var(--color-success-bg)]/60 p-5">
               <h2 className="flex items-center gap-2 text-lg">
@@ -222,10 +222,10 @@ export default async function ActivityPage({
             </Card>
           )}
 
-          {/* Inclusions / exclusions — the anti-agent weapon */}
+          {/* Inclusions / exclusions, the anti-agent weapon */}
           <section className="mt-8" aria-labelledby="inclusions">
             <h2 id="inclusions" className="text-2xl">
-              What&apos;s included — and what isn&apos;t
+              What&apos;s included, and what isn&apos;t
             </h2>
             <p className="mt-1.5 text-sm text-ink-600">
               Written out in full so you can compare this against any other listing without opening
@@ -317,7 +317,7 @@ export default async function ActivityPage({
                   <p className="mt-3 rounded-[var(--radius-control)] bg-lagoon-50 p-3 text-sm leading-relaxed text-lagoon-700">
                     <strong className="font-bold">If the driver is late:</strong> your voucher carries
                     an emergency number a person answers. Past 30 minutes we dispatch another vehicle
-                    or refund the booking in full — and the failure goes on that supplier&apos;s
+                    or refund the booking in full, and the failure goes on that supplier&apos;s
                     scorecard.
                   </p>
                 </>
@@ -350,12 +350,12 @@ export default async function ActivityPage({
                 <Link href="/manage-booking" className="font-bold text-sun-700 underline">
                   Manage booking
                 </Link>{" "}
-                — the exact refund amount and credit date are shown before you confirm.
+               , the exact refund amount and credit date are shown before you confirm.
               </p>
             </Card>
           </section>
 
-          {/* Frequently booked together — cross-sell, placed after the decision
+          {/* Frequently booked together, cross-sell, placed after the decision
               content so it adds relevance rather than distracting from it. */}
           {frequentlyBooked.length > 0 && (
             <section className="mt-8" aria-labelledby="together">
@@ -420,7 +420,7 @@ export default async function ActivityPage({
               placement: "adp_body",
             }}
             title="Still deciding? Ask before you commit to anything."
-            body="Group of seven? Travelling with parents? Need Jain food confirmed in writing? Message us and a real person will tell you honestly whether this is the right choice — and book it for you if it is."
+            body="Group of seven? Travelling with parents? Need Jain food confirmed in writing? Message us and a real person will tell you honestly whether this is the right choice, and book it for you if it is."
           />
         </div>
 

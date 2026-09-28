@@ -96,7 +96,7 @@ function ConciergeInner() {
           <p className="mt-4 max-w-2xl text-[1.05rem] leading-relaxed text-white/80">
             Private yacht charters, helicopter flights, exclusive desert camps, chauffeured days and
             full multi-day itineraries. You get one coordinator with a direct WhatsApp and phone
-            number, from the first enquiry until you&apos;re back at your hotel — and a firm all-in
+            number, from the first enquiry until you&apos;re back at your hotel, and a firm all-in
             quote within two hours.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -123,7 +123,7 @@ function ConciergeInner() {
           <h2 className="text-2xl">Request a quote</h2>
           <p className="mt-1.5 text-sm text-ink-600">
             Six fields. We come back within two hours during working hours with a firm, itemised
-            all-in figure — not a range that changes later.
+            all-in figure, not a range that changes later.
           </p>
 
           {prefilled && (
@@ -219,7 +219,7 @@ function ConciergeInner() {
               {state === "error" && (
                 <Alert tone="danger" title="That didn't send">
                   Try again{deskPhone ? `, or call us directly on ${deskPhone}` : ", or message us on WhatsApp"}{" "}
-                  — nothing you typed is lost.
+                 , nothing you typed is lost.
                 </Alert>
               )}
 

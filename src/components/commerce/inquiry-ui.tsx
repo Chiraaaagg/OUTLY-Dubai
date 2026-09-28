@@ -164,7 +164,7 @@ export function HowItWorks({
       </div>
 
       <ol className="relative grid gap-6 sm:grid-cols-3 sm:gap-4">
-        {/* Connector — behind the circles on sm+ */}
+        {/* Connector, behind the circles on sm+ */}
         <span
           aria-hidden="true"
           className="absolute left-[16.6%] right-[16.6%] top-5 hidden h-px bg-ink-200 sm:block"
@@ -217,7 +217,7 @@ export function NextSteps({
     },
     {
       title: `${agentName} checks with the operator`,
-      body: "Availability on your dates, the confirmed all-in price, and anything you flagged — dietary, mobility, pickup.",
+      body: "Availability on your dates, the confirmed all-in price, and whatever you flagged: dietary, mobility, pickup.",
       done: false,
     },
     {
@@ -227,7 +227,7 @@ export function NextSteps({
     },
     {
       title: "You decide, then pay",
-      body: "A secure payment link on WhatsApp — UPI, card or EMI. Nothing is charged before you say yes.",
+      body: "A secure payment link on WhatsApp. Nothing is charged before you say yes.",
       done: false,
     },
   ];
@@ -430,7 +430,7 @@ export function CustomerInquiryCard({
       {!inquiry.agent && !closed && (
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-ink-600">
-            Not yet assigned — the next free specialist picks it up.
+            Not yet assigned, the next free specialist picks it up.
           </p>
           <WhatsAppButton
             size="md"

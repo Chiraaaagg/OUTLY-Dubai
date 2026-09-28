@@ -106,16 +106,16 @@ function FooterInner({ categories }: { categories: Category[] }) {
   return (
     <footer className="mt-16 border-t border-ink-200 bg-ink-900 text-white">
       <div className="container-page">
-        {/* Band A — brand, promise, contact, trust */}
+        {/* Band A, brand, promise, contact, trust */}
         <div className="grid grid-safe gap-8 py-12 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
           <div>
             <Logo tone="white" />
             <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70">
-              The most trusted way for Indians to book Dubai — where the price you see is the price
+              The most trusted way for Indians to book Dubai, where the price you see is the price
               you pay, in your own currency, and a human confirms it before you pay anything.
             </p>
             <p className="mt-4 max-w-md text-xs leading-relaxed text-white/55">
-              You pay only after a real person confirms availability — by UPI, card or EMI through a
+              You pay only after a real person confirms availability, by UPI, card or EMI through a
               secure Razorpay link.
             </p>
           </div>
@@ -165,7 +165,7 @@ function FooterInner({ categories }: { categories: Category[] }) {
           </div>
         </div>
 
-        {/* Band B — sitemap */}
+        {/* Band B, sitemap */}
         <div className="border-t border-white/10 py-10">
           <div className="grid gap-8 sm:grid-cols-3">
             {COLUMNS.map((col) => (
@@ -202,7 +202,7 @@ function FooterInner({ categories }: { categories: Category[] }) {
           </nav>
         </div>
 
-        {/* Band C — legal */}
+        {/* Band C, legal */}
         <div className="flex flex-col gap-4 border-t border-white/10 py-6 text-xs text-white/55 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <p>{legalLine()}</p>

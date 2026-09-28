@@ -62,8 +62,8 @@ async function api<T>(path: string, init: RequestInit, timeoutMs = 240_000): Pro
   try {
     res = await fetch(path, { credentials: "same-origin", signal: controller.signal, ...init });
   } catch (e) {
-    if (e instanceof Error && e.name === "AbortError") throw new Error(`No response after ${Math.round(timeoutMs / 1000)} s — the server is still working or the connection dropped. Check the batch history below before retrying.`);
-    throw new Error("Network error — check your connection and try again");
+    if (e instanceof Error && e.name === "AbortError") throw new Error(`No response after ${Math.round(timeoutMs / 1000)} s, the server is still working or the connection dropped. Check the batch history below before retrying.`);
+    throw new Error("Network error, check your connection and try again");
   } finally {
     clearTimeout(timer);
   }
@@ -71,7 +71,7 @@ async function api<T>(path: string, init: RequestInit, timeoutMs = 240_000): Pro
   if (!res.ok) {
     const e = data as ApiError | null;
     const fields = e?.error?.details?.fields;
-    const detail = fields ? ` — ${Object.entries(fields).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join("; ")}` : "";
+    const detail = fields ? `, ${Object.entries(fields).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join("; ")}` : "";
     throw new Error((e?.error?.message ?? `Request failed (${res.status})`) + detail);
   }
   return data as T;
@@ -181,7 +181,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
   return (
     <div className="space-y-4">
       <details className="rounded-[var(--radius-card)] border border-ink-200 bg-paper p-4 text-sm text-ink-700">
-        <summary className="cursor-pointer font-semibold text-ink-900">Column reference — what each value should look like</summary>
+        <summary className="cursor-pointer font-semibold text-ink-900">Column reference, what each value should look like</summary>
         <ul className="mt-2 grid gap-1 sm:grid-cols-2">
           <li><b>tier</b>: A–E (A attractions/tickets, B tours, C combos, D luxury, E transfers). Words like <i>budget / standard / premium / luxury</i> are mapped.</li>
           <li><b>categorySlug</b>: one of the slugs on the Categories page. Common supplier names (dhow-cruise, water-parks, city-tours…) are mapped; unknown ones are errors.</li>
@@ -192,7 +192,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
           <li><b>lists</b> (inclusions, exclusions, importantInfo, images, timeSlots, pickupZones, keywords): items separated by <code>|</code>.</li>
           <li><b>images</b>: https URLs (or <code>img:activity:&lt;slug&gt;:0</code>). <b>imageAlt</b>: one sentence ≤ 200 chars (a <code>|</code> list keeps the first).</li>
           <li><b>faqs</b>: <code>Question? :: Answer | …</code>. <b>itinerary</b>: <code>09:00 :: Title :: detail | …</code>. <b>variants / addOns</b>: JSON arrays.</li>
-          <li><b>blank subtitle / meetingPoint / cancellationPolicy</b> are derived (from the first inclusion, the location, the cancellation hours) and flagged as notes — rewrite before publishing.</li>
+          <li><b>blank subtitle / meetingPoint / cancellationPolicy</b> are derived (from the first inclusion, the location, the cancellation hours) and flagged as notes, rewrite before publishing.</li>
         </ul>
       </details>
 
@@ -342,7 +342,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
                       {r.warnings?.length > 0 && (
                         <details className="mt-1 text-xs text-ink-600">
                           <summary className="cursor-pointer select-none">
-                            {r.warnings.length} note{r.warnings.length === 1 ? "" : "s"} — values normalised or derived
+                            {r.warnings.length} note{r.warnings.length === 1 ? "" : "s"}, values normalised or derived
                           </summary>
                           <ul className="mt-1 space-y-0.5">
                             {r.warnings.map((w, i) => (
@@ -377,7 +377,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
             )}
             {canPublish && (
               <label className="inline-flex items-center gap-2 text-sm text-ink-800">
-                <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} className="h-4 w-4" /> Publish every listing in this batch immediately — new <em>and</em> updated (otherwise they stay drafts)
+                <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} className="h-4 w-4" /> Publish every listing in this batch immediately, new <em>and</em> updated (otherwise they stay drafts)
               </label>
             )}
             <Button

@@ -97,7 +97,7 @@ export function CategoriesClient({ rows, canEdit }: { rows: CategoryRow[]; canEd
                 <input key={d.id} type="hidden" name="ids" value={d.id} />
               ))}
               <span className="text-sm text-ink-600">
-                {drafts.length} categor{drafts.length === 1 ? "y is" : "ies are"} not published — activities in {drafts.length === 1 ? "it" : "them"} have no category page.
+                {drafts.length} categor{drafts.length === 1 ? "y is" : "ies are"} not published, activities in {drafts.length === 1 ? "it" : "them"} have no category page.
               </span>
               <Button type="submit" size="sm" variant="primary" loading={bulkPending} loadingLabel="Publishing…">
                 Publish all {drafts.length}
@@ -118,7 +118,7 @@ export function CategoriesClient({ rows, canEdit }: { rows: CategoryRow[]; canEd
 
       {editing && <CategoryForm row={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
 
-      <Sheet open={Boolean(deleting)} onClose={() => setDeleting(null)} title={`Delete ${deleting?.category.name ?? "category"}?`} description="Soft delete — the row is kept for audit and can be recreated with the same slug.">
+      <Sheet open={Boolean(deleting)} onClose={() => setDeleting(null)} title={`Delete ${deleting?.category.name ?? "category"}?`} description="Soft delete, the row is kept for audit and can be recreated with the same slug.">
         <form action={delAction} className="space-y-3">
           <input type="hidden" name="id" value={deleting?.id ?? ""} />
           <FormField label="Reason" htmlFor="del-reason" required error={delState && !delState.ok ? delState.fields?.reason : undefined}>
@@ -193,7 +193,7 @@ function CategoryForm({ row, onClose }: { row: CategoryRow | null; onClose: () =
           <FormField label="Short name" htmlFor="c-short" required error={fields?.shortName}>
             <input id="c-short" value={c.shortName} onChange={(e) => set("shortName", e.target.value)} className={INPUT_CLASS} />
           </FormField>
-          <FormField label="Slug" htmlFor="c-slug" required error={fields?.slug} hint={row ? "Changing this creates a new category — the old URL needs a redirect" : "lowercase-with-hyphens"}>
+          <FormField label="Slug" htmlFor="c-slug" required error={fields?.slug} hint={row ? "Changing this creates a new category, the old URL needs a redirect" : "lowercase-with-hyphens"}>
             <input id="c-slug" value={c.slug} onChange={(e) => set("slug", e.target.value.toLowerCase())} className={INPUT_CLASS} readOnly={Boolean(row)} />
           </FormField>
           <FormField label="Emoji" htmlFor="c-emoji" error={fields?.emoji}>
@@ -217,7 +217,7 @@ function CategoryForm({ row, onClose }: { row: CategoryRow | null; onClose: () =
           <FormField label="Related category slugs (one per line)" htmlFor="c-related" error={fields?.relatedSlugs}>
             <textarea id="c-related" value={lines(c.relatedSlugs)} onChange={(e) => set("relatedSlugs", fromLines(e.target.value))} rows={4} className={`${INPUT_CLASS} min-h-0 py-2 font-mono text-sm`} />
           </FormField>
-          <FormField label="FAQ — one per line: question :: answer" htmlFor="c-faqs" error={fields?.faqs} className="sm:col-span-2">
+          <FormField label="FAQ, one per line: question :: answer" htmlFor="c-faqs" error={fields?.faqs} className="sm:col-span-2">
             <textarea id="c-faqs" value={faqText} onChange={(e) => setFaqText(e.target.value)} rows={5} className={`${INPUT_CLASS} min-h-0 py-2 font-mono text-sm`} />
           </FormField>
         </div>

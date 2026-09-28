@@ -29,7 +29,7 @@ export default function ManageBookingPage() {
   const lookup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reference.trim()) {
-      setError("Enter the booking reference from your confirmation — it looks like OUT-123456.");
+      setError("Enter the booking reference from your confirmation, it looks like OUT-123456.");
       setState("error");
       return;
     }
@@ -59,7 +59,7 @@ export default function ManageBookingPage() {
         <h1 className="text-[1.75rem] sm:text-3xl">Find your booking</h1>
         <p className="mt-1.5 text-[0.95rem] text-ink-600">
           No account needed. Your reference is in the WhatsApp message and email we sent when you
-          booked — it looks like OUT-123456.
+          booked, it looks like OUT-123456.
         </p>
 
         <Card className="mt-6 p-5">
@@ -116,7 +116,7 @@ export default function ManageBookingPage() {
           className="mt-6"
           context={{ intent: "booking_support", placement: "manage_booking" }}
           title="Lost your reference?"
-          body="Message us the phone number or email you booked with and we'll find it in under a minute — no reference needed."
+          body="Message us the phone number or email you booked with and we'll find it in under a minute, no reference needed."
         />
 
         <p className="mt-6 text-sm text-ink-600">

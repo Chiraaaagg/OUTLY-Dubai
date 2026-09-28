@@ -64,7 +64,7 @@ export function CookieBanner() {
               Cookies, honestly
             </h2>
             <p id="cookie-body" className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-700">
-              We need a couple of cookies to keep the site working — those are always on. Beyond
+              We need a couple of cookies to keep the site working, those are always on. Beyond
               that we&apos;d like to count visits and remember how you found us, which helps us
               spend less on ads and more on prices. Say no and the site works exactly the same.{" "}
               <Link href="/cookies" className="font-semibold underline underline-offset-2">
@@ -83,7 +83,7 @@ export function CookieBanner() {
                 <label className="flex items-start gap-2.5 text-sm text-ink-600">
                   <input type="checkbox" checked disabled className="mt-0.5 h-4 w-4" />
                   <span>
-                    <strong className="text-ink-900">Strictly necessary</strong> — your sign-in,
+                    <strong className="text-ink-900">Strictly necessary</strong>, your sign-in,
                     your cart and this choice. Always on; the site cannot work without them.
                   </span>
                 </label>
@@ -96,7 +96,7 @@ export function CookieBanner() {
                     className="mt-0.5 h-4 w-4 accent-ink-900"
                   />
                   <span>
-                    <strong className="text-ink-900">Measurement</strong> — a random id so we can
+                    <strong className="text-ink-900">Measurement</strong>, a random id so we can
                     count returning visits and see which pages fail people.{" "}
                     <span className="text-ink-500">outlyy_aid, outlyy_sid</span>
                   </span>
@@ -110,7 +110,7 @@ export function CookieBanner() {
                     className="mt-0.5 h-4 w-4 accent-ink-900"
                   />
                   <span>
-                    <strong className="text-ink-900">Advertising attribution</strong> — remembers
+                    <strong className="text-ink-900">Advertising attribution</strong>, remembers
                     which ad or search brought you, including Google and Meta click identifiers, so
                     we know which spend is worth repeating.{" "}
                     <span className="text-ink-500">outlyy_attr</span>

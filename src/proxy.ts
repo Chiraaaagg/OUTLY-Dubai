@@ -50,14 +50,48 @@ const PENDING_COOKIE = "outlyy_admin_pending";
 const GA_SCRIPT_SRC = "https://www.googletagmanager.com";
 const GA_CONNECT_SRC = "https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com";
 
-function buildCsp(scriptSrc: string, isProd: boolean, allowAnalytics: boolean): string {
+/**
+ * MSG91 OTP widget origins (src/lib/msg91-widget.ts).
+ *
+ * The provider script is published on two hosts and we fall back from the
+ * first to the second, so both have to be allowed or the fallback is pointless
+ * — a network that blocks one would otherwise hit a CSP wall on the other.
+ * `control.msg91.com` is where the widget posts the code for verification.
+ *
+ * Storefront only, and only when the widget is the configured provider. The
+ * admin console keeps its nonce + 'strict-dynamic' policy untouched, for the
+ * same reason analytics is kept off it: no third-party script belongs on a
+ * screen showing customer PII.
+ */
+/**
+ * hCaptcha, not reCAPTCHA.
+ *
+ * MSG91's documentation calls this "Google re-Captcha" throughout. It is not:
+ * the widget renders an `<h-captcha>` element and loads `js.hcaptcha.com`.
+ * Allowing the Google origins the docs imply leaves the real script blocked,
+ * `isCaptchaVerified()` stuck at false, and every send refused — which is the
+ * failure this constant exists to prevent recurring.
+ *
+ * All four directives are needed. The script is only the first hop: the
+ * challenge lives in an iframe (`frame-src`), hCaptcha injects its own
+ * stylesheet (`style-src`, which otherwise allows no external host), and the
+ * verdict is posted back over XHR (`connect-src`).
+ */
+const HCAPTCHA_SRC = "https://hcaptcha.com https://*.hcaptcha.com";
+const OTP_SCRIPT_SRC = `https://verify.msg91.com https://verify.phone91.com ${HCAPTCHA_SRC}`;
+const OTP_CONNECT_SRC = `https://control.msg91.com https://verify.msg91.com https://verify.phone91.com ${HCAPTCHA_SRC}`;
+const OTP_FRAME_SRC = HCAPTCHA_SRC;
+const OTP_STYLE_SRC = HCAPTCHA_SRC;
+
+function buildCsp(scriptSrc: string, isProd: boolean, allowAnalytics: boolean, allowOtpWidget: boolean): string {
   return [
     `default-src 'self'`,
-    `script-src ${scriptSrc}${allowAnalytics ? ` ${GA_SCRIPT_SRC}` : ""}`,
-    `style-src 'self' 'unsafe-inline'`,
+    `script-src ${scriptSrc}${allowAnalytics ? ` ${GA_SCRIPT_SRC}` : ""}${allowOtpWidget ? ` ${OTP_SCRIPT_SRC}` : ""}`,
+    `style-src 'self' 'unsafe-inline'${allowOtpWidget ? ` ${OTP_STYLE_SRC}` : ""}`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self' data:`,
-    `connect-src 'self'${allowAnalytics ? ` ${GA_CONNECT_SRC}` : ""}${isProd ? "" : " ws: wss:"}`,
+    `connect-src 'self'${allowAnalytics ? ` ${GA_CONNECT_SRC}` : ""}${allowOtpWidget ? ` ${OTP_CONNECT_SRC}` : ""}${isProd ? "" : " ws: wss:"}`,
+    ...(allowOtpWidget ? [`frame-src ${OTP_FRAME_SRC}`] : []),
     `frame-ancestors 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
@@ -133,7 +167,11 @@ export async function proxy(req: NextRequest) {
   // Analytics origins are allowed on the storefront only, and only when a
   // measurement id is configured — an unconfigured deploy keeps the tighter policy.
   const allowAnalytics = !isAdmin && Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
-  const csp = buildCsp(scriptSrc, isProd, allowAnalytics);
+  // Same rule for the OTP widget: storefront only, and only when it is actually
+  // the configured sign-in provider. A deploy on the DLT path never opens these
+  // origins at all.
+  const allowOtpWidget = !isAdmin && Boolean(process.env.NEXT_PUBLIC_MSG91_WIDGET_ID);
+  const csp = buildCsp(scriptSrc, isProd, allowAnalytics, allowOtpWidget);
   const headers = securityHeaders(csp, isProd);
   if (isAdmin) {
     // Admin pages are never indexed or cached — also on the redirects below.

@@ -98,7 +98,7 @@ export default function CartPage() {
       <Breadcrumbs items={[{ label: "Dubai", href: "/" }, { label: "Your trip" }]} className="mb-3" />
       <h1 className="text-[1.75rem] sm:text-3xl">Your Dubai trip</h1>
       <p className="mt-1.5 text-[0.95rem] text-ink-600">
-        Everything you&apos;ve picked, laid out day by day so you can see whether it works — then
+        Everything you&apos;ve picked, laid out day by day so you can see whether it works, then
         one message and we confirm the lot.
       </p>
 
@@ -107,7 +107,7 @@ export default function CartPage() {
           illustration="cart"
           icon={<Sparkles className="h-6 w-6" />}
           title="Your trip is empty"
-          body="Add a few experiences and they'll appear here as a day-by-day timeline — then one inquiry covers all of them."
+          body="Add a few experiences and they'll appear here as a day-by-day timeline, then one inquiry covers all of them."
           action={<ButtonLink href="/search">Browse experiences</ButtonLink>}
           secondary={
             <ButtonLink href="/collections/first-time-dubai" variant="outline">
@@ -118,7 +118,7 @@ export default function CartPage() {
       ) : (
         <div className="mt-6 grid grid-safe gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
           <div className="min-w-0">
-            {/* Price-lock timer is instant-mode only — in inquiry mode nothing is
+            {/* Price-lock timer is instant-mode only, in inquiry mode nothing is
                 being locked, and a timer would be manufactured urgency (§3.7). */}
             {!inquiry && priceLockMinutes !== null && (
               <Alert
@@ -132,7 +132,7 @@ export default function CartPage() {
               >
                 {priceLockMinutes > 0
                   ? "If an operator raises a rate while you're deciding, we'll show you the old and new price and ask before charging anything."
-                  : "We'll re-check prices at checkout. If anything has changed you'll see both figures and can decide then — nothing is charged automatically."}
+                  : "We'll re-check prices at checkout. If anything has changed you'll see both figures and can decide then, nothing is charged automatically."}
               </Alert>
             )}
 
@@ -153,7 +153,7 @@ export default function CartPage() {
                   <Link href="/support" className="font-bold underline">
                     ask us to rearrange it
                   </Link>{" "}
-                  — most suppliers allow a date change before confirmation.
+                 , most suppliers allow a date change before confirmation.
                 </p>
               </Alert>
             )}
@@ -240,7 +240,7 @@ export default function CartPage() {
                 id="add-more"
                 kicker="Goes well with what you've picked"
                 title="Add to the same inquiry"
-                sub="Priced together is usually cheaper. Chosen from what other travellers paired with these — not from what pays us most."
+                sub="Priced together is usually cheaper. Chosen from what other travellers paired with these, not from what pays us most."
               />
               <div className="grid gap-4 sm:grid-cols-3">
                 {(suggestions.length ? suggestions : fallbackSuggestions).map((a, i) => (
@@ -277,7 +277,7 @@ export default function CartPage() {
                 <span className="font-display text-xl font-bold tnum">{priceIn(totalMoney, currency)}</span>
               </div>
               <p className="mt-1 text-xs font-semibold text-[var(--color-success)]">
-                All taxes and fees included — nothing added later
+                All taxes and fees included, nothing added later
               </p>
               {inquiry && <IndicativePriceNote className="mt-2" />}
 

@@ -77,7 +77,7 @@ export function ItemEditor({
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-600">
             <span className="inline-flex items-center gap-1">
               <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-              {item.date ? fmtDate(item.date) : <span className="font-semibold text-[var(--color-warning)]">No date — needed before conversion</span>}
+              {item.date ? fmtDate(item.date) : <span className="font-semibold text-[var(--color-warning)]">No date, needed before conversion</span>}
               {item.time ? ` · ${item.time}` : ""}
             </span>
             <span className="inline-flex items-center gap-1">

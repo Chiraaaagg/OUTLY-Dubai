@@ -46,7 +46,7 @@ export default function RouteError({
           <h1 className="text-2xl">Something broke at our end</h1>
           <p className="mx-auto mt-2 max-w-md text-[0.95rem] leading-relaxed text-ink-600">
             That&apos;s on us, not you. Nothing has been charged and no booking has been changed.
-            Try again — and if it happens twice, message us and we&apos;ll do it manually rather
+            Try again, and if it happens twice, message us and we&apos;ll do it manually rather
             than make you fight the website.
           </p>
 

@@ -59,8 +59,15 @@ export function ActivityCard({
   className,
   unavailable,
   unavailableReason,
+  priority,
 }: {
   activity: CardActivity;
+  /**
+   * Above the fold. Loads this card's image eagerly so it can serve as the LCP
+   * element — every card is lazy by default, which is right for the other two
+   * hundred but delays the only image that is on screen at first paint.
+   */
+  priority?: boolean;
   layout?: Layout;
   position?: number;
   /** Where the card was rendered — flows into analytics as `source`. */
@@ -162,11 +169,12 @@ export function ActivityCard({
           <Scene
             src={activity.images[0]}
             alt={activity.imageAlt}
+            priority={priority}
             className="transition-transform duration-500 ease-[var(--ease-out-soft)] [@media(hover:hover)]:group-hover:scale-[1.04]"
           />
         </Link>
 
-        {/* Merchandising badges — top-left, max two, truth-derived only. */}
+        {/* Merchandising badges, top-left, max two, truth-derived only. */}
         <div className="pointer-events-none absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
           {activity.badges.bestseller && <BestsellerBadge size="sm" />}
           {!activity.badges.bestseller && activity.badges.editorPick && <EditorPickBadge size="sm" />}

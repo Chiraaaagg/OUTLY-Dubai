@@ -1,7 +1,7 @@
 import "server-only";
 import { randomInt } from "node:crypto";
 import type { NextRequest } from "next/server";
-import { prisma, TX_OPTIONS } from "../lib/db";
+import { prisma, TX_OPTIONS, type Tx } from "../lib/db";
 import { env } from "../lib/env";
 import { Errors } from "../lib/errors";
 import { log } from "../lib/logger";
@@ -26,7 +26,8 @@ import {
   shouldExtendSession,
   verdictMessage,
 } from "../domain/otp";
-import { hasRealSmsProvider, smsAdapter } from "../sms/registry";
+import { hasRealSmsProvider, isWidgetMode, smsAdapter, widgetConfig } from "../sms/registry";
+import { verifyWidgetToken } from "../sms/msg91-widget";
 import { customerRepo, type CustomerRecord } from "../repositories/customer.repo";
 import type { Currency, Dietary } from "@/lib/types";
 
@@ -114,6 +115,57 @@ async function resolveFromToken(token: string | undefined, ctx?: { ipHash?: stri
   return { customer: toCustomerPublic(customer), sessionId: session.id, expiresAt, actor: actorFor(customer.id, ctx) };
 }
 
+/**
+ * Create (or find) the customer behind a *verified* phone and open a session.
+ *
+ * Both sign-in paths end here, under the same contract: the phone has already
+ * been proven — by our own constant-time comparison in the OTP path, or by
+ * MSG91's signed token in the widget path. Nothing below re-checks that, so a
+ * caller must never reach this function with a phone the client merely claimed.
+ *
+ * `precondition` runs first, inside the transaction. The OTP path uses it to
+ * consume the challenge, so a replayed code loses the race here instead of
+ * minting a second session.
+ */
+async function mintSession(input: {
+  phoneE164: string;
+  now: Date;
+  sessionDays: number;
+  ctx: { ipHash?: string; userAgent?: string };
+  precondition?: (tx: Tx) => Promise<void>;
+}) {
+  const { phoneE164, now, ctx } = input;
+  const token = randomToken(32);
+  const expiresAt = sessionExpiresAt(now, input.sessionDays || 30);
+  const sessionId = uuidv7();
+
+  const result = await prisma.$transaction(async (tx) => {
+    await input.precondition?.(tx);
+
+    const { customer, created } = await customerRepo.findOrCreateByPhone(phoneE164, tx);
+    if (customer.deletedAt) throw Errors.unauthorized("This account has been closed.");
+    const actor = actorFor(customer.id, ctx);
+
+    if (created) await audit(actor, "customer.created", { type: "customer", id: customer.id }, {}, tx);
+
+    const linked = await customerRepo.linkByPhone(customer.id, phoneE164, tx);
+    if (linked.inquiries || linked.orders) {
+      await audit(actor, "customer.linked_by_phone", { type: "customer", id: customer.id }, { after: linked }, tx);
+    }
+
+    await customerRepo.createSession(
+      { id: sessionId, customerId: customer.id, tokenHash: sha256Hex(token), userAgent: ctx.userAgent, ipHash: ctx.ipHash, expiresAt },
+      tx,
+    );
+    await customerRepo.touchLogin(customer.id, now, tx);
+    await audit(actor, "customer.login", { type: "customer_session", id: sessionId }, {}, tx);
+
+    return { customer: { ...customer, lastLoginAt: now }, linked };
+  }, TX_OPTIONS);
+
+  return { token, expiresAt, sessionId, customer: result.customer, linked: result.linked };
+}
+
 export const customerAuthService = {
   /** Is customer sign-in available in this environment? (contract §1) */
   enabled(): boolean {
@@ -126,6 +178,9 @@ export const customerAuthService = {
 
   async requestOtp(input: { phone: string; countryCode: string; ip?: string }) {
     if (!customerAuthService.enabled()) throw Errors.notConfigured("Customer sign-in");
+    // In widget mode MSG91 sends the code straight from the browser. Leaving this
+    // endpoint open would give an attacker a second, cheaper way to burn credits.
+    if (isWidgetMode()) throw Errors.notConfigured("Server-side OTP");
     const e = env();
 
     const phone = normalisePhone(input.phone, input.countryCode);
@@ -199,38 +254,66 @@ export const customerAuthService = {
       );
     }
 
-    const ctx = { ipHash, userAgent: input.userAgent };
-    const token = randomToken(32);
-    const expiresAt = sessionExpiresAt(now, e.AUTH_CUSTOMER_SESSION_DAYS || 30);
-    const sessionId = uuidv7();
+    const { token, expiresAt, sessionId, customer, linked } = await mintSession({
+      phoneE164: challenge.phoneE164,
+      now,
+      sessionDays: e.AUTH_CUSTOMER_SESSION_DAYS,
+      ctx: { ipHash, userAgent: input.userAgent },
+      precondition: async (tx) => {
+        // Single-use: whoever consumes first wins — a replay of the same code lands here.
+        if (!(await customerRepo.consumeChallenge(challenge.id, now, tx))) throw Errors.unauthorized(verdictMessage("consumed"));
+      },
+    });
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Single-use: whoever consumes first wins — a replay of the same code lands here.
-      if (!(await customerRepo.consumeChallenge(challenge.id, now, tx))) throw Errors.unauthorized(verdictMessage("consumed"));
+    log.info("customer_auth.login", { sessionId, method: "otp", linkedInquiries: linked.inquiries, linkedOrders: linked.orders });
+    return { token, expiresAt, customer: toCustomerPublic(customer), linkedInquiries: linked.inquiries };
+  },
 
-      const { customer, created } = await customerRepo.findOrCreateByPhone(challenge.phoneE164, tx);
-      if (customer.deletedAt) throw Errors.unauthorized("This account has been closed.");
-      const actor = actorFor(customer.id, ctx);
+  /* ------------------------------------------------------------- widget */
 
-      if (created) await audit(actor, "customer.created", { type: "customer", id: customer.id }, {}, tx);
+  /**
+   * Widget sign-in (`SMS_PROVIDER=msg91_widget`).
+   *
+   * By the time we are called, MSG91 has already sent the code, collected it
+   * and verified it in the browser; the only thing that crosses our boundary is
+   * the signed access token. `verifyWidgetToken` exchanges it for the phone
+   * MSG91 actually verified — the request body never gets a say in which
+   * account is opened.
+   *
+   * Rate-limited per IP because, unlike the OTP path, there is no challenge row
+   * to count attempts against. Every failure returns one message, so a caller
+   * cannot tell a forged token from an expired one from a provider outage.
+   */
+  async verifyWidget(input: { accessToken: string; ip?: string; userAgent?: string }) {
+    if (!customerAuthService.enabled()) throw Errors.notConfigured("Customer sign-in");
+    const cfg = widgetConfig();
+    if (!cfg) throw Errors.notConfigured("Customer sign-in");
 
-      const linked = await customerRepo.linkByPhone(customer.id, challenge.phoneE164, tx);
-      if (linked.inquiries || linked.orders) {
-        await audit(actor, "customer.linked_by_phone", { type: "customer", id: customer.id }, { after: linked }, tx);
-      }
+    const ipHash = hashIp(input.ip);
+    await enforceRateLimit({
+      key: `otp_widget:ip:${ipHash ?? NO_IP_BUCKET}`,
+      limit: VERIFY_IP_LIMIT,
+      windowSeconds: VERIFY_IP_WINDOW_SECONDS,
+    });
 
-      await customerRepo.createSession(
-        { id: sessionId, customerId: customer.id, tokenHash: sha256Hex(token), userAgent: input.userAgent, ipHash, expiresAt },
-        tx,
-      );
-      await customerRepo.touchLogin(customer.id, now, tx);
-      await audit(actor, "customer.login", { type: "customer_session", id: sessionId }, {}, tx);
+    let phoneE164: string;
+    try {
+      ({ phoneE164 } = await verifyWidgetToken({ authKey: cfg.authKey, accessToken: input.accessToken }));
+    } catch {
+      // The provider reason is already in the log; the customer gets one line.
+      throw Errors.unauthorized("We couldn't confirm that code. Please try again.");
+    }
 
-      return { customer: { ...customer, lastLoginAt: now }, linked };
-    }, TX_OPTIONS);
+    const now = new Date();
+    const { token, expiresAt, sessionId, customer, linked } = await mintSession({
+      phoneE164,
+      now,
+      sessionDays: env().AUTH_CUSTOMER_SESSION_DAYS,
+      ctx: { ipHash, userAgent: input.userAgent },
+    });
 
-    log.info("customer_auth.login", { sessionId, linkedInquiries: result.linked.inquiries, linkedOrders: result.linked.orders });
-    return { token, expiresAt, customer: toCustomerPublic(result.customer), linkedInquiries: result.linked.inquiries };
+    log.info("customer_auth.login", { sessionId, method: "widget", linkedInquiries: linked.inquiries, linkedOrders: linked.orders });
+    return { token, expiresAt, customer: toCustomerPublic(customer), linkedInquiries: linked.inquiries };
   },
 
   /* ------------------------------------------------------------ session */

@@ -10,6 +10,7 @@ import { CurrencyToggle } from "@/components/commerce/price";
 import { WhatsAppButton } from "@/components/commerce/whatsapp";
 import { useApp } from "@/components/providers/app-provider";
 import { useSlimCatalog } from "@/lib/catalog/client";
+import { useCustomerHint } from "@/lib/use-customer-hint";
 import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
@@ -30,29 +31,13 @@ const SECONDARY_NAV = [
   { label: "Abu Dhabi", href: "/abu-dhabi-day-tours-from-dubai" },
 ];
 
-/**
- * Signed-in hint (customer-auth contract §1): the backend sets a non-httpOnly
- * `outlyy_customer=1` cookie beside the real session cookie. It carries no
- * data — it only lets the header choose "Account" over "Sign in" without an
- * API call. Read after mount so server and first client render agree.
- */
-function useCustomerHint(pathname: string | null): boolean {
-  const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => {
-    try {
-      setSignedIn(/(?:^|;\s*)outlyy_customer=1(?:;|$)/.test(document.cookie));
-    } catch {
-      setSignedIn(false);
-    }
-  }, [pathname]);
-  return signedIn;
-}
-
 export function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const { cart, wishlist, hydrated } = useApp();
-  const signedIn = useCustomerHint(pathname);
+  // Shared with the inquiry form, which signs people in mid-flow and needs the
+  // same read of the same cookie.
+  const { signedIn } = useCustomerHint(pathname);
   const accountHref = signedIn ? "/account" : "/login";
   const accountLabel = signedIn ? "Your account" : "Sign in";
 
@@ -73,7 +58,7 @@ export function Header() {
         Skip to content
       </a>
 
-      {/* Trust bar — the first thing a first-time visitor reads (PRD §5.1). */}
+      {/* Trust bar, the first thing a first-time visitor reads (PRD §5.1). */}
       <div className="border-b border-ink-200 bg-ink-900 text-white">
         <div className="container-page flex h-9 items-center justify-between gap-4 text-2xs sm:text-xs">
           {/* Short form on small screens: a truncated trust claim reads worse

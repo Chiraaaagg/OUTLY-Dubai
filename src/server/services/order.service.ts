@@ -96,7 +96,10 @@ export const orderService = {
     if (!input.items.length) throw Errors.validation({ items: "An order needs at least one item" });
 
     if (input.idempotencyKey) {
-      const existing = await prisma.order.findFirst({ where: { idempotencyKey: input.idempotencyKey } });
+      // Read through the caller's transaction when there is one: inside
+      // inquiry.convertToOrder the global client would wait for a second pool
+      // connection while the transaction holds the first (P2024 at connection_limit=1).
+      const existing = await (tx ?? prisma).order.findFirst({ where: { idempotencyKey: input.idempotencyKey } });
       if (existing) return { id: existing.id, reference: existing.reference, status: existing.status, totalInr: existing.totalInr, totalAed: existing.totalAed };
     }
 

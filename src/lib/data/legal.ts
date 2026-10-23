@@ -207,7 +207,8 @@ export const legalPages: Record<string, LegalPage> = {
   privacy: {
     slug: "privacy",
     title: "Privacy policy",
-    updated: UPDATED,
+    // Database host changed from Neon (US) to Supabase (Mumbai) on this date.
+    updated: "23 October 2026",
     intro:
       "What we collect, why we collect it, who else sees it, where it is stored, how long we keep it, and how to make us delete it. Written to be read.",
     sections: [
@@ -256,7 +257,7 @@ export const legalPages: Record<string, LegalPage> = {
         ],
         bullets: [
           "Vercel, website and application hosting (Mumbai, India region)",
-          "Neon, database hosting (United States, Ohio region)",
+          "Supabase, database hosting (Mumbai, India region)",
           "Resend, transactional email delivery",
           "MSG91, delivery of sign-in codes by SMS",
           "Google, website analytics (Google Analytics 4), only where you have accepted measurement cookies",
@@ -268,7 +269,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "Where your data is stored, and who reaches it",
         paragraphs: [
-          "Our website runs in Mumbai, India, and our database is hosted in the United States. That means your data is transferred outside the UAE and, for European visitors, outside the EEA. We rely on our contracts with those providers, which include the standard data-protection terms they publish, to keep the same protections travelling with the data.",
+          "Our website and our database both run in Mumbai, India, and some of the providers above, such as Google, process data in the United States. That means your data is transferred outside the UAE and, for European visitors, outside the EEA. We rely on our contracts with those providers, which include the standard data-protection terms they publish, to keep the same protections travelling with the data.",
           "Our staff in the United Arab Emirates and in India access customer data to answer enquiries and deliver bookings. Access requires an individual account with two-factor authentication, is limited to what a role needs, and every action on a customer record is written to an audit log.",
         ],
       },

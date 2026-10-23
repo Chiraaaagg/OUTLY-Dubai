@@ -23,7 +23,7 @@ describe("parseCsv", () => {
   });
 
   it("returns empty for an empty file", () => {
-    expect(parseCsv("")).toEqual({ headers: [], rows: [] });
+    expect(parseCsv("")).toEqual({ headers: [], rows: [], notes: [] });
   });
 });
 

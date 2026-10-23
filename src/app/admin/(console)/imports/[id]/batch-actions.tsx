@@ -36,6 +36,7 @@ export function BatchActions({
   const [publish, setPublish] = useState(false);
   const [partial, setPartial] = useState(false);
   const [createCats, setCreateCats] = useState(true);
+  const [held, setHeld] = useState<string[]>([]);
 
   const call = async (path: string, body: Record<string, unknown>) => {
     setBusy(true);
@@ -46,6 +47,8 @@ export function BatchActions({
         const data = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
         throw new Error(data?.error?.message ?? `Request failed (${res.status})`);
       }
+      const data = (await res.json().catch(() => null)) as { heldForReview?: string[] } | null;
+      setHeld(data?.heldForReview ?? []);
       setConfirm(false);
       router.refresh();
     } catch (e) {
@@ -114,6 +117,11 @@ export function BatchActions({
         </form>
       )}
 
+      {held.length > 0 && (
+        <p className="w-full text-right text-xs font-semibold text-[var(--color-warning)]" role="status">
+          {held.length} stayed drafts because a derived value needs checking: <span className="font-mono">{held.join(", ")}</span>
+        </p>
+      )}
       {error && (
         <p className="w-full text-right text-xs font-semibold text-[var(--color-danger)]" role="alert">
           {error}

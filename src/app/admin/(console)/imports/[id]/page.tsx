@@ -26,6 +26,7 @@ interface RowError {
   row: number;
   field: string;
   message: string;
+  cell?: string;
 }
 
 export default async function ImportBatchPage({ params }: { params: Promise<{ id: string }> }) {
@@ -63,7 +64,7 @@ export default async function ImportBatchPage({ params }: { params: Promise<{ id
                 {(errorsByRow.get(r.row) ?? []).map((e, i) => (
                   <li key={i}>
                     <span className="font-mono">{e.field}</span>: {e.message}
-                    {r.raw && r.raw[e.field] !== undefined && <span className="ml-1 text-ink-500">(cell: “{r.raw[e.field].slice(0, 80)}”)</span>}
+                    {e.cell !== undefined ? <span className="ml-1 text-ink-500">(cell: “{e.cell.slice(0, 80)}”)</span> : r.raw && r.raw[e.field] !== undefined && <span className="ml-1 text-ink-500">(cell: “{r.raw[e.field].slice(0, 80)}”)</span>}
                   </li>
                 ))}
               </ul>

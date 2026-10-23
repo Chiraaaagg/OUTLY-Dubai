@@ -162,6 +162,76 @@ Free until 24h before.
     expect(preview.rows[0].input?.categorySlug).toBe("desert-safari");
   });
 
+  it("a sheet with a few columns updates only those fields of an existing listing", async () => {
+    const before = await activityService.get(admin, (await activityService.create(admin, input(9, "partial"), { status: "published" })).id);
+    const csv = `slug,Selling Price (AED),Price (INR),Tier,Duration (hours),Meeting Point / Pickup,meetingPoint\n${before.slug},AED 199,"Rs. 4,500/-",,,,\n`;
+    const preview = await importService.preview(admin, { source: "csv", text: csv, fileName: "partial.csv" });
+    expect(preview.rows[0], JSON.stringify(preview.rows[0].errors)).toMatchObject({ action: "update", ok: true });
+    await importService.apply(admin, preview.batchId);
+    const after = await activityService.get(admin, before.id);
+    // Only the two prices moved; the blank tier/duration/meeting point cells kept the listing's values.
+    expect(after.content).toEqual({ ...before.content, price: { ...before.content.price, adult: { inr: 4500, aed: 199 } } });
+    expect(after.status).toBe("published");
+    expect(Number(after.priceFromInr)).toBe(4500);
+  }, 90_000);
+
+  it("the catalogue export re-imports as updates that change nothing", async () => {
+    // attraction + collections are exactly the fields the old template dropped.
+    const a = await activityService.get(admin, (await activityService.create(admin, { ...input(10, "rt-a"), attractionSlug: "burj-khalifa", collectionSlugs: ["first-time-dubai"], video: "https://example.com/v.mp4" })).id);
+    const b = await activityService.get(admin, (await activityService.create(admin, { ...input(11, "rt-b"), faqs: [{ q: "Pipe | inside?", a: "Yes :: and\na new line" }] })).id);
+    const { csv, skipped } = await importService.exportCsv(admin);
+    expect(skipped).toEqual([]);
+    const [head, ...lines] = csv.trimEnd().split("\r\n");
+    const mine = lines.filter((l) => l.startsWith(`zz-test-${RUN}-rt-`));
+    expect(mine).toHaveLength(2);
+    const preview = await importService.preview(admin, { source: "csv", text: [head, ...mine].join("\r\n"), fileName: "export.csv" });
+    expect(preview.rowsFailed, JSON.stringify(preview.rows.map((r) => r.errors))).toBe(0);
+    expect(preview.rows.every((r) => r.action === "update" && !r.review)).toBe(true);
+    await importService.apply(admin, preview.batchId);
+    for (const before of [a, b]) {
+      const after = await activityService.get(admin, before.id);
+      expect(after.version).toBe(before.version + 1);
+      expect(after.content).toEqual(before.content);
+    }
+  }, 120_000);
+
+  it("the blank template is the header row; one filled row creates a listing with nothing invented", async () => {
+    const { csv } = await importService.exportCsv(admin, { blank: true });
+    await expect(importService.preview(admin, { source: "csv", text: csv })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    const header = csv.trimEnd();
+    const cols = header.split(",");
+    const cell = (f: string, v: string) => (cols.indexOf(f) >= 0 ? v : "");
+    const values: Record<string, string> = { slug: slug("tpl"), title: "Template Row Tour", subtitle: "A filled template row", tier: "C", categorySlug: "dubai-city-tours", location: "Deira", meetingPoint: "Gold Souk gate", durationMinutes: "150", "price.adult.inr": "2100", "price.adult.aed": "92", cancellationPolicy: "Free cancellation up to 48 hours before" };
+    const row = cols.map((f) => cell(f, values[f] ?? "")).join(",");
+    const preview = await importService.preview(admin, { source: "csv", text: `${header}\r\n${row}\r\n` });
+    expect(preview.rows[0], JSON.stringify(preview.rows[0].errors)).toMatchObject({ ok: true, action: "create" });
+    const derived = preview.rows[0].warnings.map((w) => w.field);
+    for (const f of ["tier", "durationMinutes", "meetingPoint", "cancellationPolicy", "subtitle"]) expect(derived).not.toContain(f);
+    expect(preview.rows[0].input).toMatchObject({ tier: "C", durationMinutes: 150, meetingPoint: "Gold Souk gate", freeCancellationHours: 48 });
+  }, 90_000);
+
+  it("publish immediately leaves rows with derived values to check as drafts", async () => {
+    const csv = `title,tier,categorySlug,location,price.adult.inr,price.adult.aed,freeCancellationHours,inclusions,meetingPoint,slug\nReview Me Tour,B,desert-safari,Al Awir,2990,129,24,Dunes,,${slug("held")}\nReady Tour,B,desert-safari,Al Awir,2990,129,24,Dunes,Camp gate 2,${slug("ready")}\n`;
+    const preview = await importService.preview(admin, { source: "csv", text: csv });
+    expect(preview.rows.map((r) => [r.ok, Boolean(r.review)])).toEqual([
+      [true, true],
+      [true, true], // no images column: placeholder image is a review item too
+    ]);
+    const result = await importService.apply(admin, preview.batchId, { publish: true });
+    expect(result.heldForReview.sort()).toEqual([slug("held"), slug("ready")].sort());
+    expect(result.published).toBe(0);
+    expect((await activityService.getBySlug(admin, slug("held")))?.status).toBe("draft");
+  }, 90_000);
+
+  it("refuses to apply an update when the listing changed after the preview", async () => {
+    const before = await activityService.create(admin, input(12, "race"));
+    const preview = await importService.preview(admin, { source: "csv", text: `slug,title\n${before.slug},From the sheet\n` });
+    expect(preview.rows[0]).toMatchObject({ ok: true, action: "update" });
+    await activityService.update(admin, before.id, { ...input(12, "race"), title: "Edited in the console" }, { expectedVersion: before.version });
+    await expect(importService.apply(admin, preview.batchId)).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await activityService.get(admin, before.id)).content.title).toBe("Edited in the console");
+  }, 90_000);
+
   it("rejects non-Google URLs and agents", async () => {
     await expect(importService.fetch(admin, "https://evil.example.com/spreadsheets/d/abc123456789/edit")).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
     await expect(importService.fetch(admin, "http://docs.google.com/spreadsheets/d/abc123456789/edit")).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
@@ -169,7 +239,7 @@ Free until 24h before.
   });
 
   it("exports the catalogue as a CSV that previews with zero errors", async () => {
-    const csv = await importService.exportCsv(admin);
+    const { csv } = await importService.exportCsv(admin);
     const preview = await importService.preview(admin, { source: "csv", text: csv, fileName: "export.csv" });
     expect(preview.rowsTotal).toBeGreaterThanOrEqual(1);
     expect(preview.rowsFailed).toBe(0);

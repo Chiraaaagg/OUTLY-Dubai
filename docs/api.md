@@ -35,13 +35,13 @@ All routes live under `src/app/api/**`, run on Node.js, and are wrapped in `hand
 
 | Method | Path | Permission | Notes |
 |---|---|---|---|
-| POST | `/api/admin/imports/preview` | `imports.run` (20/h) | JSON `{ source: "csv", text, fileName?, mapping? }` \| `{ source: "sheet", url, mapping? }` \| `{ source: "doc", url?, text?, mapping? }` \| `{ source: "bulk", items: ActivityInput[] }`, or multipart `file` (+ `mapping` JSON string). → 201 `ImportPreview { batchId, headers, mapping, rowsTotal, rowsOk, rowsFailed, rows[], warnings[] }` |
-| POST | `/api/admin/imports/fetch` | `imports.run` (20/h) | `{ url }` (docs.google.com only) → sheet `{ kind, headers, sample, rows, mapping }` or doc `{ kind, draft, warnings, sections }` |
-| POST | `/api/admin/imports/:id/apply` | `imports.run` (20/h) | `{ partial?, publish?, reason? }` → `{ applied, created, updated, items[] }`; all-or-nothing unless `partial` |
+| POST | `/api/admin/imports/preview` | `imports.run` (20/h) | JSON `{ source: "csv", text, fileName?, mapping? }` \| `{ source: "sheet", url, mapping? }` \| `{ source: "doc", url?, text?, mapping? }` \| `{ source: "bulk", items: ActivityInput[] }`, or multipart `file` (UTF-8, UTF-16 or Windows-1252; comma, semicolon or tab; + `mapping` JSON string, any subset of fields). → 201 `ImportPreview { batchId, headers, mapping, rowsTotal, rowsOk, rowsFailed, rows[], warnings[], missingCategories[] }`; each row `{ row, slug, title, action, ok, input?, errors[{ field, message, cell? }], warnings[{ field, message, review? }], review?, baseVersion? }`. Contract: `docs/admin/imports.md` |
+| POST | `/api/admin/imports/fetch` | `imports.run` (20/h) | `{ url }` (docs.google.com only) → sheet `{ kind, headers, sample, rows, mapping, notes }` or doc `{ kind, draft, warnings, sections }` |
+| POST | `/api/admin/imports/:id/apply` | `imports.run` (20/h) | `{ partial?, publish?, createMissingCategories?, reason? }` → `{ applied, created, updated, published, heldForReview[], categoriesCreated[], items[] }`; all-or-nothing unless `partial`; 409 if an updated listing changed after the preview; rows flagged `review` stay drafts under `publish` |
 | POST | `/api/admin/imports/:id/revert` | `imports.run` (20/h) | `{ reason? }` → `{ reverted }` |
 | GET | `/api/admin/imports` | `imports.run` | `?page` → batches |
 | GET | `/api/admin/imports/:id` | `imports.run` | batch + preview rows + errors + applied items |
-| GET | `/api/admin/imports/export` | `products.edit` (20/h) | CSV of every activity (import template) |
+| GET | `/api/admin/imports/export` | `products.edit` (20/h) | CSV of every activity in the canonical column order (re-imports as no-op updates); `?template=blank` = header row only. Header `x-outlyy-export-skipped` counts listings whose stored document no longer validates |
 
 ## Reports and analytics
 

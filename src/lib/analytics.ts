@@ -71,6 +71,13 @@ export const ANALYTICS_EVENT_NAMES = [
   "inquiry_submitted",
   "inquiry_field_error",
   "inquiry_whatsapp_alternative",
+  // Verification funnel. Every inquiry now comes from a verified account, so
+  // the drop-off between a filled-in form and a confirmed inquiry runs through
+  // these two: inquiry_started → otp_sent → otp_verified → inquiry_submitted.
+  // A gap between otp_sent and otp_verified is codes not arriving; a gap after
+  // otp_verified is the inquiry itself failing, and they need different fixes.
+  "otp_sent",
+  "otp_verified",
   // Inquiry pipeline — emitted by the server on state transitions; listed so
   // client and server agree on the taxonomy by construction (§11.2).
   "inquiry_acknowledged",

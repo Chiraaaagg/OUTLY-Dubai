@@ -26,7 +26,7 @@ export async function generateMetadata({
   const c = collectionBySlug(slug);
   if (!c) return { title: "Collection not found" };
   return {
-    title: `${c.name} — Curated Dubai Experiences`,
+    title: `${c.name}. Curated Dubai Experiences`,
     description: c.narrative.slice(0, 155),
     alternates: { canonical: `/collections/${c.slug}` },
   };
@@ -89,7 +89,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
           id="picks"
           kicker={`${items.length} hand-picked`}
           title="In this collection"
-          sub="Ordered deliberately — start at the top and work down."
+          sub="Ordered deliberately, start at the top and work down."
         />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((a, i) => (
@@ -122,7 +122,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
           body={
             dark
               ? "A trip designer will build the itinerary around your dates, brief every supplier and stay reachable on WhatsApp and by phone throughout your trip."
-              : "Tell us who's travelling — ages, dietary needs, how much walking is realistic — and we'll build the plan and price it all-in."
+              : "Tell us who's travelling, ages, dietary needs, how much walking is realistic, and we'll build the plan and price it all-in."
           }
         />
 

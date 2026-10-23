@@ -57,7 +57,7 @@ export function Logo({
   const mark = (
     <span className={cn("group/logo inline-flex items-center", className)}>
       <Wordmark tone={tone} className="h-7 w-auto" />
-      <span className="sr-only">OUTLYY — Dubai activities for Indian travellers</span>
+      <span className="sr-only">OUTLYY: Dubai activities for Indian travellers</span>
     </span>
   );
   if (!href) return mark;

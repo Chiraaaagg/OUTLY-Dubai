@@ -72,12 +72,19 @@ const schema = z.object({
   OTP_RATE_LIMIT_PER_IP_PER_HOUR: int(10),
 
   // SMS — OTP delivery port. `log` writes the code to the server log in non-production only;
-  // `msg91` needs every MSG91_* value below (DLT-registered OTP template).
-  SMS_PROVIDER: z.enum(["log", "msg91"]).default("log"),
+  // `msg91` needs every MSG91_* value below (DLT-registered OTP template);
+  // `msg91_widget` needs MSG91_AUTH_KEY plus the two NEXT_PUBLIC_MSG91_WIDGET_* values
+  // and carries no DLT template of its own — MSG91 owns the template and the code.
+  SMS_PROVIDER: z.enum(["log", "msg91", "msg91_widget"]).default("log"),
   MSG91_AUTH_KEY: optionalStr,
   MSG91_SENDER_ID: optionalStr,
   MSG91_TEMPLATE_ID_OTP: optionalStr,
   MSG91_DLT_ENTITY_ID: optionalStr,
+  /// Widget id and client token are public by design: they ship in the page's JS.
+  /// They are safe to expose ONLY while the widget's domain allowlist is set in
+  /// the MSG91 dashboard — without it, anyone can replay them and spend your credits.
+  NEXT_PUBLIC_MSG91_WIDGET_ID: optionalStr,
+  NEXT_PUBLIC_MSG91_WIDGET_TOKEN: optionalStr,
 
   // Email — Resend (ACTIVE, narrow scope). Absent key → log adapter.
   RESEND_API_KEY: optionalStr,
@@ -154,6 +161,22 @@ const schema = z.object({
   FEATURE_MAINTENANCE_MODE: bool,
   /** Optional override for customer sign-in. Unset ⇒ enabled outside production, or when a real SMS provider is configured. */
   FEATURE_CUSTOMER_AUTH: optionalBool,
+  /**
+   * Require a verified phone before an inquiry can be created.
+   *
+   * Off by default, and off in production at the time of writing, because the
+   * MSG91 OTP widget cannot currently deliver an access token: its bundle
+   * references an undeclared `TraceIQ` global on the verify-success path and
+   * throws before our callback runs. Gating inquiries on a flow that cannot
+   * complete loses every guest lead, so the gate stays shut until that is
+   * fixed upstream.
+   *
+   * The server is the only authority here. The storefront does not read a flag
+   * of its own — it submits, and opens the code step only if the API answers
+   * VERIFICATION_REQUIRED. So flipping this one value changes both halves and
+   * the two can never disagree.
+   */
+  FEATURE_VERIFIED_INQUIRIES: optionalBool,
 
   // Photography — Pexels search for any catalogue image without a curated id (src/lib/images/manifest.ts).
   PEXELS_API_KEY: optionalStr,

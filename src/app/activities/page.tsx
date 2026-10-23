@@ -9,9 +9,9 @@ import { Breadcrumbs, Prose, SectionHeading } from "@/components/ui/primitives";
 import { getActivities, getCategories } from "@/lib/catalog/server";
 
 export const metadata: Metadata = {
-  title: "All Dubai Experiences — The Full OUTLYY Catalogue",
+  title: "All Dubai Experiences. The Full OUTLYY Catalogue",
   description:
-    "Every Dubai experience we sell, in one list. Around 26 curated activities with all-in pricing, dietary filters and instant WhatsApp vouchers.",
+    "Every Dubai experience we sell, in one list. All-in pricing, dietary filters and your voucher on WhatsApp.",
   alternates: { canonical: "/activities" },
 };
 
@@ -47,12 +47,12 @@ export default async function ActivitiesIndexPage() {
             <p>
               There are {activities.length} of them. That is a deliberate number, not a temporary
               one. A traveller looking at three hundred options with no way to tell them apart
-              books nothing — so we contract a small set of suppliers, check them ourselves, score
+              books nothing, so we contract a small set of suppliers, check them ourselves, score
               them monthly on on-time performance and complaints, and drop the ones that slip.
               Everything here is something we would put our own family on.
             </p>
             <p>
-              If what you want isn&apos;t listed, it usually still exists — private charters, larger
+              If what you want isn&apos;t listed, it usually still exists, private charters, larger
               group arrangements and unusual requests are quoted rather than published. Ask on
               WhatsApp and you&apos;ll get an honest answer, including &ldquo;no, not on those
               dates&rdquo; when that&apos;s the truth.
@@ -75,7 +75,7 @@ export default async function ActivitiesIndexPage() {
       </div>
 
       <div className="container-page pb-16">
-        {grouped.map(({ category, items }) =>
+        {grouped.map(({ category, items }, groupIndex) =>
           items.length ? (
             <section key={category.slug} id={category.slug} className="mb-12 scroll-mt-32">
               <SectionHeading
@@ -92,6 +92,9 @@ export default async function ActivitiesIndexPage() {
                     activity={toCard(a)}
                     position={i + 1}
                     source="activities_index"
+                    // The first row of the first group is the only thing on
+                    // screen at first paint; everything below it stays lazy.
+                    priority={groupIndex === 0 && i < 3}
                     showCompare
                     showInquiry
                   />

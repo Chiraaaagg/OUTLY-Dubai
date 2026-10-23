@@ -38,7 +38,7 @@ export function Gallery({
             const el = e.currentTarget;
             setIndex(Math.round(el.scrollLeft / el.clientWidth));
           }}
-          aria-label={`${alt} — photo gallery`}
+          aria-label={`${alt}, photo gallery`}
         >
           {shots.map((src, i) => (
             <div key={`${src}-${i}`} className="rail-item aspect-[4/3] w-screen">
@@ -53,7 +53,7 @@ export function Gallery({
       </div>
 
       {/* Desktop mosaic. Two details worth keeping:
-          1. Height lives on the grid, not as an aspect ratio on the hero — a
+          1. Height lives on the grid, not as an aspect ratio on the hero, a
              `row-span-2` cell with its own aspect ratio fights implicit row
              sizing and produces uneven tiles.
           2. Column count follows the number of secondary shots, so a SKU with

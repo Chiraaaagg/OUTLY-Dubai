@@ -109,6 +109,14 @@ export const createInquirySchema = z
     attribution: attributionSchema.optional(),
     sessionId: z.string().max(80).optional(),
     anonId: z.string().max(80).optional(),
+    /**
+     * One value per filled-in form, generated on the client. Two submissions
+     * carrying the same key are the same inquiry — a double tap, or a retry
+     * after the one-time-code step — and only the first creates a row.
+     * Namespaced server-side by the verified customer, so it cannot be used to
+     * reach anyone else's result.
+     */
+    idempotencyKey: z.string().trim().min(8).max(64).optional(),
   })
   .strict();
 

@@ -82,7 +82,7 @@ const PAYMENT_METHODS = [
 
 const DIETARY_OPTIONS: { id: Dietary; label: string }[] = [
   { id: "veg", label: "Pure vegetarian" },
-  { id: "jain", label: "Jain — no onion, no garlic" },
+  { id: "jain", label: "Jain, no onion, no garlic" },
   { id: "halal", label: "Halal" },
   { id: "non-veg", label: "No restriction" },
 ];
@@ -144,7 +144,7 @@ export default function CheckoutPage() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(traveller.email))
       next.email = "Enter an email we can send the voucher and invoice to.";
     if (!/^\d{7,12}$/.test(traveller.phone.replace(/\s/g, "")))
-      next.phone = "We need a working number — the driver and your voucher both use it.";
+      next.phone = "We need a working number, the driver and your voucher both use it.";
     if (!terms) next.terms = "Please confirm you've read the cancellation policy.";
     setErrors(next);
     Object.keys(next).forEach((field) =>
@@ -252,7 +252,7 @@ export default function CheckoutPage() {
         <EmptyState
           illustration="cart"
           title="Nothing to check out yet"
-          body="Your trip is empty. Add an experience and it'll appear here — or if you started a booking on WhatsApp, we can pick it up from there."
+          body="Your trip is empty. Add an experience and it'll appear here, or if you started a booking on WhatsApp, we can pick it up from there."
           action={<ButtonLink href="/search">Browse experiences</ButtonLink>}
           secondary={<ButtonLink href="/manage-booking" variant="outline">Find an existing booking</ButtonLink>}
         />
@@ -406,7 +406,7 @@ export default function CheckoutPage() {
                     Dietary requirement
                   </legend>
                   <p className="mb-2 text-xs text-ink-500">
-                    Attached to the booking and printed on your voucher — not a note someone might
+                    Attached to the booking and printed on your voucher, not a note someone might
                     miss. Jain meals need 24 hours&apos; notice.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -461,7 +461,7 @@ export default function CheckoutPage() {
                     Send my voucher and trip updates on WhatsApp, and message me if I don&apos;t
                     finish this booking.{" "}
                     <span className="text-ink-500">
-                      You can opt out any time by replying STOP — it takes effect immediately.
+                      You can opt out any time by replying STOP, it takes effect immediately.
                     </span>
                   </span>
                 </label>
@@ -782,7 +782,7 @@ export default function CheckoutPage() {
               {payment === "processing" && (
                 <p className="mt-2 text-center text-xs text-ink-600" role="status">
                   Re-checking availability with the operator before charging you. Don&apos;t close
-                  this page — it usually takes a few seconds.
+                  this page, it usually takes a few seconds.
                 </p>
               )}
 
@@ -798,7 +798,7 @@ export default function CheckoutPage() {
             <Alert tone="info" title="One of these needs the operator to confirm">
               You&apos;ll get a status message within five minutes and the confirmed voucher within
               two hours. If the operator can&apos;t take it, we offer you an alternative SKU, an
-              alternative date or a full refund — within two hours, without you having to chase.
+              alternative date or a full refund, within two hours, without you having to chase.
             </Alert>
           )}
 
@@ -810,7 +810,7 @@ export default function CheckoutPage() {
               placement: "checkout_body",
             }}
             title="Rather have a person do this?"
-            body="Send us your trip on WhatsApp. An agent confirms availability, answers whatever you're unsure about, and sends a payment link for the same total — same booking engine, same voucher, same cancellation rights."
+            body="Send us your trip on WhatsApp. An agent confirms availability, answers whatever you're unsure about, and sends a payment link for the same total, same booking engine, same voucher, same cancellation rights."
           />
         </div>
 
@@ -861,7 +861,7 @@ export default function CheckoutPage() {
               </li>
               <li className="flex gap-2">
                 <span className="font-bold text-ink-900">2.</span> Your QR voucher reaches WhatsApp,
-                email and your account — usually inside a minute.
+                email and your account, usually inside a minute.
               </li>
               <li className="flex gap-2">
                 <span className="font-bold text-ink-900">3.</span> For pickups, driver name, photo

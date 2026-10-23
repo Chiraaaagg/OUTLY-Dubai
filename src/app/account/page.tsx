@@ -72,7 +72,7 @@ export default async function AccountPage() {
           illustration="inquiries"
             icon={<Inbox className="h-6 w-6" />}
             title="No open inquiries"
-            body="Ask us to check availability and price on anything — it appears here with who's handling it and when they'll reply."
+            body="Ask us to check availability and price on anything, it appears here with who's handling it and when they'll reply."
             action={<ButtonLink href="/search">Browse experiences</ButtonLink>}
           />
         )}

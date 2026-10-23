@@ -54,7 +54,7 @@ export async function LandingPageView({ page }: { page: LandingPage }) {
     <>
       <PageView pageType="landing" landing props={{ landing_page: page.slug }} />
 
-      {/* HERO — must answer the search query in the first screen */}
+      {/* HERO, must answer the search query in the first screen */}
       <section className="relative overflow-hidden border-b border-ink-200">
         <div className="absolute inset-0">
           <Scene src={page.heroImage} alt="" scrim />
@@ -109,7 +109,7 @@ export async function LandingPageView({ page }: { page: LandingPage }) {
           id="experiences-h"
           kicker="All-in pricing"
           title="Recommended experiences"
-          sub="Curated rather than catalogued — these are the ones we'd book ourselves."
+          sub="The ones people book most, with what makes each one different."
         />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {activities.map((a, i) => (
@@ -125,7 +125,7 @@ export async function LandingPageView({ page }: { page: LandingPage }) {
         </div>
       </section>
 
-      {/* COMPARISON MODULE — the decision aid */}
+      {/* COMPARISON MODULE, the decision aid */}
       {comparison.length > 0 && page.comparison && (
         <section className="container-page pb-10">
           <ComparisonTable
@@ -154,7 +154,7 @@ export async function LandingPageView({ page }: { page: LandingPage }) {
         </section>
       )}
 
-      {/* BODY COPY — the unique 400+ words the quality gate requires */}
+      {/* BODY COPY, the unique 400+ words the quality gate requires */}
       <section className="bg-shell py-12" aria-labelledby="detail">
         <div className="container-page">
           <div className="mx-auto max-w-3xl">

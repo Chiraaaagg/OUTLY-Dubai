@@ -42,7 +42,7 @@ export default async function NotFound() {
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-[1.02rem] leading-relaxed text-ink-600">
           The link is broken or the page has moved. Nothing has gone wrong with any booking you
-          have — your voucher is still in WhatsApp, your email and your account.
+          have, your voucher is still in WhatsApp, your email and your account.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <ButtonLink href="/search" size="lg">
@@ -96,7 +96,7 @@ export default async function NotFound() {
         <WhatsAppCard
           context={{ intent: "general", placement: "404" }}
           title="Looking for something specific?"
-          body="Tell us what you were trying to find and we'll send you the right link — or just book it for you."
+          body="Tell us what you were trying to find and we'll send you the right link, or just book it for you."
         />
       </div>
     </div>

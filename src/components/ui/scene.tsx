@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
  *
  * No captions, credits or overlays are ever drawn inside the frame.
  */
-import { FRAME_RATIO, SRCSET_WIDTHS, imageSpecFor, parseImageRef, pexelsCdnUrl } from "@/lib/images/manifest";
+import { FRAME_RATIO, SRCSET_WIDTHS, imageSpecFor, parseImageRef, pexelsCdnUrl, resizableRemoteUrl } from "@/lib/images/manifest";
 
 type Motif =
   | "skyline"
@@ -279,13 +279,23 @@ export interface SceneProps {
 
 const SIZES = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw";
 
-function Photo({ srcFor, alt, className, scrim, priority }: { srcFor: (w: number) => string } & Omit<SceneProps, "src">) {
+function Photo({
+  srcFor,
+  alt,
+  className,
+  scrim,
+  priority,
+  fixed,
+}: { srcFor: (w: number) => string; fixed?: boolean } & Omit<SceneProps, "src">) {
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={srcFor(800)}
-      srcSet={SRCSET_WIDTHS.map((w) => `${srcFor(w)} ${w}w`).join(", ")}
-      sizes={SIZES}
+      // `fixed` means this source cannot produce per-width renditions. Omitting
+      // the srcset then tells the browser the truth, instead of offering it a
+      // choice between four copies of the same file.
+      srcSet={fixed ? undefined : SRCSET_WIDTHS.map((w) => `${srcFor(w)} ${w}w`).join(", ")}
+      sizes={fixed ? undefined : SIZES}
       alt={alt}
       width={800}
       height={Math.round(800 * FRAME_RATIO)}
@@ -309,7 +319,22 @@ function Photo({ srcFor, alt, className, scrim, priority }: { srcFor: (w: number
 
 export function Scene({ src, alt, className, scrim, priority }: SceneProps) {
   if (src.startsWith("http")) {
-    return <Photo srcFor={() => src} alt={alt} className={className} scrim={scrim} priority={priority} />;
+    // Imported supplier images. When the URL carries a resizable transform we
+    // ask for the width each srcset entry claims; when it does not, we pass
+    // `fixed` so no srcset is emitted at all. Declaring four widths that all
+    // resolve to the same file is worse than declaring none — the browser
+    // believes it is choosing and downloads the largest every time, which is
+    // how a 400px card ended up fetching a 3840px image.
+    return (
+      <Photo
+        srcFor={(w) => resizableRemoteUrl(src, w) ?? src}
+        fixed={!resizableRemoteUrl(src, SRCSET_WIDTHS[0])}
+        alt={alt}
+        className={className}
+        scrim={scrim}
+        priority={priority}
+      />
+    );
   }
 
   const resolved = imageSpecFor(src);

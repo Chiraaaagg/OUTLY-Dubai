@@ -21,7 +21,7 @@ import type { Dietary, SearchFilters, SortKey, Suitability } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Search Dubai Experiences",
   description:
-    "Search 26 curated Dubai experiences by date, price, dietary needs, suitability and booking convenience. All-in pricing with instant WhatsApp vouchers.",
+    "Search Dubai experiences by date, price, dietary needs and who you are travelling with. All-in pricing, voucher on WhatsApp.",
   robots: { index: false, follow: true },
 };
 
@@ -164,12 +164,12 @@ export default async function SearchPage({
             </>
           )}
 
-          {/* AC-SRCH-01 — near matches instead of a dead end */}
+          {/* AC-SRCH-01, near matches instead of a dead end */}
           {pageItems.length === 0 && result.relaxed && (
             <div>
               <Alert
                 tone="info"
-                title="No exact matches — but these are close"
+                title="No exact matches, but these are close"
                 className="mb-5"
                 icon={<SearchX className="h-4.5 w-4.5" />}
               >
@@ -189,13 +189,13 @@ export default async function SearchPage({
             </div>
           )}
 
-          {/* True empty state — only reachable when nothing at all matches */}
+          {/* True empty state, only reachable when nothing at all matches */}
           {pageItems.length === 0 && !result.relaxed && (
             <EmptyState
           illustration="search"
               icon={<SearchX className="h-6 w-6" />}
               title="Nothing matched that search"
-              body="We keep a deliberately small catalogue — around 26 experiences we'd book ourselves — so some searches come up empty. Tell us what you're after on WhatsApp and we'll almost certainly be able to arrange it."
+              body="Nothing matched those filters. Tell us what you are after and we will go and find it, including things that are not listed here."
               action={<ButtonLink href="/search">Browse everything</ButtonLink>}
               secondary={
                 <ButtonLink href="/categories/desert-safari" variant="outline">
@@ -216,7 +216,7 @@ export default async function SearchPage({
             body="Send us your dates, group size and what you're hoping to do. We'll come back with three options, priced all-in, usually within the hour."
           />
 
-          {/* Internal linking — keeps crawl paths short and helps undecided users */}
+          {/* Internal linking, keeps crawl paths short and helps undecided users */}
           <section className="mt-10" aria-labelledby="browse-more">
             <h2 id="browse-more" className="mb-3 text-lg">
               Browse by category

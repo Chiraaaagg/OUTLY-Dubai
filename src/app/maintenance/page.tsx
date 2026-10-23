@@ -38,7 +38,7 @@ export default function MaintenancePage() {
           We&apos;re making a few things faster. Back within the hour.
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-[1.02rem] leading-relaxed text-ink-700">
-          New bookings are paused for a short while. Every existing booking is unaffected — your
+          New bookings are paused for a short while. Every existing booking is unaffected, your
           voucher already lives in WhatsApp and your email, and it works offline.
         </p>
 
@@ -49,14 +49,14 @@ export default function MaintenancePage() {
             <Ticket className="mb-2 h-5 w-5 text-sun-500" aria-hidden="true" />
             <h2 className="text-[1.02rem]">Need your voucher?</h2>
             <p className="mt-1 text-sm text-ink-600">
-              Check your WhatsApp — it was delivered when you booked and doesn&apos;t need this site.
+              Check your WhatsApp, it was delivered when you booked and doesn&apos;t need this site.
             </p>
           </Card>
           <Card className="p-5">
             <MessageCircle className="mb-2 h-5 w-5 text-whatsapp" aria-hidden="true" />
             <h2 className="text-[1.02rem]">Want to book?</h2>
             <p className="mt-1 text-sm text-ink-600">
-              Message us and an agent will book it manually — same price, same voucher.
+              Message us and an agent will book it manually, same price, same voucher.
             </p>
             {whatsappDisplay() && (
               <a

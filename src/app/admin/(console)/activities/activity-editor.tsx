@@ -360,7 +360,7 @@ export function ActivityEditor(props: EditorProps) {
               <MoneyRow id="infant" label="Infant" optional value={a.price.infant} onChange={(v) => set("price", { ...a.price, infant: v })} error={err("price.infant")} />
               <MoneyRow id="senior" label="Senior" optional value={a.price.senior} onChange={(v) => set("price", { ...a.price, senior: v })} error={err("price.senior")} />
               <MoneyRow id="compareAt" label="Compare-at (gate price)" optional value={a.price.compareAt} onChange={(v) => set("price", { ...a.price, compareAt: v })} error={err("price.compareAt")} />
-              <Toggle id="quoteOnly" label="Quote only (no public price)" hint="Tier D — CTA becomes “Request a quote”" checked={Boolean(a.quoteOnly)} onChange={(v) => set("quoteOnly", v || undefined)} />
+              <Toggle id="quoteOnly" label="Quote only (no public price)" hint="Tier D. CTA becomes “Request a quote”" checked={Boolean(a.quoteOnly)} onChange={(v) => set("quoteOnly", v || undefined)} />
             </div>
           </Panel>
 
@@ -395,8 +395,8 @@ export function ActivityEditor(props: EditorProps) {
                 <Area id="cancellationPolicy" label="Cancellation policy (plain English)" required value={a.cancellationPolicy} error={err("cancellationPolicy")} rows={3} onChange={(v) => set("cancellationPolicy", v)} />
                 <Text id="mealNote" label="Meal note" value={a.mealNote ?? ""} error={err("mealNote")} onChange={(v) => set("mealNote", v || undefined)} />
               </div>
-              <Area id="itinerary" label="Itinerary — one stop per line: time :: title :: detail [:: minutes]" value={structuredText.itinerary} error={err("itinerary")} rows={5} onChange={(v) => setStructuredText((s) => ({ ...s, itinerary: v }))} />
-              <Area id="faqs" label="FAQ — one per line: question :: answer" value={structuredText.faqs} error={err("faqs")} rows={5} onChange={(v) => setStructuredText((s) => ({ ...s, faqs: v }))} />
+              <Area id="itinerary" label="Itinerary, one stop per line: time :: title :: detail [:: minutes]" value={structuredText.itinerary} error={err("itinerary")} rows={5} onChange={(v) => setStructuredText((s) => ({ ...s, itinerary: v }))} />
+              <Area id="faqs" label="FAQ, one per line: question :: answer" value={structuredText.faqs} error={err("faqs")} rows={5} onChange={(v) => setStructuredText((s) => ({ ...s, faqs: v }))} />
             </div>
           </Panel>
 
@@ -417,7 +417,7 @@ export function ActivityEditor(props: EditorProps) {
                 value={structuredText.addOns}
                 error={jsonErrors.addOns ?? err("addOns")}
                 rows={8}
-                hint={`[{ "id": "photos", "name": "Photo package", "description": "", "price": { "inr": 900, "aed": 39 }, "perPerson": false, "category": "photo" }] — categories: ${ADDON_CATEGORIES.join(", ")}`}
+                hint={`[{ "id": "photos", "name": "Photo package", "description": "", "price": { "inr": 900, "aed": 39 }, "perPerson": false, "category": "photo" }], categories: ${ADDON_CATEGORIES.join(", ")}`}
                 onChange={(v) => setStructuredText((s) => ({ ...s, addOns: v }))}
               />
               <Area id="relatedSlugs" label="Related activities (one slug per line)" value={lines(a.relatedSlugs)} error={err("relatedSlugs")} rows={3} onChange={(v) => set("relatedSlugs", fromLines(v))} />
@@ -474,7 +474,7 @@ export function ActivityEditor(props: EditorProps) {
           </Panel>
 
           {props.versions && props.versions.length > 0 && props.id && (
-            <Panel title="Version history" sub="Restoring writes a new version equal to the old one — nothing is lost.">
+            <Panel title="Version history" sub="Restoring writes a new version equal to the old one, nothing is lost.">
               <ol className="divide-y divide-ink-200 text-sm">
                 {props.versions.slice(0, 15).map((v) => (
                   <li key={v.version} className="flex items-center justify-between gap-2 py-2">

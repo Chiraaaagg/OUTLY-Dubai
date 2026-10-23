@@ -151,7 +151,7 @@ export function BookingWidget({
           {priceIn(activity.price.adult, currency)}
         </p>
         <p className="mt-2 text-sm leading-relaxed text-ink-600">
-          Priced per booking, not per person — so the honest number depends on your date, group and
+          Priced per booking, not per person, so the honest number depends on your date, group and
           route. Send us the details and you&apos;ll have a firm all-in quote within two hours during
           working hours.
         </p>
@@ -273,7 +273,7 @@ export function BookingWidget({
           </fieldset>
         )}
 
-        {/* Date — availability marks only in instant mode; inquiry mode never
+        {/* Date, availability marks only in instant mode; inquiry mode never
             asserts availability it hasn't checked. */}
         <div>
           <div className="mb-2 flex items-center justify-between">
@@ -296,7 +296,7 @@ export function BookingWidget({
           />
           {inquiryMode && (
             <p className="mt-2 text-xs text-ink-500">
-              Not fixed yet? Pick your best guess — you can mark dates flexible on the next step.
+              Not fixed yet? Pick your best guess, you can mark dates flexible on the next step.
             </p>
           )}
         </div>
@@ -336,7 +336,7 @@ export function BookingWidget({
             }
           >
             {error?.recovery ??
-              "The operator's system didn't respond. Nothing has been charged — try again, or ask us and we'll confirm your date directly."}
+              "The operator's system didn't respond. Nothing has been charged, try again, or ask us and we'll confirm your date directly."}
           </Alert>
         )}
 
@@ -366,7 +366,7 @@ export function BookingWidget({
             <TimeSlots slots={availability.slots} value={time} onChange={setTime} />
             {availability.status === "limited" && availability.spotsLeft && (
               <p className="mt-2 text-xs font-bold text-[var(--color-warning)]">
-                Only {availability.spotsLeft} spots left for this date — this is the operator&apos;s
+                Only {availability.spotsLeft} spots left for this date, this is the operator&apos;s
                 live count, not a countdown.
               </p>
             )}
@@ -463,7 +463,7 @@ export function BookingWidget({
           </div>
         )}
 
-        {/* CTAs — both rails, equal weight, in both modes */}
+        {/* CTAs, both rails, equal weight, in both modes */}
         <div className="space-y-2">
           <Button
             block
@@ -480,7 +480,7 @@ export function BookingWidget({
             size="lg"
             context={{
               intent: paxBillable(pax) >= 5 ? "group" : "activity",
-              activityTitle: `${activity.title}${variant ? ` — ${variant.name}` : ""}`,
+              activityTitle: `${activity.title}${variant ? `, ${variant.name}` : ""}`,
               activityUrl: `https://outlyy.com/activities/${activity.slug}`,
               date: formatDateKey(date),
               time,

@@ -43,7 +43,7 @@ export default function ContactPage() {
     const next: Record<string, string> = {};
     if (!form.name.trim()) next.name = "We need a name to reply to.";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) next.email = "Enter a valid email address.";
-    if (!form.message.trim()) next.message = "Tell us what you need — even a line is enough.";
+    if (!form.message.trim()) next.message = "Tell us what you need, even a line is enough.";
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -67,7 +67,7 @@ export default function ContactPage() {
         <Breadcrumbs items={[{ label: "Dubai", href: "/" }, { label: "Contact" }]} className="mb-3" />
         <h1 className="text-[1.75rem] sm:text-3xl">Contact us</h1>
         <p className="mt-1.5 text-[0.95rem] text-ink-600">
-          For anything about an existing booking, WhatsApp is genuinely faster — {RESPONSE_SLA.toLowerCase()}.
+          For anything about an existing booking, WhatsApp is genuinely faster, {RESPONSE_SLA.toLowerCase()}.
           The form below is for invoices, group bookings and supplier enquiries.
         </p>
 
@@ -76,7 +76,7 @@ export default function ContactPage() {
             <h2 className="text-xl">Send us a message</h2>
             {state === "sent" ? (
               <Alert tone="success" className="mt-4" title="Message received">
-                We&apos;ll reply to {form.email} within one working day — usually much sooner. If
+                We&apos;ll reply to {form.email} within one working day, usually much sooner. If
                 it&apos;s urgent or about a booking in the next 48 hours, message us on WhatsApp
                 instead and we&apos;ll pick it up straight away.
                 <div className="mt-3">

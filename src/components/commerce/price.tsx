@@ -105,7 +105,7 @@ export function PriceBlock({
       {showTaxLine && (
         <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-success)]">
           <Info className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Includes all taxes and fees — nothing added at checkout
+          Includes all taxes and fees, nothing added at checkout
         </p>
       )}
 

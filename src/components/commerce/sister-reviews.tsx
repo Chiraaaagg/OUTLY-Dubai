@@ -51,8 +51,9 @@ export function SisterReviewCard({ review, className }: { review: SisterReview; 
         <span className="text-2xs font-semibold uppercase tracking-wide text-ink-500">{SISTER_BRAND.name}</span>
       </div>
       <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-800">{review.body}</p>
+      {/* Which branch the reviewer walked into is our detail, not theirs. */}
       <p className="mt-3 text-xs text-ink-500">
-        {review.author} · {review.branch} office · {monthLabel(review.month)}
+        {review.author} · {monthLabel(review.month)}
       </p>
     </Card>
   );
@@ -75,11 +76,11 @@ export function SisterBrandReviews({ limit, className }: { limit?: number; class
         What travellers say about {SISTER_BRAND.name}
       </h2>
       <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink-700">
-        OUTLYY is new, so it has no reviews yet — and we would rather show you nothing of our own than
+        OUTLYY is new, so it has no reviews yet, and we would rather show you nothing of our own than
         make some up. These {sisterReviewStats.total} Google reviews belong to{" "}
-        <strong>{SISTER_BRAND.name}</strong>, {SISTER_BRAND.relationship}, which has been running trips
-        from {SISTER_BRAND.offices.join(", ")} for years. They are about Holiday Planner&rsquo;s service,
-        not about anything you would book here. The same team answers your WhatsApp messages.
+        <strong>{SISTER_BRAND.name}</strong>, {SISTER_BRAND.relationship}, which has been sending people
+        on holiday for years. They&rsquo;re about Holiday Planner&rsquo;s service, not about anything
+        you&rsquo;d book here. Same team, same phones.
       </p>
       <p className="mt-1 text-xs text-ink-500">
         {sisterReviewStats.average} average across {sisterReviewStats.total} reviews, as exported on {captured}.

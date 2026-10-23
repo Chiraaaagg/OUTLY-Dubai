@@ -30,7 +30,7 @@ export async function generateMetadata({
   const a = attractionBySlug(slug);
   if (!a) return { title: "Attraction not found" };
   return {
-    title: `${a.name} — Tickets, Prices & Practical Info`,
+    title: `${a.name}. Tickets, Prices & Practical Info`,
     description: a.blurb.slice(0, 155),
     alternates: { canonical: `/attractions/${a.slug}` },
   };
@@ -81,7 +81,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
         </div>
       </section>
 
-      {/* Combo routing block — on Tier A hubs the primary CTA is the combo, not a
+      {/* Combo routing block, on Tier A hubs the primary CTA is the combo, not a
           lone ticket inquiry (pivot §3.2). Price stays visible; the route changes. */}
       {linkedCombos[0] && (
         <section className="container-page pt-8" aria-labelledby="route-combo">
@@ -97,7 +97,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
                   {linkedCombos[0].name.split(":")[0].replace(/\s*\+.*$/, "")}
                 </h2>
                 <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-700">
-                  One inquiry, one reply, one confirmed price — and{" "}
+                  One inquiry, one reply, one confirmed price, and{" "}
                   <strong className="font-bold">
                     <Amount money={{ inr: linkedCombos[0].separatePrice.inr - linkedCombos[0].bundlePrice.inr, aed: linkedCombos[0].separatePrice.aed - linkedCombos[0].bundlePrice.aed }} /> per adult
                   </strong>{" "}
@@ -118,7 +118,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
         </section>
       )}
 
-      {/* Tickets — the SEO job of this page; the commercial job is above */}
+      {/* Tickets, the SEO job of this page; the commercial job is above */}
       <section className="container-page py-10" aria-labelledby="tickets">
         <SectionHeading
           id="tickets"

@@ -105,7 +105,7 @@ export function WhatsAppCard({
               )}
             >
               {body ??
-                `A real person who knows these suppliers answers in about 30 minutes. Tell us your dates, group and any food or mobility needs — we'll confirm availability and come back with options, priced all-in.`}
+                `A real person who knows these suppliers answers in about 30 minutes. Tell us your dates, group and any food or mobility needs, we'll confirm availability and come back with options, priced all-in.`}
             </p>
             <p
               className={cn(

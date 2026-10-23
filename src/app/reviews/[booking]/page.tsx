@@ -46,7 +46,7 @@ export default function ReviewPage({ params }: { params: Promise<{ booking: stri
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      setError("Pick a star rating — it's the only required field.");
+      setError("Pick a star rating, it's the only required field.");
       return;
     }
     setState("sending");
@@ -61,7 +61,7 @@ export default function ReviewPage({ params }: { params: Promise<{ booking: stri
       setState("sent");
     } catch {
       setState("error");
-      setError("That didn't send. Nothing you wrote is lost — try again in a moment.");
+      setError("That didn't send. Nothing you wrote is lost, try again in a moment.");
     }
   };
 
@@ -70,7 +70,7 @@ export default function ReviewPage({ params }: { params: Promise<{ booking: stri
       <div className="container-page py-10 pb-20">
         <div className="mx-auto max-w-2xl">
           <Alert tone="info" title="We can't find that booking">
-            Reviews can only be written against a completed booking — that&apos;s what makes every
+            Reviews can only be written against a completed booking, that&apos;s what makes every
             review on OUTLYY verified. Check the link in your review request message, or find your
             booking first.
             <div className="mt-3">
@@ -104,13 +104,13 @@ export default function ReviewPage({ params }: { params: Promise<{ booking: stri
             >
               <Star className="h-7 w-7 fill-dune-400 text-dune-400" />
             </span>
-            <h1 className="text-2xl">Thank you — genuinely</h1>
+            <h1 className="text-2xl">Thank you, genuinely</h1>
             <p className="mx-auto mt-2 max-w-md text-[0.95rem] leading-relaxed text-ink-600">
               Your review goes through moderation and appears within 24 hours.
               {dietaryMet === false && (
                 <>
                   {" "}
-                  You told us your dietary request wasn&apos;t met — that&apos;s already flagged to
+                  You told us your dietary request wasn&apos;t met, that&apos;s already flagged to
                   our operations team and attached to the supplier&apos;s scorecard. Someone will
                   message you about a refund of the meal portion.
                 </>

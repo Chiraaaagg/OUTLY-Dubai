@@ -25,7 +25,7 @@ const FORWARD_LABELS: Partial<Record<InquiryStatus, string>> = {
   negotiating: "Negotiating",
   payment_pending: "Payment link sent",
   assigned: "Back to assigned",
-  new: "Not spam — reopen",
+  new: "Not spam, reopen",
 };
 
 function ErrorAlert({ state }: { state: ActionResult<unknown> | null }) {
@@ -134,7 +134,7 @@ export function StatusActions({
   if (status === "won") {
     return (
       <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-success)]">
-        <CheckCheck className="h-4 w-4" /> Won — order created. Nothing more to do here.
+        <CheckCheck className="h-4 w-4" /> Won, order created. Nothing more to do here.
       </p>
     );
   }

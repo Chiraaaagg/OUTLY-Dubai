@@ -90,7 +90,7 @@ function TrackInner() {
       } else if (code === "RATE_LIMITED") {
         setFailure({
           title: "Too many lookups from this connection",
-          body: "Wait fifteen minutes and try again, or message us on WhatsApp with your reference — that's usually quicker.",
+          body: "Wait fifteen minutes and try again, or message us on WhatsApp with your reference, that's usually quicker.",
         });
       } else if (code === "VALIDATION_FAILED" && err instanceof ApiError && err.fields) {
         setErrors({ reference: err.fields.reference, phone: err.fields.phone });
@@ -113,7 +113,7 @@ function TrackInner() {
         />
         <h1 className="text-[1.75rem] sm:text-3xl">Track your inquiry</h1>
         <p className="mt-1.5 text-[0.95rem] text-ink-600">
-          No sign-in needed. Your reference is in the WhatsApp message we sent when you asked — it
+          No sign-in needed. Your reference is in the WhatsApp message we sent when you asked, it
           looks like INQ-104821.
         </p>
 
@@ -226,7 +226,7 @@ function TrackInner() {
           className="mt-6"
           context={{ intent: "inquiry_followup", placement: "inquiry_track" }}
           title="Lost the reference?"
-          body="Message us from the number you used and we'll find it — no reference needed."
+          body="Message us from the number you used and we'll find it, no reference needed."
         />
 
         {!result && (

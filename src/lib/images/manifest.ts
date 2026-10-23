@@ -214,3 +214,35 @@ export function pexelsCdnUrl(photoId: number, width: number, ext: "jpeg" | "png"
   const h = Math.round(width * FRAME_RATIO);
   return `https://images.pexels.com/photos/${photoId}/pexels-photo-${photoId}.${ext}?auto=compress&cs=tinysrgb&fit=crop&w=${width}&h=${h}`;
 }
+
+/**
+ * Resize a supplier image URL that was imported with a fixed width.
+ *
+ * Imported listings carry Cloudinary *fetch* URLs with the transform width
+ * baked in — `c_limit,w_3840` — because that is what the supplier feed
+ * contains. A card renders at roughly 400 CSS pixels, so the stored URL asks
+ * for about ten times the pixels it can use: measured on one listing, 196 KB at
+ * w_3840 against 38 KB at w_480, the same image, both WebP.
+ *
+ * Cloudinary reads the width from the transform segment, so swapping it is
+ * enough to get a correctly sized rendition — no re-import, and it works for
+ * URLs that arrive in future feeds too.
+ *
+ * Returns `undefined` when the URL is not a Cloudinary fetch URL, which is the
+ * caller's signal that this image cannot be resized and must not advertise a
+ * srcset it cannot honour.
+ */
+export function resizableRemoteUrl(src: string, width: number): string | undefined {
+  if (!src.includes("res.cloudinary.com") || !src.includes("/image/fetch/")) return undefined;
+  // Only the transform segment is touched. The fetched origin URL is appended
+  // after it and may legitimately contain its own `w_` — hence the split.
+  const marker = "/image/fetch/";
+  const at = src.indexOf(marker) + marker.length;
+  const head = src.slice(0, at);
+  const rest = src.slice(at);
+  const originAt = rest.search(/https?%3A|https?:/i);
+  const transforms = originAt === -1 ? rest : rest.slice(0, originAt);
+  const origin = originAt === -1 ? "" : rest.slice(originAt);
+  if (!/(^|[,/])w_\d+/.test(transforms)) return undefined;
+  return head + transforms.replace(/(^|[,/])w_\d+/, `$1w_${width}`) + origin;
+}

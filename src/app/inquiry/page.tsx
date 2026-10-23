@@ -54,7 +54,7 @@ export default function InquiryPage() {
         <h1 className="text-[1.75rem] sm:text-3xl">Check availability &amp; price</h1>
         <p className="mt-1.5 hidden text-[0.95rem] leading-relaxed text-ink-600 sm:block">
           Two fields and thirty seconds. A named person confirms with the operator and replies on
-          WhatsApp in about 30 minutes — with the exact price. Nothing is charged until you say yes.
+          WhatsApp in about 30 minutes, with the exact price. Nothing is charged until you say yes.
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export default function InquiryPage() {
           <Card className="p-5 sm:p-6">
             <p className="mb-4 flex items-center gap-2 rounded-[var(--radius-control)] bg-shell p-3 text-sm text-ink-700">
               <Sparkles className="h-4 w-4 shrink-0 text-sun-500" aria-hidden="true" />
-              Nothing picked yet? That&apos;s fine — tell us your dates and group and we&apos;ll
+              Nothing picked yet? That&apos;s fine, tell us your dates and group and we&apos;ll
               suggest a plan.
             </p>
             <InquiryForm items={[]} />

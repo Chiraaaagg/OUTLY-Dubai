@@ -24,7 +24,7 @@ const DIFFERENTIATORS = [
   {
     icon: Tag,
     title: "The price you see is the price you pay",
-    body: "Taxes and booking fees are already inside every number on this site. If anything is ever added at checkout, that's a defect and we treat it as one.",
+    body: "Taxes and booking fees are already inside every number on this site. If anything ever gets added at checkout, that's a bug and we treat it as one.",
   },
   {
     icon: Leaf,
@@ -39,7 +39,7 @@ const DIFFERENTIATORS = [
   {
     icon: CalendarCheck2,
     title: "Free cancellation, stated plainly",
-    body: "Every activity says exactly when free cancellation ends, in plain language. Where a ticket is non-refundable, we say that too — before you pay.",
+    body: "Every activity says exactly when free cancellation ends, in plain language. Where a ticket is non-refundable, we say so before you pay.",
   },
 ];
 
@@ -71,7 +71,7 @@ export function WhyOutlyy({ className }: { className?: string }) {
 
 const MARQUEE_ITEMS = [
   { icon: Tag, label: "All-in pricing" },
-  { icon: Smartphone, label: "UPI · GPay · PhonePe · Paytm" },
+  { icon: Smartphone, label: "Your voucher on WhatsApp" },
   { icon: MessageCircle, label: "Human reply in 30 minutes" },
   { icon: Leaf, label: "Jain & pure-veg filters" },
   { icon: Truck, label: "Hotel pickup with driver details" },
@@ -148,10 +148,10 @@ export function SocialProofStrip({ className }: { className?: string }) {
 /** Compact trust row for the ADP sidebar and checkout. */
 export function TrustSummary({ className }: { className?: string }) {
   const items = [
-    { icon: ShieldCheck, label: "Operator confirms availability before you pay" },
-    { icon: Tag, label: "All-in price — nothing added at checkout" },
-    { icon: MessageCircle, label: "Confirmed with the operator before you pay" },
-    { icon: Smartphone, label: "Named specialist replies in ~30 min" },
+    { icon: ShieldCheck, label: "We check with the operator before you pay" },
+    { icon: Tag, label: "All-in price. Nothing added at checkout" },
+    { icon: CalendarCheck2, label: "Free cancellation where the operator allows it" },
+    { icon: Smartphone, label: "A named person replies in about 30 minutes" },
   ];
   return (
     <ul className={cn("space-y-2", className)}>

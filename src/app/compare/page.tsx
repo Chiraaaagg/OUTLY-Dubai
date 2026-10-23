@@ -35,7 +35,7 @@ export default function ComparePage() {
         <div>
           <h1 className="text-[1.75rem] sm:text-3xl">Compare experiences</h1>
           <p className="mt-1.5 text-[0.95rem] text-ink-600">
-            The attributes that actually decide it — pickup, confirmation, cancellation and food —
+            The attributes that actually decide it, pickup, confirmation, cancellation and food —
             side by side.
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function ComparePage() {
           placement: "compare",
         }}
         title="Still can't decide?"
-        body="Send us your group — ages, dietary needs, how much walking is realistic — and we'll tell you which of these actually suits you, and why."
+        body="Send us your group, ages, dietary needs, how much walking is realistic, and we'll tell you which of these actually suits you, and why."
       />
 
       <p className="mt-8 text-sm text-ink-600">

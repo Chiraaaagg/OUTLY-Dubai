@@ -73,7 +73,7 @@ import type { PaxCount } from "@/lib/types";
 const COLOURS: { group: string; note: string; tokens: { name: string; value: string }[] }[] = [
   {
     group: "Ink",
-    note: "Text, surfaces at the dark end, premium sections. Never pure black — pure black on a warm ground reads harsh.",
+    note: "Text, surfaces at the dark end, premium sections. Never pure black, pure black on a warm ground reads harsh.",
     tokens: [
       { name: "ink-900", value: "#14101f" },
       { name: "ink-800", value: "#241b3a" },
@@ -87,7 +87,7 @@ const COLOURS: { group: string; note: string; tokens: { name: string; value: str
   },
   {
     group: "Sun (primary)",
-    note: "Dubai sunshine and Indian marigold. Reserved for the primary action — one per view.",
+    note: "Dubai sunshine and Indian marigold. Reserved for the primary action, one per view.",
     tokens: [
       { name: "sun-500", value: "#ff6a13" },
       { name: "sun-600", value: "#e85403" },
@@ -98,7 +98,7 @@ const COLOURS: { group: string; note: string; tokens: { name: string; value: str
   },
   {
     group: "Lagoon",
-    note: "Marina water. Trust signals — instant confirmation, free cancellation, security.",
+    note: "Marina water. Trust signals, instant confirmation, free cancellation, security.",
     tokens: [
       { name: "lagoon-500", value: "#00a6a0" },
       { name: "lagoon-600", value: "#008783" },
@@ -108,7 +108,7 @@ const COLOURS: { group: string; note: string; tokens: { name: string; value: str
   },
   {
     group: "Sunset",
-    note: "Savings and deals only. Never used for errors — a discount and a failure must not share a colour.",
+    note: "Savings and deals only. Never used for errors, a discount and a failure must not share a colour.",
     tokens: [
       { name: "sunset-500", value: "#f02e63" },
       { name: "sunset-400", value: "#ff4d7e" },
@@ -217,15 +217,15 @@ export default function DesignSystemPage() {
             </p>
             <ul className="mt-4 space-y-1.5 text-sm text-ink-700">
               <li>
-                <strong className="font-bold">Playful but not childish</strong> — stickers and
+                <strong className="font-bold">Playful but not childish</strong>, stickers and
                 illustration in the chrome, never in the price block.
               </li>
               <li>
-                <strong className="font-bold">Vibrant but controlled</strong> — one primary colour,
+                <strong className="font-bold">Vibrant but controlled</strong>, one primary colour,
                 used for one job.
               </li>
               <li>
-                <strong className="font-bold">Premium but approachable</strong> — deep plum for
+                <strong className="font-bold">Premium but approachable</strong>, deep plum for
                 luxury, sand for everything else.
               </li>
             </ul>
@@ -241,13 +241,13 @@ export default function DesignSystemPage() {
               Body · wide apertures, reads well at 14px on mid-range Android
             </p>
             <div className="mt-5 space-y-1.5">
-              <p className="font-display text-3xl font-bold">Heading 1 — 2rem/3.4rem</p>
-              <p className="font-display text-2xl font-bold">Heading 2 — 1.75rem</p>
-              <p className="text-[1.02rem] font-bold">Heading 3 — 1.02rem</p>
-              <p className="text-[0.95rem] text-ink-600">Body — 0.95rem, line-height 1.75</p>
-              <p className="text-xs text-ink-500">Caption — 0.75rem</p>
+              <p className="font-display text-3xl font-bold">Heading 1, 2rem/3.4rem</p>
+              <p className="font-display text-2xl font-bold">Heading 2, 1.75rem</p>
+              <p className="text-[1.02rem] font-bold">Heading 3, 1.02rem</p>
+              <p className="text-[0.95rem] text-ink-600">Body, 0.95rem, line-height 1.75</p>
+              <p className="text-xs text-ink-500">Caption, 0.75rem</p>
               <p className="text-2xs font-bold uppercase tracking-[0.12em] text-ink-400">
-                Kicker — 0.6875rem
+                Kicker, 0.6875rem
               </p>
               <p className="tnum text-lg font-bold">₹2,990 · tabular numerals for all prices</p>
             </div>
@@ -298,7 +298,7 @@ export default function DesignSystemPage() {
       </Section>
 
       {/* ---------------------------------------------------- BUTTONS */}
-      <Section title="Buttons" kicker="Actions" sub="Strict hierarchy — a page never has two things competing to be primary.">
+      <Section title="Buttons" kicker="Actions" sub="Strict hierarchy, a page never has two things competing to be primary.">
         <div className="space-y-4">
           <Row label="Variants">
             <Button>Book now</Button>
@@ -324,7 +324,7 @@ export default function DesignSystemPage() {
       </Section>
 
       {/* ---------------------------------------------------- BADGES */}
-      <Section title="Badges" kicker="Signals" sub="Colour is meaning. Nothing here may render from an invented number — every urgency badge is derived from real supplier availability.">
+      <Section title="Badges" kicker="Signals" sub="Colour is meaning. Nothing here may render from an invented number, every urgency badge is derived from real supplier availability.">
         <Row label="Trust">
           <InstantBadge />
           <FreeCancellationBadge hours={24} />
@@ -353,7 +353,7 @@ export default function DesignSystemPage() {
       </Section>
 
       {/* ---------------------------------------------------- PRICE */}
-      <Section title="Price" kicker="The load-bearing component" sub="Price honesty is the product. The all-in tax line is not garnish — it is the differentiator against both the agent and the OTA.">
+      <Section title="Price" kicker="The load-bearing component" sub="Price honesty is the product. The all-in tax line is not garnish, it is the differentiator against both the agent and the OTA.">
         <div className="grid gap-4 sm:grid-cols-3">
           <Card className="p-5">
             <PriceBlock band={sample.price} />
@@ -374,7 +374,7 @@ export default function DesignSystemPage() {
       <Section title="Cards" kicker="Inventory">
         <div className="space-y-6">
           <div>
-            <p className="mb-2 text-sm font-bold text-ink-700">Activity card — grid, rail, compact, row</p>
+            <p className="mb-2 text-sm font-bold text-ink-700">Activity card, grid, rail, compact, row</p>
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               <ActivityCard activity={sample} showCompare showWhatsApp source="design_system" />
               <ActivityCard activity={activities[0]} layout="compact" source="design_system" />
@@ -471,7 +471,7 @@ export default function DesignSystemPage() {
               {
                 id: "overview",
                 label: "Overview",
-                content: <p className="text-sm text-ink-600">Tab panels use the WAI-ARIA tabs pattern with roving tabindex — arrow keys, Home and End all work.</p>,
+                content: <p className="text-sm text-ink-600">Tab panels use the WAI-ARIA tabs pattern with roving tabindex, arrow keys, Home and End all work.</p>,
               },
               {
                 id: "faq",
@@ -480,7 +480,7 @@ export default function DesignSystemPage() {
                 content: (
                   <Accordion
                     items={[
-                      { q: "Is the price I see the price I pay?", a: "Yes — taxes and booking fees are inside every number on the site." },
+                      { q: "Is the price I see the price I pay?", a: "Yes, taxes and booking fees are inside every number on the site." },
                       { q: "Is Jain food genuinely available?", a: "On the camps we mark for it: cooked to order, requested at booking, printed on your voucher." },
                     ]}
                   />
@@ -522,7 +522,7 @@ export default function DesignSystemPage() {
       >
         <div className="space-y-5">
           <div>
-            <p className="mb-2 text-sm font-bold text-ink-700">Loading — skeleton matches the real layout exactly (CLS &lt; 0.1)</p>
+            <p className="mb-2 text-sm font-bold text-ink-700">Loading, skeleton matches the real layout exactly (CLS &lt; 0.1)</p>
             <div className="grid gap-5 sm:grid-cols-3">
               <ActivityCardSkeleton />
               <ActivityCardSkeleton />
@@ -542,11 +542,11 @@ export default function DesignSystemPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <EmptyState
               title="Nothing matched that search"
-              body="We keep a deliberately small catalogue, so some searches come up empty. Tell us what you're after and we'll almost certainly arrange it."
+              body="Some searches come up empty. Tell us what you're after and we'll almost certainly arrange it."
               action={<Button size="sm">Browse everything</Button>}
             />
             <ErrorState
-              body="The operator's system didn't respond. Nothing has been charged — try again, or ask us and we'll confirm your date directly."
+              body="The operator's system didn't respond. Nothing has been charged, try again, or ask us and we'll confirm your date directly."
               onRetry={() => toast({ tone: "info", title: "Retrying…" })}
               action={<WhatsAppButton size="sm" context={{ intent: "availability" }} />}
             />
@@ -561,7 +561,7 @@ export default function DesignSystemPage() {
               two hours.
             </Alert>
             <Alert tone="warning" title="The price changed while you were booking">
-              Was ₹9,900, now ₹10,494. You have not been charged — confirm to continue.
+              Was ₹9,900, now ₹10,494. You have not been charged, confirm to continue.
             </Alert>
             <Alert tone="danger" title="That payment didn't go through">
               Nothing has been charged and your trip is exactly as you left it.
@@ -625,7 +625,7 @@ export default function DesignSystemPage() {
       <Section
         title="WhatsApp surfaces"
         kicker="Rail B"
-        sub="A conversion surface, not a support widget — and offered, never forced."
+        sub="A conversion surface, not a support widget, and offered, never forced."
       >
         <Row label="Inline">
           <WhatsAppButton context={{ intent: "activity" }} />
@@ -658,7 +658,7 @@ export default function DesignSystemPage() {
         <Card className="p-5">
           {events.length === 0 ? (
             <p className="text-sm text-ink-600">
-              No events yet — interact with something above and they&apos;ll appear here.
+              No events yet, interact with something above and they&apos;ll appear here.
             </p>
           ) : (
             <ul className="space-y-1 font-mono text-xs">
@@ -693,7 +693,7 @@ export default function DesignSystemPage() {
         <p className="text-sm leading-relaxed text-ink-600">
           Focus moves into the panel on open and returns to the trigger on close, Escape closes,
           Tab is trapped, and the background scroll is locked. Used by filters, sort, the guest
-          selector, the calendar and the cancellation flow — solved once.
+          selector, the calendar and the cancellation flow, solved once.
         </p>
       </Sheet>
 

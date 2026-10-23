@@ -160,6 +160,8 @@ export interface CreateInquiryInput {
   attribution?: Record<string, unknown>;
   sessionId?: string;
   anonId?: string;
+  /** One per filled-in form; repeat submissions with the same value replay the first result. */
+  idempotencyKey?: string;
 }
 
 export interface CreateInquiryResult {

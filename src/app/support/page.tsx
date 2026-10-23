@@ -56,7 +56,7 @@ const TASKS = [
   {
     icon: CreditCard,
     title: "Payment problem",
-    body: "Failed UPI, double charge, or money debited without a booking — we reconcile these within an hour.",
+    body: "Failed UPI, double charge, or money debited without a booking, we reconcile these within an hour.",
     href: "/faq#payments",
     cta: "Payment FAQs",
   },
@@ -126,7 +126,7 @@ export default function SupportPage() {
           <div className={`grid gap-4 ${channelCount === 3 ? "sm:grid-cols-3" : "sm:max-w-md"}`}>
             <Card className="p-5">
               <MessageCircle className="mb-2 h-5 w-5 text-whatsapp" aria-hidden="true" />
-              <h3 className="text-[1.02rem]">WhatsApp — the main one</h3>
+              <h3 className="text-[1.02rem]">WhatsApp, the main one</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
                 {RESPONSE_SLA} during {SUPPORT_HOURS}. Out of hours you get an automatic
                 acknowledgement within a minute telling you when we&apos;ll reply.
@@ -150,7 +150,7 @@ export default function SupportPage() {
                   <Phone className="mb-2 h-5 w-5 text-[var(--color-danger)]" aria-hidden="true" />
                   <h3 className="text-[1.02rem]">24/7 emergency</h3>
                   <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                    On every voucher. For anything happening right now in Dubai — a driver who
+                    On every voucher. For anything happening right now in Dubai, a driver who
                     hasn&apos;t come, a ticket rejected at a gate.
                   </p>
                   <a href={emergencyTel} className="mt-2 block font-bold text-ink-900 underline">

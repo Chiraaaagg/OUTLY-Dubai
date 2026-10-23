@@ -73,7 +73,7 @@ const ADDON: Record<string, AddOn> = {
   privateTransfer: {
     id: "ao-private-transfer",
     name: "Private vehicle (no other guests)",
-    description: "Your family alone in the car — no waiting at other hotels.",
+    description: "Your family alone in the car, no waiting at other hotels.",
     price: { inr: 2400, aed: 104 },
     perPerson: false,
     category: "transfer",
@@ -175,7 +175,7 @@ function makeActivity(seed: ActivitySeed): Activity {
     badges: {},
     seo: {
       // The layout's title template appends "| OUTLYY" — never repeat it here.
-      title: `${seed.title} — from ₹${seed.price.adult.inr.toLocaleString("en-IN")} all-in`,
+      title: `${seed.title}, from ₹${seed.price.adult.inr.toLocaleString("en-IN")} all-in`,
       description: seed.subtitle,
       keywords: [seed.title.toLowerCase()],
     },
@@ -204,7 +204,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "burj-khalifa-124-125",
     title: "Burj Khalifa: Level 124 & 125 Entry",
-    subtitle: "The view everyone comes to Dubai for — booked at the honest price",
+    subtitle: "The view everyone comes to Dubai for, booked at the honest price",
     tier: "A",
     categorySlug: "dubai-attractions",
     secondaryCategorySlugs: ["family-activities", "dubai-city-tours"],
@@ -241,14 +241,14 @@ export const activities: Activity[] = [
       "Hotel transfers",
       "Food and drink",
       "The Dubai Fountain show (free to watch, outside)",
-      "At the Top SKY (level 148) — that's a separate ticket",
+      "At the Top SKY (level 148), that's a separate ticket",
     ],
     itinerary: [
       {
         time: "Arrive",
         title: "Check in at the Dubai Mall counter",
         detail:
-          "Show the QR code on your phone. Arrive 30 minutes before your slot — security screening is thorough and the queue moves slowly at sunset.",
+          "Show the QR code on your phone. Arrive 30 minutes before your slot, security screening is thorough and the queue moves slowly at sunset.",
         durationMin: 30,
       },
       {
@@ -272,7 +272,7 @@ export const activities: Activity[] = [
       "Fully wheelchair accessible, including the outdoor terrace.",
     ],
     cancellationPolicy:
-      "Free cancellation up to 24 hours before your selected slot — full refund, no questions. Inside 24 hours the ticket is non-refundable because the slot is held for you.",
+      "Free cancellation up to 24 hours before your selected slot, full refund, no questions. Inside 24 hours the ticket is non-refundable because the slot is held for you.",
     variants: [
       STANDARD_VARIANT({
         name: "Non-prime hours",
@@ -282,7 +282,7 @@ export const activities: Activity[] = [
       {
         id: "prime",
         name: "Sunset (prime hours)",
-        blurb: "The 17:30–19:00 window — city by day and by light in one visit.",
+        blurb: "The 17:30–19:00 window, city by day and by light in one visit.",
         delta: { inr: 1800, aed: 78 },
         highlights: ["Day-to-night in one visit", "Book 5+ days ahead in winter"],
         isPrivate: false,
@@ -306,7 +306,7 @@ export const activities: Activity[] = [
     relatedSlugs: ["dubai-aquarium-underwater-zoo", "dubai-frame-tickets", "burj-khalifa-148-sky"],
     comboSlugs: ["dubai-icons-combo"],
     seo: {
-      title: "Burj Khalifa Tickets from India — ₹3,690 All-In",
+      title: "Burj Khalifa Tickets from India, ₹3,690 All-In",
       description:
         "Book Burj Khalifa level 124 & 125 tickets in rupees. All-in price, instant WhatsApp voucher, free cancellation up to 24 hours. No fees added at checkout.",
       keywords: [
@@ -346,7 +346,7 @@ export const activities: Activity[] = [
     badges: { editorPick: true },
     inclusions: [
       "Priority access with a dedicated lift",
-      "Level 148 outdoor terrace — the world's highest observation terrace",
+      "Level 148 outdoor terrace, the world's highest observation terrace",
       "Refreshments and a guided lounge experience",
       "Levels 125 and 124 on the way down",
       "All taxes and booking fees",
@@ -357,7 +357,7 @@ export const activities: Activity[] = [
       "Smart casual dress. Beachwear and sportswear are turned away.",
     ],
     cancellationPolicy:
-      "Free cancellation up to 48 hours before your slot. Inside 48 hours this ticket is non-refundable — capacity on 148 is very limited.",
+      "Free cancellation up to 48 hours before your slot. Inside 48 hours this ticket is non-refundable, capacity on 148 is very limited.",
     variants: [STANDARD_VARIANT({ name: "SKY 148 experience" })],
     addOns: [ADDON.privateTransfer, ADDON.photoPack],
     relatedSlugs: ["burj-khalifa-124-125", "helicopter-tour-12min"],
@@ -406,7 +406,7 @@ export const activities: Activity[] = [
     ],
     exclusions: ["Transfers", "Food and drink"],
     importantInfo: [
-      "The glass floor turns opaque when you step off it — children love this and nervous adults can simply walk around it.",
+      "The glass floor turns opaque when you step off it, children love this and nervous adults can simply walk around it.",
       "Best light is the last slot before sunset, when both skylines are lit.",
     ],
     variants: [STANDARD_VARIANT({ name: "Standard entry" })],
@@ -420,11 +420,11 @@ export const activities: Activity[] = [
       },
       {
         q: "Is it good for young children?",
-        a: "Yes — the glass floor is the highlight and it's short enough to hold attention. Strollers are fine throughout.",
+        a: "Yes, the glass floor is the highlight and it's short enough to hold attention. Strollers are fine throughout.",
       },
     ],
     seo: {
-      title: "Dubai Frame Tickets — ₹1,690 All-In, Instant Voucher",
+      title: "Dubai Frame Tickets, ₹1,690 All-In, Instant Voucher",
       description:
         "Dubai Frame tickets in rupees with the glass-floor sky deck included. Instant WhatsApp voucher, free cancellation, no fees added at checkout.",
       keywords: ["dubai frame tickets", "dubai frame ticket price india"],
@@ -486,7 +486,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "dubai-aquarium-underwater-zoo",
     title: "Dubai Aquarium & Underwater Zoo",
-    subtitle: "Inside the Dubai Mall — a good hour when the heat wins",
+    subtitle: "Inside the Dubai Mall, a good hour when the heat wins",
     tier: "A",
     categorySlug: "dubai-attractions",
     secondaryCategorySlugs: ["family-activities", "water-activities"],
@@ -534,7 +534,7 @@ export const activities: Activity[] = [
     bookedThisMonth: 1180,
     durationMinutes: 240,
     location: "Sheikh Mohammed Bin Zayed Road, Exit 37",
-    meetingPoint: "Global Village Gate 1 or Gate 3 — scan at the turnstile",
+    meetingPoint: "Global Village Gate 1 or Gate 3, scan at the turnstile",
     timeSlots: ["16:00", "18:00", "20:00"],
     price: {
       adult: { inr: 690, aed: 30 },
@@ -550,7 +550,7 @@ export const activities: Activity[] = [
     exclusions: ["Food and shopping inside", "Carnival rides", "Transfers"],
     importantInfo: [
       "Seasonal: open roughly mid-October to end of April. Closed through the summer.",
-      "Seniors above 60 and people of determination enter free — we price them at zero rather than charging you and telling you later.",
+      "Seniors above 60 and people of determination enter free, we price them at zero rather than charging you and telling you later.",
       "Tuesdays are the quietest evening; Fridays and Saturdays are extremely busy.",
       "Plenty of pure-vegetarian and Jain-friendly food at the India and Pakistan pavilions.",
     ],
@@ -586,7 +586,7 @@ export const activities: Activity[] = [
     inclusions: ["Garden entry", "All display areas", "All taxes and booking fees"],
     exclusions: ["Butterfly Garden (separate ticket)", "Transfers", "Food"],
     importantInfo: [
-      "Seasonal: mid-November to late May. Closed in summer — the flowers cannot survive it.",
+      "Seasonal: mid-November to late May. Closed in summer, the flowers cannot survive it.",
       "Go early morning or after 4pm. Midday in March is unpleasant and the photos are washed out.",
     ],
     variants: [STANDARD_VARIANT({ name: "Standard entry" })],
@@ -598,7 +598,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "evening-desert-safari-veg-jain",
     title: "Evening Desert Safari with Pure Veg & Jain Dinner",
-    subtitle: "Dune drive, camel ride, live shows — and food your family can actually eat",
+    subtitle: "Dune drive, camel ride, live shows, and food your family can actually eat",
     tier: "B",
     categorySlug: "desert-safari",
     secondaryCategorySlugs: ["family-activities"],
@@ -621,7 +621,7 @@ export const activities: Activity[] = [
       "Palm Jumeirah",
     ],
     location: "Al Lahbab red dunes · Hotel pickup included",
-    meetingPoint: "Your hotel lobby — driver calls 10 minutes before arrival",
+    meetingPoint: "Your hotel lobby, driver calls 10 minutes before arrival",
     timeSlots: ["14:30 pickup", "15:00 pickup", "15:30 pickup"],
     price: {
       adult: { inr: 2990, aed: 129 },
@@ -635,7 +635,7 @@ export const activities: Activity[] = [
     supplier: SUP.arabianDunes,
     badges: { bestseller: true, sellingFast: true },
     mealNote:
-      "The pure-veg counter is a separate live-cooking station, not a corner of the main buffet. Jain thalis are cooked to order without onion or garlic and must be requested when you book — we confirm it in writing on your voucher.",
+      "The pure-veg counter is a separate live-cooking station, not a corner of the main buffet. Jain thalis are cooked to order without onion or garlic and must be requested when you book, we confirm it in writing on your voucher.",
     inclusions: [
       "Hotel pickup and drop in an air-conditioned 4x4 (6 seats)",
       "45 minutes of dune bashing on the Al Lahbab red dunes",
@@ -665,7 +665,7 @@ export const activities: Activity[] = [
         time: "16:00",
         title: "Dune bashing",
         detail:
-          "Forty-five minutes across the red dunes. Tell your driver if anyone wants it gentler — they will slow down. If you already know you don't want this at all, book the gentle safari instead.",
+          "Forty-five minutes across the red dunes. Tell your driver if anyone wants it gentler, they will slow down. If you already know you don't want this at all, book the gentle safari instead.",
         durationMin: 45,
       },
       {
@@ -695,13 +695,13 @@ export const activities: Activity[] = [
       },
     ],
     importantInfo: [
-      "Not recommended during pregnancy, or for guests with back, neck or heart conditions — book the gentle safari, which skips dune bashing entirely.",
+      "Not recommended during pregnancy, or for guests with back, neck or heart conditions, book the gentle safari, which skips dune bashing entirely.",
       "Carry a light jacket between November and February. Desert evenings drop to around 15°C.",
       "Jain and Jain-with-no-root-vegetable meals must be requested at booking, not on the day. The camp cooks them to order.",
       "Palm Jumeirah and Al Barsha South pickups add roughly 20 minutes to your journey.",
     ],
     cancellationPolicy:
-      "Free cancellation up to 24 hours before your pickup time — full refund. Inside 24 hours there is no refund, because your seats and meals are already confirmed with the camp.",
+      "Free cancellation up to 24 hours before your pickup time, full refund. Inside 24 hours there is no refund, because your seats and meals are already confirmed with the camp.",
     variants: [
       STANDARD_VARIANT({
         name: "Shared 4x4",
@@ -733,7 +733,7 @@ export const activities: Activity[] = [
       },
       {
         q: "My father is 71 and can't do dune bashing. Can he skip it?",
-        a: "He can stay at the camp — but the honest answer is to book the gentle safari instead, which drives a scenic desert route and reaches the same camp at the same time, with the same dinner and shows. It is a separate activity on our site, not a favour you have to negotiate with the driver.",
+        a: "He can stay at the camp, but the honest answer is to book the gentle safari instead, which drives a scenic desert route and reaches the same camp at the same time, with the same dinner and shows. It is a separate activity on our site, not a favour you have to negotiate with the driver.",
       },
       {
         q: "How many people in one car?",
@@ -752,7 +752,7 @@ export const activities: Activity[] = [
     ],
     comboSlugs: ["desert-and-dhow-family", "family-fun-pack"],
     seo: {
-      title: "Desert Safari Dubai with Pure Veg & Jain Food — ₹2,990",
+      title: "Desert Safari Dubai with Pure Veg & Jain Food, ₹2,990",
       description:
         "Evening desert safari with hotel pickup, a separate pure-veg live counter and Jain thali on request at no extra cost. All-in rupee price, free cancellation up to 24 hours.",
       keywords: [
@@ -765,7 +765,7 @@ export const activities: Activity[] = [
 
   makeActivity({
     slug: "gentle-desert-safari-seniors",
-    title: "Gentle Desert Safari — No Dune Bashing",
+    title: "Gentle Desert Safari. No Dune Bashing",
     subtitle: "Same camp, same dinner, same shows. A scenic drive instead of the rollercoaster.",
     tier: "B",
     categorySlug: "desert-safari",
@@ -779,7 +779,7 @@ export const activities: Activity[] = [
     pickupIncluded: true,
     pickupZones: ["Deira", "Bur Dubai", "Downtown", "Business Bay", "Marina", "JBR", "Al Barsha"],
     location: "Al Lahbab desert · Hotel pickup included",
-    meetingPoint: "Your hotel lobby — driver calls 10 minutes before arrival",
+    meetingPoint: "Your hotel lobby, driver calls 10 minutes before arrival",
     timeSlots: ["15:00 pickup", "15:30 pickup"],
     price: {
       adult: { inr: 3290, aed: 142 },
@@ -795,7 +795,7 @@ export const activities: Activity[] = [
       "Pure-veg live counter as standard. Jain thali without onion or garlic on request at no extra cost.",
     inclusions: [
       "Hotel pickup and drop in an air-conditioned 4x4",
-      "Scenic desert drive on graded tracks — no dune bashing at any point",
+      "Scenic desert drive on graded tracks, no dune bashing at any point",
       "Camel ride and henna",
       "Sunset photo stop with seating",
       "Live tanoura and fire show",
@@ -806,7 +806,7 @@ export const activities: Activity[] = [
     exclusions: ["Alcohol", "Quad biking", "Tips"],
     importantInfo: [
       "Designed for grandparents, pregnant travellers, anyone with back or neck trouble, and children under five.",
-      "Wheelchair users can be accommodated with 48 hours' notice — message us on WhatsApp and we will confirm the camp's ramp access in writing before you pay.",
+      "Wheelchair users can be accommodated with 48 hours' notice, message us on WhatsApp and we will confirm the camp's ramp access in writing before you pay.",
       "Reaches the camp at the same time as the standard safari, so families can split across both and still eat together.",
     ],
     variants: [
@@ -830,7 +830,7 @@ export const activities: Activity[] = [
     faqs: [
       {
         q: "Is this actually different, or is it the same tour sold twice?",
-        a: "It is a genuinely different route. The vehicles stay on graded desert tracks and never go over a dune ridge. Everything after that — the camp, the camel ride, the dinner, the shows — is identical to the standard safari.",
+        a: "It is a genuinely different route. The vehicles stay on graded desert tracks and never go over a dune ridge. Everything after that, the camp, the camel ride, the dinner, the shows, is identical to the standard safari.",
       },
       {
         q: "Can we split our family across both safaris?",
@@ -885,7 +885,7 @@ export const activities: Activity[] = [
     ],
     exclusions: ["Alcohol (available to pre-order)", "Photographer (add below)"],
     importantInfo: [
-      "Confirmed by the camp within two hours of booking — we message you the moment it is done, and refund immediately if the date cannot be held.",
+      "Confirmed by the camp within two hours of booking, we message you the moment it is done, and refund immediately if the date cannot be held.",
       "Minimum two guests. Groups above 12 are quoted separately on WhatsApp.",
       "Al Marmoom is a conservation reserve, so vehicle numbers are capped nightly. December to February sells out three to four weeks ahead.",
     ],
@@ -911,7 +911,7 @@ export const activities: Activity[] = [
     faqs: [
       {
         q: "Is it really private?",
-        a: "Yes — your own majlis, your own table and your own vehicle. You will see other camps in the reserve at a distance, but nobody joins your group and there is no shared buffet queue.",
+        a: "Yes, your own majlis, your own table and your own vehicle. You will see other camps in the reserve at a distance, but nobody joins your group and there is no shared buffet queue.",
       },
       {
         q: "Can you arrange a proposal?",
@@ -992,7 +992,7 @@ export const activities: Activity[] = [
     bookedThisMonth: 830,
     durationMinutes: 120,
     location: "Dubai Marina · Marina Walk jetty",
-    meetingPoint: "Marina Walk jetty opposite Dubai Marina Mall — boarding from 20:00",
+    meetingPoint: "Marina Walk jetty opposite Dubai Marina Mall, boarding from 20:00",
     timeSlots: ["20:30 sailing"],
     price: {
       adult: { inr: 2790, aed: 120 },
@@ -1006,7 +1006,7 @@ export const activities: Activity[] = [
     supplier: SUP.marinaFleet,
     badges: { bestseller: true },
     mealNote:
-      "The vegetarian buffet is a full section with about a dozen dishes, not two token items. Jain meals need 24 hours' notice — ask on WhatsApp and we'll confirm in writing before you pay.",
+      "The vegetarian buffet is a full section with about a dozen dishes, not two token items. Jain meals need 24 hours' notice, ask on WhatsApp and we'll confirm in writing before you pay.",
     inclusions: [
       "Two-hour cruise through Dubai Marina and past Bluewaters",
       "International buffet dinner with a full vegetarian section",
@@ -1025,7 +1025,7 @@ export const activities: Activity[] = [
     importantInfo: [
       "Arrive by 20:00. The boat leaves on time and does not return for late arrivals.",
       "The upper deck is open-air and best for photos; the lower deck is air-conditioned and better with small children.",
-      "Very calm water throughout — this is a good choice if anyone in your group is prone to seasickness.",
+      "Very calm water throughout, this is a good choice if anyone in your group is prone to seasickness.",
     ],
     variants: [
       STANDARD_VARIANT({
@@ -1044,12 +1044,12 @@ export const activities: Activity[] = [
     addOns: [ADDON.hotelPickup, ADDON.cake, ADDON.jainMeal],
     faqs: [
       {
-        q: "Marina or Creek — which cruise is better?",
+        q: "Marina or Creek, which cruise is better?",
         a: "Marina for the modern skyline and a newer boat; Creek for old Dubai, the souks and a more traditional dhow. Families visiting for the first time usually prefer Marina; travellers who want the heritage side prefer Creek.",
       },
       {
         q: "Is there enough vegetarian food?",
-        a: "Yes — a dozen or so dishes in a separate section including Indian, Arabic and continental. Jain meals are possible with 24 hours' notice and we get it confirmed in writing before you pay.",
+        a: "Yes, a dozen or so dishes in a separate section including Indian, Arabic and continental. Jain meals are possible with 24 hours' notice and we get it confirmed in writing before you pay.",
       },
     ],
     relatedSlugs: ["dhow-cruise-creek-heritage", "luxury-yacht-tour-90min", "evening-desert-safari-veg-jain"],
@@ -1070,7 +1070,7 @@ export const activities: Activity[] = [
     bookedThisMonth: 420,
     durationMinutes: 120,
     location: "Dubai Creek · Deira jetty",
-    meetingPoint: "Deira Creek jetty near the Radisson Blu — boarding from 20:00",
+    meetingPoint: "Deira Creek jetty near the Radisson Blu, boarding from 20:00",
     timeSlots: ["20:30 sailing"],
     price: {
       adult: { inr: 1990, aed: 86 },
@@ -1096,7 +1096,7 @@ export const activities: Activity[] = [
 
   makeActivity({
     slug: "luxury-yacht-tour-90min",
-    title: "Shared Luxury Yacht Tour — Marina & Burj Al Arab",
+    title: "Shared Luxury Yacht Tour. Marina & Burj Al Arab",
     subtitle: "Ninety minutes, open deck, and the photo you came for",
     tier: "C",
     categorySlug: "cruises-yachts",
@@ -1108,7 +1108,7 @@ export const activities: Activity[] = [
     bookedThisMonth: 186,
     durationMinutes: 90,
     location: "Dubai Marina · Yacht Club berth",
-    meetingPoint: "Dubai Marina Yacht Club, Berth 12 — check in 20 minutes before sailing",
+    meetingPoint: "Dubai Marina Yacht Club, Berth 12, check in 20 minutes before sailing",
     timeSlots: ["10:00", "12:00", "15:00", "17:30 sunset"],
     price: {
       adult: { inr: 4990, aed: 215 },
@@ -1122,7 +1122,7 @@ export const activities: Activity[] = [
     badges: { editorPick: true, sellingFast: true },
     inclusions: [
       "90-minute cruise past Bluewaters, the Palm and the Burj Al Arab",
-      "Maximum 24 guests — not 200",
+      "Maximum 24 guests, not 200",
       "Open sun deck and shaded saloon",
       "Snacks, soft drinks and water",
       "Life jackets and a safety briefing",
@@ -1130,7 +1130,7 @@ export const activities: Activity[] = [
     ],
     exclusions: ["Transfers", "Alcohol", "Swimming stop (private charters only)"],
     importantInfo: [
-      "The sunset sailing is the one people book for photographs and it sells out first — usually five to seven days ahead in winter.",
+      "The sunset sailing is the one people book for photographs and it sells out first, usually five to seven days ahead in winter.",
       "Open sea past the Burj Al Arab can be choppy in December and January.",
     ],
     variants: [
@@ -1152,7 +1152,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "atlantis-aquaventure",
     title: "Atlantis Aquaventure Waterpark, Palm Jumeirah",
-    subtitle: "The region's biggest waterpark — a genuine full day out",
+    subtitle: "The region's biggest waterpark, a genuine full day out",
     tier: "B",
     categorySlug: "water-activities",
     secondaryCategorySlugs: ["family-activities", "theme-parks"],
@@ -1185,14 +1185,14 @@ export const activities: Activity[] = [
       "All taxes and booking fees",
     ],
     exclusions: [
-      "Lockers (chargeable at the park — around AED 60)",
+      "Lockers (chargeable at the park, around AED 60)",
       "Food and drink inside",
       "The Lost Chambers Aquarium (separate ticket)",
       "Transfers",
     ],
     importantInfo: [
       "Allow a full day. Arriving at 2pm wastes half the ticket.",
-      "Height limits apply on the headline slides — roughly 120cm for most and 1.2m minimum for the Leap of Faith.",
+      "Height limits apply on the headline slides, roughly 120cm for most and 1.2m minimum for the Leap of Faith.",
       "Under-3s enter free. Seniors 60+ get a reduced rate, which we show on the page rather than at the gate.",
       "Bring water shoes if you have them; the walkways get hot between May and September.",
     ],
@@ -1201,7 +1201,7 @@ export const activities: Activity[] = [
       {
         id: "aquarium-combo",
         name: "Aquaventure + Lost Chambers",
-        blurb: "Add the aquarium — it's indoors and air-conditioned, which helps mid-afternoon.",
+        blurb: "Add the aquarium, it's indoors and air-conditioned, which helps mid-afternoon.",
         delta: { inr: 1900, aed: 82 },
         highlights: ["Saves ₹1,290 vs separate", "Air-conditioned break", "Same-day entry"],
         isPrivate: false,
@@ -1257,7 +1257,7 @@ export const activities: Activity[] = [
 
   makeActivity({
     slug: "jet-ski-burj-al-arab",
-    title: "30-Minute Jet Ski — Burj Al Arab Route",
+    title: "30-Minute Jet Ski. Burj Al Arab Route",
     subtitle: "The fastest way to the photograph everyone recognises",
     tier: "B",
     categorySlug: "water-activities",
@@ -1288,14 +1288,14 @@ export const activities: Activity[] = [
     exclusions: ["Transfers", "Photos (guide takes them on your phone free)"],
     importantInfo: [
       "Riders must be 16+ to drive. A child aged 8+ may ride as a passenger with a parent.",
-      "Swimming is not required — the lifejacket is mandatory and included.",
+      "Swimming is not required, the lifejacket is mandatory and included.",
       "Bring a change of clothes. You will get soaked.",
     ],
     variants: [
       STANDARD_VARIANT({ name: "30 minutes" }),
       {
         id: "60min",
-        name: "60 minutes — extended route",
+        name: "60 minutes, extended route",
         blurb: "Adds the Palm Atlantis loop and a longer photo stop.",
         delta: { inr: 4200, aed: 181 },
         highlights: ["Atlantis loop", "More photo time"],
@@ -1309,7 +1309,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "img-worlds-of-adventure",
     title: "IMG Worlds of Adventure Entry",
-    subtitle: "The world's largest indoor theme park — the summer answer",
+    subtitle: "The world's largest indoor theme park, the summer answer",
     tier: "A",
     categorySlug: "theme-parks",
     secondaryCategorySlugs: ["family-activities"],
@@ -1338,7 +1338,7 @@ export const activities: Activity[] = [
     ],
     exclusions: ["Food and drink", "Transfers", "Haunted Hotel express pass"],
     importantInfo: [
-      "Fully indoor and air-conditioned — the best Dubai plan on a 45°C afternoon.",
+      "Fully indoor and air-conditioned, the best Dubai plan on a 45°C afternoon.",
       "Most headline rides require 130cm minimum height, so under-8s will be limited to the Cartoon Network zone.",
       "Under-3s enter free.",
     ],
@@ -1376,7 +1376,7 @@ export const activities: Activity[] = [
     exclusions: ["Food", "Transfers", "Other Dubai Parks & Resorts parks"],
     importantInfo: [
       "The Smurfs and Dreamworks zones are the best in Dubai for ages 4–10.",
-      "Large parts of the park are outdoors — from May to September go for the evening opening.",
+      "Large parts of the park are outdoors, from May to September go for the evening opening.",
     ],
     variants: [STANDARD_VARIANT({ name: "Full-day entry" })],
     addOns: [ADDON.hotelPickup],
@@ -1387,7 +1387,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "aya-universe",
     title: "AYA Universe Immersive Light Experience",
-    subtitle: "Twelve rooms of light and sound — gentle, indoor, ninety minutes",
+    subtitle: "Twelve rooms of light and sound, gentle, indoor, ninety minutes",
     tier: "B",
     categorySlug: "theme-parks",
     secondaryCategorySlugs: ["family-activities", "dubai-attractions"],
@@ -1413,7 +1413,7 @@ export const activities: Activity[] = [
     inclusions: ["Entry to all 12 immersive zones", "All taxes and booking fees"],
     exclusions: ["Transfers", "Café"],
     importantInfo: [
-      "Entirely indoors, step-free and walkable in 90 minutes — one of the few Dubai attractions that works equally for a toddler and a grandparent.",
+      "Entirely indoors, step-free and walkable in 90 minutes, one of the few Dubai attractions that works equally for a toddler and a grandparent.",
       "Very photogenic and very popular on weekends; weekday afternoons are almost empty.",
     ],
     variants: [STANDARD_VARIANT({ name: "Standard entry" })],
@@ -1423,7 +1423,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "dubai-city-tour-half-day",
     title: "Half-Day Dubai City Tour with Hindi Guide",
-    subtitle: "Old Creek to Downtown in four hours — do this on day one",
+    subtitle: "Old Creek to Downtown in four hours, do this on day one",
     tier: "B",
     categorySlug: "dubai-city-tours",
     secondaryCategorySlugs: ["family-activities"],
@@ -1459,7 +1459,7 @@ export const activities: Activity[] = [
     ],
     exclusions: ["Entry tickets to attractions", "Meals", "Shopping"],
     importantInfo: [
-      "A Hindi-speaking guide must be selected at least 24 hours ahead — it is a scheduled guide, not an on-the-day request.",
+      "A Hindi-speaking guide must be selected at least 24 hours ahead, it is a scheduled guide, not an on-the-day request.",
       "Photo stops, not entries. Book Burj Khalifa separately if you want to go up.",
     ],
     variants: [
@@ -1505,7 +1505,7 @@ export const activities: Activity[] = [
     supplier: SUP.arabianDunes,
     badges: { newlyAdded: true, editorPick: true },
     mealNote:
-      "Six tasting stops. The vegetarian route swaps every meat stop for a vegetarian one — it is not a reduced version of the tour.",
+      "Six tasting stops. The vegetarian route swaps every meat stop for a vegetarian one, it is not a reduced version of the tour.",
     inclusions: [
       "Small group (maximum 10 guests)",
       "Six street-food tasting stops",
@@ -1517,7 +1517,7 @@ export const activities: Activity[] = [
     exclusions: ["Hotel transfers", "Shopping"],
     importantInfo: [
       "About 2.5km of walking in total, mostly flat, with breaks at every stop.",
-      "Tell us at booking if anyone is vegetarian or Jain — the guide plans a different set of stops rather than watching you skip half the tour.",
+      "Tell us at booking if anyone is vegetarian or Jain, the guide plans a different set of stops rather than watching you skip half the tour.",
     ],
     variants: [
       STANDARD_VARIANT({ name: "Shared small group" }),
@@ -1537,7 +1537,7 @@ export const activities: Activity[] = [
   makeActivity({
     slug: "abu-dhabi-city-tour-grand-mosque",
     title: "Abu Dhabi Day Trip with Sheikh Zayed Grand Mosque",
-    subtitle: "The mosque, the Corniche and Qasr Al Watan — one long, worthwhile day",
+    subtitle: "The mosque, the Corniche and Qasr Al Watan, one long, worthwhile day",
     tier: "B",
     categorySlug: "dubai-city-tours",
     secondaryCategorySlugs: ["family-activities", "dubai-attractions"],
@@ -1585,7 +1585,7 @@ export const activities: Activity[] = [
     importantInfo: [
       "Dress code at the mosque: ankles, wrists and shoulders covered for everyone; women must also cover their hair. Carrying your own scarf is faster than queueing for a loaned abaya.",
       "Eleven hours door to door, with about three hours in the car. It is a long day for children under six.",
-      "Passport or Emirates ID must be carried — there are checkpoints on the route.",
+      "Passport or Emirates ID must be carried, there are checkpoints on the route.",
     ],
     variants: [
       STANDARD_VARIANT({ name: "Shared coach" }),
@@ -1602,13 +1602,13 @@ export const activities: Activity[] = [
     faqs: [
       {
         q: "Can we add Ferrari World?",
-        a: "Yes, but not on the same day as Qasr Al Watan — there isn't enough time to do both properly. Book the Ferrari World ticket separately and message us on WhatsApp; we'll arrange transport that fits both into one Abu Dhabi day.",
+        a: "Yes, but not on the same day as Qasr Al Watan, there isn't enough time to do both properly. Book the Ferrari World ticket separately and message us on WhatsApp; we'll arrange transport that fits both into one Abu Dhabi day.",
       },
     ],
     relatedSlugs: ["ferrari-world-abu-dhabi", "dubai-city-tour-half-day"],
     comboSlugs: ["abu-dhabi-day-combo"],
     seo: {
-      title: "Abu Dhabi Day Tours from Dubai — ₹4,290 with Grand Mosque",
+      title: "Abu Dhabi Day Tours from Dubai, ₹4,290 with Grand Mosque",
       description:
         "Full-day Abu Dhabi trip from Dubai with hotel pickup, Sheikh Zayed Grand Mosque, Qasr Al Watan and lunch. All-in rupee pricing, Hindi guide available.",
       keywords: ["abu dhabi day tour from dubai", "sheikh zayed grand mosque tour"],
@@ -1654,7 +1654,7 @@ export const activities: Activity[] = [
 
   makeActivity({
     slug: "la-perle-show",
-    title: "La Perle by Dragone — Aqua Theatre Show",
+    title: "La Perle by Dragone. Aqua Theatre Show",
     subtitle: "Ninety minutes of high diving and stagecraft, in the middle of the city",
     tier: "B",
     categorySlug: "dubai-attractions",
@@ -1666,7 +1666,7 @@ export const activities: Activity[] = [
     bookedThisMonth: 260,
     durationMinutes: 90,
     location: "Al Habtoor City, Sheikh Zayed Road",
-    meetingPoint: "La Perle theatre, Al Habtoor City — doors open 45 minutes before",
+    meetingPoint: "La Perle theatre, Al Habtoor City, doors open 45 minutes before",
     timeSlots: ["19:00", "21:30"],
     price: {
       adult: { inr: 4290, aed: 185 },
@@ -1686,7 +1686,7 @@ export const activities: Activity[] = [
       STANDARD_VARIANT({ name: "Bronze seating" }),
       {
         id: "silver",
-        name: "Silver — centre block",
+        name: "Silver, centre block",
         blurb: "Middle of the theatre, best overall view of the aerial work.",
         delta: { inr: 1600, aed: 69 },
         highlights: ["Best sightline", "Out of the splash zone"],
@@ -1695,7 +1695,7 @@ export const activities: Activity[] = [
       },
       {
         id: "vip",
-        name: "VIP — front centre",
+        name: "VIP, front centre",
         blurb: "Closest seats with a welcome drink.",
         delta: { inr: 4200, aed: 181 },
         highlights: ["Front centre", "Welcome drink", "Splash zone"],
@@ -1710,7 +1710,7 @@ export const activities: Activity[] = [
    * Premium. Quote-led, concierge-served. */
   makeActivity({
     slug: "private-yacht-charter-sunset",
-    title: "Private Yacht Charter — Sunset, Marina",
+    title: "Private Yacht Charter. Sunset, Marina",
     subtitle: "The whole boat, your own guest list, priced per hour",
     tier: "D",
     categorySlug: "luxury-experiences",
@@ -1723,8 +1723,8 @@ export const activities: Activity[] = [
     durationMinutes: 180,
     isPrivate: true,
     location: "Dubai Marina Yacht Club",
-    meetingPoint: "Dubai Marina Yacht Club — berth confirmed the day before",
-    timeSlots: ["Flexible — you choose"],
+    meetingPoint: "Dubai Marina Yacht Club, berth confirmed the day before",
+    timeSlots: ["Flexible, you choose"],
     quoteOnly: true,
     confirmation: "manual",
     freeCancellationHours: 72,
@@ -1743,9 +1743,9 @@ export const activities: Activity[] = [
       "Fishing equipment on request",
       "All taxes and booking fees",
     ],
-    exclusions: ["Catering (we arrange it — veg, Jain and halal menus available)", "Alcohol", "Transfers"],
+    exclusions: ["Catering (we arrange it, veg, Jain and halal menus available)", "Alcohol", "Transfers"],
     importantInfo: [
-      "Priced per boat per hour, not per person — which is why we quote rather than publish a number. The figure shown is a genuine starting point for a 48ft boat for three hours.",
+      "Priced per boat per hour, not per person, which is why we quote rather than publish a number. The figure shown is a genuine starting point for a 48ft boat for three hours.",
       "A named coordinator handles the booking from enquiry to disembarkation.",
       "Quotes are sent within two hours during working hours.",
     ],
@@ -1753,13 +1753,13 @@ export const activities: Activity[] = [
       "Free cancellation up to 72 hours before departure. Inside 72 hours, 50% is retained; inside 24 hours the charter is non-refundable.",
     variants: [
       STANDARD_VARIANT({
-        name: "48ft — up to 12 guests",
+        name: "48ft, up to 12 guests",
         blurb: "The usual choice for a couple or a small family group.",
         isPrivate: true,
       }),
       {
         id: "75ft",
-        name: "75ft — up to 30 guests",
+        name: "75ft, up to 30 guests",
         blurb: "Flybridge, larger saloon, jacuzzi on deck.",
         delta: { inr: 26000, aed: 1124 },
         highlights: ["Flybridge", "Deck jacuzzi", "For celebrations"],
@@ -1795,7 +1795,7 @@ export const activities: Activity[] = [
     bookedThisMonth: 88,
     durationMinutes: 90,
     location: "Atlantis Helipad, Palm Jumeirah",
-    meetingPoint: "Atlantis The Palm helipad reception — check in 45 minutes before",
+    meetingPoint: "Atlantis The Palm helipad reception, check in 45 minutes before",
     timeSlots: ["09:00", "11:00", "13:00", "15:00", "16:30"],
     price: {
       adult: { inr: 18900, aed: 815 },
@@ -1817,12 +1817,12 @@ export const activities: Activity[] = [
     ],
     exclusions: ["Transfers", "Photos", "Private charter (quoted separately)"],
     importantInfo: [
-      "Weight declaration required for every passenger for load balancing — the operator asks for this before flight, and we collect it at booking rather than surprising you at the helipad.",
+      "Weight declaration required for every passenger for load balancing, the operator asks for this before flight, and we collect it at booking rather than surprising you at the helipad.",
       "Flights are weather-dependent. If yours is cancelled, you get a full refund or a rebook, decided by you, within two hours.",
       "Confirmation comes from the operator, usually within two hours of booking.",
     ],
     cancellationPolicy:
-      "Free cancellation up to 48 hours before departure. Inside 48 hours the seat is non-refundable — unless the operator cancels for weather, in which case you are refunded in full.",
+      "Free cancellation up to 48 hours before departure. Inside 48 hours the seat is non-refundable, unless the operator cancels for weather, in which case you are refunded in full.",
     variants: [
       STANDARD_VARIANT({ name: "12-minute shared flight" }),
       {
@@ -1836,7 +1836,7 @@ export const activities: Activity[] = [
       {
         id: "private-heli",
         name: "Private charter",
-        blurb: "The whole aircraft — priced on request.",
+        blurb: "The whole aircraft, priced on request.",
         delta: { inr: 84000, aed: 3630 },
         highlights: ["Aircraft to yourselves", "Flexible departure", "Proposal-friendly"],
         isPrivate: true,
@@ -1863,7 +1863,7 @@ export const activities: Activity[] = [
     pickupIncluded: true,
     pickupZones: ["Deira", "Bur Dubai", "Downtown", "Marina", "JBR", "Business Bay"],
     location: "Dubai Desert Conservation Reserve · Hotel pickup included",
-    meetingPoint: "Your hotel lobby at 04:30 — yes, really",
+    meetingPoint: "Your hotel lobby at 04:30, yes, really",
     timeSlots: ["04:30 pickup"],
     price: {
       adult: { inr: 21500, aed: 928 },
@@ -1888,7 +1888,7 @@ export const activities: Activity[] = [
     exclusions: ["Photos", "Tips"],
     importantInfo: [
       "Flights operate roughly September to May. Too hot and unstable in high summer.",
-      "Weather-dependent. Cancellations are called the night before or at the launch site, and you are refunded in full or rebooked — your choice.",
+      "Weather-dependent. Cancellations are called the night before or at the launch site, and you are refunded in full or rebooked, your choice.",
       "Not suitable during pregnancy, or for children under five, or for anyone unable to stand for an hour.",
     ],
     variants: [

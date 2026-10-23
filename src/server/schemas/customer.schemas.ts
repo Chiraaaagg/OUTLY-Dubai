@@ -33,6 +33,21 @@ export const verifyOtpSchema = z
   })
   .strict();
 
+/**
+ * MSG91 widget sign-in. The token is an opaque signed string from the provider;
+ * we bound its length so a multi-megabyte body cannot reach the verify call,
+ * and validate nothing else here — only MSG91 can say whether it is genuine.
+ *
+ * Note what is absent: there is no `phone` field, and there must never be one.
+ * The verified number comes back from MSG91, so accepting one here would let a
+ * caller pair a token they legitimately hold with an account they do not.
+ */
+export const verifyWidgetSchema = z
+  .object({
+    accessToken: z.string().trim().min(16, "Please try again.").max(4096, "Please try again."),
+  })
+  .strict();
+
 /* -------------------------------------------------------------------- me */
 
 /** Empty string means "clear this field"; absent means "leave it alone". */

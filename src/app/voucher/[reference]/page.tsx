@@ -86,7 +86,7 @@ export default async function VoucherPage({
           className="mb-4 print:hidden"
         />
 
-        {/* Brand lockup. Printed too — the print sheet keeps the voucher's own
+        {/* Brand lockup. Printed too, the print sheet keeps the voucher's own
             header, so the black version carries it on a monochrome printer. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -120,7 +120,7 @@ export default async function VoucherPage({
 
         {pending && (
           <Alert tone="warning" className="mb-5" title="Awaiting operator confirmation">
-            This voucher becomes valid once the operator confirms — within two hours of booking.
+            This voucher becomes valid once the operator confirms, within two hours of booking.
             You&apos;ll get a WhatsApp message either way. Don&apos;t travel to the meeting point
             until it says confirmed.
           </Alert>
@@ -205,7 +205,7 @@ export default async function VoucherPage({
                         <Utensils className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                         Dietary requirement confirmed with the operator:{" "}
                         {booking.traveller.dietary === "jain"
-                          ? "Jain — no onion, no garlic"
+                          ? "Jain, no onion, no garlic"
                           : booking.traveller.dietary}
                       </p>
                     )}
@@ -264,7 +264,7 @@ export default async function VoucherPage({
             <p className="flex items-start gap-2 border-t border-white/15 pt-3 text-xs leading-relaxed text-white/70">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {booking.items[0]?.freeCancellationHours
-                ? `Free cancellation up to ${booking.items[0].freeCancellationHours} hours before your start time. After that, no refund. Cancel from Manage booking — the exact refund amount is shown before you confirm.`
+                ? `Free cancellation up to ${booking.items[0].freeCancellationHours} hours before your start time. After that, no refund. Cancel from Manage booking, the exact refund amount is shown before you confirm.`
                 : `This booking is non-refundable. If something goes wrong on the day, ${emergency ? "call the emergency number above" : "message us on WhatsApp"} before leaving the venue.`}
             </p>
           </footer>

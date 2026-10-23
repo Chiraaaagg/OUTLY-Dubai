@@ -31,7 +31,7 @@ export async function generateMetadata({
   if (!c) return { title: "Package not found" };
   const saving = c.separatePrice.inr - c.bundlePrice.inr;
   return {
-    title: `${c.name} — Save ₹${saving.toLocaleString("en-IN")}`,
+    title: `${c.name}. Save ₹${saving.toLocaleString("en-IN")}`,
     description: `${c.tagline}. ₹${c.bundlePrice.inr.toLocaleString("en-IN")} all-in per adult against ₹${c.separatePrice.inr.toLocaleString("en-IN")} bought separately.`,
     alternates: { canonical: `/combos/${c.slug}` },
   };
@@ -93,7 +93,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
             <h2 className="text-xl">Check the maths yourself</h2>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
               The comparison below is against what these exact experiences cost individually on this
-              site today — not against a gate price nobody pays.
+              site today, not against a gate price nobody pays.
             </p>
             <ul className="mt-4 divide-y divide-ink-200">
               {included.map((a) => (
@@ -151,7 +151,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
               id="included"
               kicker={`${included.length} experiences`}
               title="Everything included"
-              sub="Each keeps its own timed slot and QR code — use them on different days if you prefer."
+              sub="Each keeps its own timed slot and QR code, use them on different days if you prefer."
             />
             <div className="grid gap-4 sm:grid-cols-2">
               {included.map((a, i) => (
@@ -208,7 +208,7 @@ export default async function ComboPage({ params }: { params: Promise<{ slug: st
               placement: "combo_body",
             }}
             title="Want to swap something out?"
-            body="Bundle prices depend on the specific combination, so swaps aren't possible in self-serve. Tell us what you'd rather have and we'll price the alternative — it usually still beats booking separately."
+            body="Bundle prices depend on the specific combination, so swaps aren't possible in self-serve. Tell us what you'd rather have and we'll price the alternative, it usually still beats booking separately."
           />
         </div>
 

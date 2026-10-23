@@ -7,9 +7,17 @@ import { KeyRound, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, Breadcrumbs, Card, Skeleton } from "@/components/ui/primitives";
 import { Scene } from "@/components/ui/scene";
-import { ApiError, requestOtp, verifyOtp } from "@/lib/api";
+import { ApiError, requestOtp, verifyOtp, verifyOtpWidget } from "@/lib/api";
 import { track } from "@/lib/analytics";
-import { normalisePhone } from "@/lib/phone";
+import { maskPhone, normalisePhone } from "@/lib/phone";
+import {
+  CAPTCHA_ELEMENT_ID,
+  captchaCleared,
+  preloadWidget,
+  sendWidgetOtp,
+  verifyWidgetOtp,
+  widgetConfigured,
+} from "@/lib/msg91-widget";
 import { safeNext } from "@/lib/safe-next";
 import { serverErrorCode } from "@/lib/server-error";
 import { cn } from "@/lib/utils";
@@ -34,6 +42,9 @@ import { cn } from "@/lib/utils";
 
 const RESEND_AFTER_SECONDS = 30;
 const CODE_LENGTH = 6;
+
+/** Stand-in id for the widget flow, which has no server-side challenge row. */
+const WIDGET_CHALLENGE = "widget";
 
 const INPUT =
   "min-h-12 w-full rounded-[var(--radius-control)] border bg-paper px-3 text-[0.95rem] text-ink-900 outline-none focus:border-ink-900 disabled:opacity-60";
@@ -65,6 +76,10 @@ function LoginInner() {
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
 
+  // Decided at build time: the widget credentials are baked into the bundle or
+  // they are not, so this never changes while the page is open.
+  const widgetMode = widgetConfigured();
+
   const [step, setStep] = useState<Step>("phone");
   const [countryCode, setCountryCode] = useState("+91");
   const [phone, setPhone] = useState("");
@@ -81,6 +96,10 @@ function LoginInner() {
 
   useEffect(() => {
     track("page_view", { page_type: "login" });
+    // Draw hCaptcha while the number is being typed. Initialising it inside the
+    // send instead would put the challenge on screen at the moment it already
+    // needs to be solved, so the first press would always be refused.
+    preloadWidget();
   }, []);
 
   // Resend countdown.
@@ -108,7 +127,21 @@ function LoginInner() {
     setNotice(null);
     setSending(true);
     try {
-      const result = await requestOtp({ phone: parsed.national, countryCode: parsed.countryCode });
+      // Widget mode: MSG91 sends the code straight from the browser, so there is
+      // no challenge row to come back with. The card only needs a masked number
+      // to display, and `verify()` goes to the widget endpoint instead.
+      if (widgetMode && !captchaCleared()) {
+        setPhoneError("Tick the box above to confirm you're not a robot, then try again.");
+        setSending(false);
+        return false;
+      }
+      const result = widgetMode
+        ? await sendWidgetOtp(parsed.e164).then(() => ({
+            challengeId: WIDGET_CHALLENGE,
+            expiresInSeconds: 0,
+            phoneMasked: maskPhone(parsed.e164),
+          }))
+        : await requestOtp({ phone: parsed.national, countryCode: parsed.countryCode });
       setChallenge(result);
       setCode("");
       setCodeError(null);
@@ -145,7 +178,14 @@ function LoginInner() {
     setVerifying(true);
     setCodeError(null);
     try {
-      await verifyOtp({ challengeId: challenge.challengeId, code: value });
+      if (widgetMode) {
+        // MSG91 checks the code and signs a token; the server decides which
+        // account that token opens. The token is never trusted on this side.
+        const accessToken = await verifyWidgetOtp(value);
+        await verifyOtpWidget(accessToken);
+      } else {
+        await verifyOtp({ challengeId: challenge.challengeId, code: value });
+      }
       router.replace(next);
       router.refresh();
     } catch (err) {
@@ -190,7 +230,7 @@ function LoginInner() {
           <Breadcrumbs items={[{ label: "Dubai", href: "/" }, { label: "Sign in" }]} className="mb-3" />
           <h1 className="text-[1.75rem] sm:text-3xl">Sign in</h1>
           <p className="mt-1.5 text-[0.95rem] text-ink-600">
-            Use the WhatsApp number from your inquiry. We send a one-time code — no password, and
+            Use the WhatsApp number from your inquiry. We send a one-time code, no password, and
             nothing to set up. You never need to sign in to ask us about a trip.
           </p>
 
@@ -246,6 +286,15 @@ function LoginInner() {
                   )}
                 </div>
 
+                {/*
+                  Render target for MSG91's captcha, which is hCaptcha despite
+                  what their docs call it. The widget fills this with an
+                  <h-captcha> element on init, so it is never empty — it simply
+                  has no height until hCaptcha decides to challenge the visitor.
+                  It has to exist before init or every send is refused.
+                */}
+                {widgetMode && <div id={CAPTCHA_ELEMENT_ID} className="[&:not(:has(iframe))]:hidden" />}
+
                 <Button type="submit" block size="lg" loading={sending} loadingLabel="Sending the code…">
                   <Smartphone className="h-[1.15rem] w-[1.15rem]" />
                   Send me a code
@@ -262,7 +311,7 @@ function LoginInner() {
                   <Link href="/privacy" className="font-semibold underline underline-offset-2 hover:text-ink-700">
                     Privacy Policy
                   </Link>
-                  . We send the code by SMS or WhatsApp to verify it is you — never for marketing.
+                  . We send the code by SMS or WhatsApp to verify it is you, never for marketing.
                 </p>
               </form>
             )}
@@ -347,7 +396,7 @@ function LoginInner() {
               <Link href="/inquiry/track" className="font-bold text-sun-700 underline underline-offset-2">
                 Track it with your reference
               </Link>{" "}
-              — no sign-in needed.
+             , no sign-in needed.
             </p>
             <p>
               Have a paid booking?{" "}
@@ -369,7 +418,7 @@ function DisabledState() {
     <div>
       <Alert tone="info" title="Sign-in is coming soon">
         We haven&apos;t switched on one-time codes for this site yet. Track your inquiry with its
-        reference and the phone number you used instead — it shows the same status, agent and next
+        reference and the phone number you used instead, it shows the same status, agent and next
         step.
       </Alert>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">

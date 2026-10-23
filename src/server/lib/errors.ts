@@ -19,6 +19,7 @@ export type ErrorCode =
   | "SUPPRESSED"
   | "TOTP_REQUIRED"
   | "TOTP_ENROLMENT_REQUIRED"
+  | "VERIFICATION_REQUIRED"
   | "NOT_CONFIGURED"
   | "NOT_IMPLEMENTED"
   | "error";
@@ -71,6 +72,21 @@ export const Errors = {
     }),
   unauthorized: (message = "Sign in required") =>
     new AppError({ status: 401, code: "UNAUTHORIZED", message, recovery: "Sign in and try again." }),
+  /**
+   * The caller's phone is not verified yet, so the action cannot proceed.
+   *
+   * Distinct from `unauthorized` on purpose: the storefront answers this by
+   * opening the one-time-code step inline and retrying, never by sending the
+   * visitor to a sign-in page. A generic 401 would be indistinguishable from
+   * an expired session and the client would handle it the wrong way.
+   */
+  verificationRequired: (message = "Verify your number to continue") =>
+    new AppError({
+      status: 401,
+      code: "VERIFICATION_REQUIRED",
+      message,
+      recovery: "Enter the code we just sent you.",
+    }),
   forbidden: (permission?: string) =>
     new AppError({
       status: 403,

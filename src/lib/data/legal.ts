@@ -44,13 +44,13 @@ export const legalPages: Record<string, LegalPage> = {
     title: "Cancellation & refund policy",
     updated: UPDATED,
     intro:
-      "Each experience carries its own cancellation terms, set by the operator who runs it. The terms that apply to you are the ones shown on the listing and repeated in your confirmation — this page explains how they work and how to use them.",
+      "Each experience carries its own cancellation terms, set by the operator who runs it. The terms that apply to you are the ones shown on the listing and repeated in your confirmation, this page explains how they work and how to use them.",
     sections: [
       {
         heading: "The policy on your listing is the policy that applies",
         paragraphs: [
           "Cancellation windows differ by experience: some are free to cancel up to 24 or 48 hours before, some are non-refundable from the moment the operator confirms, and a few are refundable only if the operator cancels. Every listing states its own window before you enquire, and we repeat it in writing when we confirm your booking.",
-          "If the listing and your written confirmation ever disagree, the written confirmation wins — it is the document that reflects what the operator actually confirmed for your date.",
+          "If the listing and your written confirmation ever disagree, the written confirmation wins, it is the document that reflects what the operator actually confirmed for your date.",
         ],
       },
       {
@@ -70,14 +70,14 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "If we or the operator cancel",
         paragraphs: [
-          "If an experience cannot run — weather, safety, mechanical failure, an operator shortfall — you choose between a full refund of what you paid us and a rebooking on another date at the same price, even if that date is priced higher.",
+          "If an experience cannot run, weather, safety, mechanical failure, an operator shortfall, you choose between a full refund of what you paid us and a rebooking on another date at the same price, even if that date is priced higher.",
           "We tell you as soon as we know. We do not hold a cancellation back in the hope that it resolves itself.",
         ],
       },
       {
         heading: "If something goes wrong on the day",
         paragraphs: [
-          `Contact us immediately, while the problem is still fixable — on WhatsApp during our hours (${siteConfig.supportHours})${siteConfig.emergencyPhone ? ", or on the emergency number printed on your confirmation at any time" : ""}. Tell us what happened and, where you can, send a photograph.`,
+          `Contact us immediately, while the problem is still fixable, on WhatsApp during our hours (${siteConfig.supportHours})${siteConfig.emergencyPhone ? ", or on the emergency number printed on your confirmation at any time" : ""}. Tell us what happened and, where you can, send a photograph.`,
           "What we can put right depends on the operator's terms and on what actually happened; we will tell you honestly what is recoverable and what is not, and we pursue the operator ourselves rather than asking you to do it.",
         ],
       },
@@ -101,13 +101,13 @@ export const legalPages: Record<string, LegalPage> = {
         heading: "Indicative until confirmed",
         paragraphs: [
           "We do not take payment on this website. You send an enquiry, we check the date and the exact price with the operator, and we come back to you in writing with the confirmed price before anything is payable. The listing price is our best current information, not a quotation.",
-          "If the confirmed price is higher than the listing price, you are free to walk away — you owe nothing until you accept a written confirmation.",
+          "If the confirmed price is higher than the listing price, you are free to walk away, you owe nothing until you accept a written confirmation.",
         ],
       },
       {
         heading: "What the price includes",
         paragraphs: [
-          `Prices are quoted inclusive of UAE VAT${trn ? ` (TRN ${trn})` : ""} and of the taxes and fees the operator charges. Optional extras — transfers, upgrades, add-ons — are priced separately and are never added silently.`,
+          `Prices are quoted inclusive of UAE VAT${trn ? ` (TRN ${trn})` : ""} and of the taxes and fees the operator charges. Optional extras, transfers, upgrades, add-ons, are priced separately and are never added silently.`,
           "Where an experience is priced per person, the listing says so; where it is priced per vehicle, boat or group, the listing says that instead.",
         ],
       },
@@ -142,7 +142,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "Enquiries, confirmations and bookings",
         paragraphs: [
-          "Sending an enquiry does not create a booking and does not oblige you to pay anything. We check the date and price with the operator and reply with a written confirmation — normally within about 30 minutes during our working hours.",
+          "Sending an enquiry does not create a booking and does not oblige you to pay anything. We check the date and price with the operator and reply with a written confirmation, normally within about 30 minutes during our working hours.",
           `A booking exists only when you accept that written confirmation and we receive payment. Payment is made to ${company}; we are the merchant of record for your booking.`,
           `Our working hours are ${siteConfig.supportHours}. Enquiries that arrive outside those hours are answered when we next open.`,
         ],
@@ -168,7 +168,7 @@ export const legalPages: Record<string, LegalPage> = {
         ],
         bullets: [
           "Carry valid photo identification; several venues and all Abu Dhabi routes require it",
-          "Follow the operator's safety instructions — they may refuse participation on safety grounds",
+          "Follow the operator's safety instructions, they may refuse participation on safety grounds",
           "Tell us immediately if something goes wrong, while it is still fixable",
           "You are responsible for your own visas, insurance and fitness to take part",
         ],
@@ -184,8 +184,8 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "Liability",
         paragraphs: [
-          "Our liability for a booking is limited to the amount you paid for that booking, except where the law does not permit such a limit — including death or personal injury caused by our negligence, fraud, and rights you have under the UAE Consumer Protection Law or under the consumer law of your country of residence.",
-          "We are not liable for losses caused by events outside our reasonable control — weather, road closures, government action, operator failure that we could not reasonably have foreseen — though our cancellation policy describes what we refund in those situations regardless of fault.",
+          "Our liability for a booking is limited to the amount you paid for that booking, except where the law does not permit such a limit, including death or personal injury caused by our negligence, fraud, and rights you have under the UAE Consumer Protection Law or under the consumer law of your country of residence.",
+          "We are not liable for losses caused by events outside our reasonable control, weather, road closures, government action, operator failure that we could not reasonably have foreseen, though our cancellation policy describes what we refund in those situations regardless of fault.",
         ],
       },
       {
@@ -207,14 +207,15 @@ export const legalPages: Record<string, LegalPage> = {
   privacy: {
     slug: "privacy",
     title: "Privacy policy",
-    updated: UPDATED,
+    // Database host changed from Neon (US) to Supabase (Mumbai) on this date.
+    updated: "23 October 2026",
     intro:
       "What we collect, why we collect it, who else sees it, where it is stored, how long we keep it, and how to make us delete it. Written to be read.",
     sections: [
       {
         heading: "Who is responsible for your data",
         paragraphs: [
-          `${company} — trading as OUTLYY — decides how and why your personal data is used, which makes us the controller.${atAddress}`,
+          `${company}, trading as OUTLYY, decides how and why your personal data is used, which makes us the controller.${atAddress}`,
           grievance
             ? `Questions, requests and complaints about your data go to ${grievance}. They are our data-protection and grievance contact for the purposes of the UAE Personal Data Protection Law and India's Digital Personal Data Protection Act 2023, and they answer within 30 days.`
             : "Questions, requests and complaints about your data go to our support address.",
@@ -225,10 +226,10 @@ export const legalPages: Record<string, LegalPage> = {
         paragraphs: [
           "When you send an enquiry: your name, phone number, email address, travel dates, number and type of travellers, hotel or pickup area, any dietary preference, any special request you type, your budget band, and the experiences you were looking at.",
           "When you sign in: your phone number and the one-time code we send you, plus the profile and preferences you choose to save.",
-          "Automatically: pages viewed, searches and filters used, the approximate country your request came from, a shortened one-way fingerprint of your IP address, your browser's user-agent string, and the identifiers described in our cookie policy — including the advertising click identifiers (for example from Google or Meta) that were attached to the link you arrived on.",
+          "Automatically: pages viewed, searches and filters used, the approximate country your request came from, a shortened one-way fingerprint of your IP address, your browser's user-agent string, and the identifiers described in our cookie policy, including the advertising click identifiers (for example from Google or Meta) that were attached to the link you arrived on.",
         ],
         bullets: [
-          "We do not collect card or bank details on this site — no payment is taken here",
+          "We do not collect card or bank details on this site, no payment is taken here",
           "We do not ask for passport or Emirates ID details unless a specific operator requires them for your booking, and then only for that booking",
           "We do not knowingly collect data about children; traveller counts by age band are not the same as a child's identity",
         ],
@@ -237,9 +238,9 @@ export const legalPages: Record<string, LegalPage> = {
         heading: "Why we use it, and on what basis",
         paragraphs: [
           "To answer your enquiry, check availability with the operator, confirm your booking, send confirmations and trip messages, and support you when something goes wrong. This is necessary to take steps at your request and to perform our contract with you.",
-          "To meet tax and accounting obligations — UAE VAT records in particular — which is a legal obligation.",
+          "To meet tax and accounting obligations. UAE VAT records in particular, which is a legal obligation.",
           "To keep the site secure, prevent spam and abuse, and measure how well the product works. This is our legitimate interest, balanced against your privacy: security data is minimised and analytics identifiers are not used to build a profile for sale.",
-          "To send marketing messages, and to message you on WhatsApp — both only with your consent, which you can withdraw at any time without affecting the service you have already booked.",
+          "To send marketing messages, and to message you on WhatsApp, both only with your consent, which you can withdraw at any time without affecting the service you have already booked.",
         ],
       },
       {
@@ -255,12 +256,12 @@ export const legalPages: Record<string, LegalPage> = {
           "The companies that run our technology see data only as part of running it, under contract, and may not use it for their own purposes.",
         ],
         bullets: [
-          "Vercel — website and application hosting (Mumbai, India region)",
-          "Neon — database hosting (United States, Ohio region)",
-          "Resend — transactional email delivery",
-          "MSG91 — delivery of sign-in codes by SMS",
-          "Google — website analytics (Google Analytics 4), only where you have accepted measurement cookies",
-          "Pexels — stock photography shown on the site (no personal data is sent to them)",
+          "Vercel, website and application hosting (Mumbai, India region)",
+          "Supabase, database hosting (Mumbai, India region)",
+          "Resend, transactional email delivery",
+          "MSG91, delivery of sign-in codes by SMS",
+          "Google, website analytics (Google Analytics 4), only where you have accepted measurement cookies",
+          "Pexels, stock photography shown on the site (no personal data is sent to them)",
           "Our WhatsApp messaging provider, named here before we switch WhatsApp messaging on",
           "Payment providers, named here before we begin taking payment on this site",
         ],
@@ -268,14 +269,14 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "Where your data is stored, and who reaches it",
         paragraphs: [
-          "Our website runs in Mumbai, India, and our database is hosted in the United States. That means your data is transferred outside the UAE and, for European visitors, outside the EEA. We rely on our contracts with those providers — which include the standard data-protection terms they publish — to keep the same protections travelling with the data.",
+          "Our website and our database both run in Mumbai, India, and some of the providers above, such as Google, process data in the United States. That means your data is transferred outside the UAE and, for European visitors, outside the EEA. We rely on our contracts with those providers, which include the standard data-protection terms they publish, to keep the same protections travelling with the data.",
           "Our staff in the United Arab Emirates and in India access customer data to answer enquiries and deliver bookings. Access requires an individual account with two-factor authentication, is limited to what a role needs, and every action on a customer record is written to an audit log.",
         ],
       },
       {
         heading: "WhatsApp, email and marketing",
         paragraphs: [
-          "Messages about an enquiry or a booking you made — confirmations, day-of details, changes — are service messages, sent because you asked us for something.",
+          "Messages about an enquiry or a booking you made, confirmations, day-of details, changes, are service messages, sent because you asked us for something.",
           "Marketing messages are separate and require you to opt in. Replying STOP, or turning the setting off in your account, ends them; we action it immediately and it does not affect your existing bookings.",
           "WhatsApp messages are carried by Meta's WhatsApp Business Platform. Meta processes them under its own terms; we send the minimum needed to answer you.",
           "We do not sell your phone number, email address or any other personal data.",
@@ -294,7 +295,7 @@ export const legalPages: Record<string, LegalPage> = {
         paragraphs: [
           "You can ask us for a copy of everything we hold about you, correct it, ask us to delete it, object to us using it for marketing or analytics, or ask us to restrict how we use it. Signed-in customers can export their data and request deletion from Profile settings; everyone else can ask us by email.",
           grievance
-            ? `Send requests to ${grievance}. We answer within 30 days. If you are not satisfied, you may complain to the UAE Data Office, or — if you are in India — to the Data Protection Board of India, or to your local data-protection authority.`
+            ? `Send requests to ${grievance}. We answer within 30 days. If you are not satisfied, you may complain to the UAE Data Office, or, if you are in India, to the Data Protection Board of India, or to your local data-protection authority.`
             : "Send requests to our support address. We answer within 30 days.",
           "A deletion request removes your personal details from our systems. Financial records required by law are retained with your identity replaced by an irreversible marker, and entries in our append-only audit and consent logs are kept because they are the evidence that we handled your data correctly.",
         ],
@@ -329,31 +330,31 @@ export const legalPages: Record<string, LegalPage> = {
         heading: "Strictly necessary",
         paragraphs: ["These make the site work. They cannot be switched off and they are not used for advertising."],
         bullets: [
-          "outlyy_customer_session — keeps you signed in after a one-time code; expires with the session",
-          "outlyy_customer — a flag that tells the site to show account links; no personal data",
-          "outlyy_admin_session, outlyy_admin_pending — staff sign-in only, 8 hours",
-          "outlyy_consent — the cookie choice you made on this banner, so we do not ask again; 6 months",
-          "Local storage: your cart, saved list, comparison tray, recent searches and currency choice — stored in your browser, never sent to us except when you submit an enquiry",
+          "outlyy_customer_session, keeps you signed in after a one-time code; expires with the session",
+          "outlyy_customer, a flag that tells the site to show account links; no personal data",
+          "outlyy_admin_session, outlyy_admin_pending, staff sign-in only, 8 hours",
+          "outlyy_consent, the cookie choice you made on this banner, so we do not ask again; 6 months",
+          "Local storage: your cart, saved list, comparison tray, recent searches and currency choice, stored in your browser, never sent to us except when you submit an enquiry",
         ],
       },
       {
         heading: "Measurement and attribution",
         paragraphs: [
-          "These tell us which pages lead to enquiries so we can fix the ones that do not. Most are first-party — set by this site — and we do not sell what any of them record.",
+          "These tell us which pages lead to enquiries so we can fix the ones that do not. Most are first-party, set by this site, and we do not sell what any of them record.",
           "One is not ours: we use Google Analytics 4, so if you accept measurement, Google receives your IP address (truncated before storage), the pages you view and a random device identifier. Google acts as our processor for this and is in the United States, so the transfer note in our privacy policy applies. Advertising personalisation and data sharing with Google Ads stay switched off unless you also accept the advertising category.",
-          "None of them are set until you agree. Before you choose, and if you choose no, they are not written at all and no analytics event leaves your browser — the site simply does not measure you. Measurement and advertising attribution can be accepted separately.",
+          "None of them are set until you agree. Before you choose, and if you choose no, they are not written at all and no analytics event leaves your browser, the site simply does not measure you. Measurement and advertising attribution can be accepted separately.",
         ],
         bullets: [
-          "outlyy_sid — groups your page views into one visit; 30 minutes",
-          "outlyy_aid — a random identifier that lets us count returning visits; 1 year",
-          "outlyy_attr — remembers how you first reached us (search, ad, referral) including advertising click identifiers such as gclid or fbclid; 1 year",
-          "_ga, _ga_<id> — set by Google Analytics to count visits and distinguish one device from another; up to 2 years. These are Google's cookies, not ours, and are the only third-party cookies on this site.",
+          "outlyy_sid, groups your page views into one visit; 30 minutes",
+          "outlyy_aid, a random identifier that lets us count returning visits; 1 year",
+          "outlyy_attr, remembers how you first reached us (search, ad, referral) including advertising click identifiers such as gclid or fbclid; 1 year",
+          "_ga, _ga_<id>, set by Google Analytics to count visits and distinguish one device from another; up to 2 years. These are Google's cookies, not ours, and are the only third-party cookies on this site.",
         ],
       },
       {
         heading: "Advertising",
         paragraphs: [
-          "We load no advertising pixels — no Meta Pixel, no Google Ads remarketing tag. The only advertising-adjacent signal is Google Analytics' own advertising features, and those are held off by Google Consent Mode unless you accept the advertising category. Accept measurement only and Google is told, in its own protocol, that advertising storage is denied.",
+          "We load no advertising pixels, no Meta Pixel, no Google Ads remarketing tag. The only advertising-adjacent signal is Google Analytics' own advertising features, and those are held off by Google Consent Mode unless you accept the advertising category. Accept measurement only and Google is told, in its own protocol, that advertising storage is denied.",
           "If we ever add a real advertising pixel it will be listed here by name before it loads, and it will load only after you agree.",
         ],
       },
@@ -388,7 +389,7 @@ export const legalPages: Record<string, LegalPage> = {
         bullets: [
           "A copy of the personal data we hold about you (signed-in customers can export it instantly from Profile settings)",
           "Correction of anything wrong",
-          "Deletion of your personal data — we anonymise financial records we must keep by law",
+          "Deletion of your personal data, we anonymise financial records we must keep by law",
           "An end to marketing messages, or to WhatsApp messaging",
           "An explanation of how we used your data, and objection to analytics",
         ],
@@ -403,7 +404,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "If you are not satisfied",
         paragraphs: [
-          "Tell us first — most problems are a misunderstanding we can fix the same day. If you are still unhappy, you can complain to the UAE Data Office; if you are in India, to the Data Protection Board of India; if you are in the EEA or the UK, to your national data-protection authority.",
+          "Tell us first, most problems are a misunderstanding we can fix the same day. If you are still unhappy, you can complain to the UAE Data Office; if you are in India, to the Data Protection Board of India; if you are in the EEA or the UK, to your national data-protection authority.",
           "Consumer complaints about a booking (rather than about data) can be raised with the Dubai Department of Economy and Tourism after you have given us a chance to put it right.",
         ],
       },
@@ -419,7 +420,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "Experiences are delivered by licensed operators",
         paragraphs: [
-          `${company} sells these experiences in its own name and remains responsible to you for your booking. The activity itself — the vehicle, the vessel, the guide, the venue — is delivered by a licensed operator, and their on-site safety rules and conduct are theirs. We tell you who is operating an experience when we confirm it.`,
+          `${company} sells these experiences in its own name and remains responsible to you for your booking. The activity itself, the vehicle, the vessel, the guide, the venue, is delivered by a licensed operator, and their on-site safety rules and conduct are theirs. We tell you who is operating an experience when we confirm it.`,
         ],
       },
       {
@@ -438,7 +439,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: "Travel, health and documents",
         paragraphs: [
-          "You are responsible for your visas, travel insurance, and your fitness to take part in an activity. Where an experience carries an age, height, weight, pregnancy or medical restriction, it is stated on the listing — please read it before you book.",
+          "You are responsible for your visas, travel insurance, and your fitness to take part in an activity. Where an experience carries an age, height, weight, pregnancy or medical restriction, it is stated on the listing, please read it before you book.",
           "Nothing on this site is medical, legal, immigration or financial advice.",
         ],
       },
@@ -450,7 +451,7 @@ export const legalPages: Record<string, LegalPage> = {
     title: "Why OUTLYY exists",
     updated: UPDATED,
     intro:
-      "We are not trying to build a better Klook. We are trying to beat the travel agent you would otherwise use — on trust, not just on price.",
+      "We are not trying to build a better Klook. We are trying to beat the travel agent you would otherwise use, on trust, not just on price.",
     sections: [
       {
         heading: "The problem",
@@ -463,7 +464,7 @@ export const legalPages: Record<string, LegalPage> = {
         heading: "What we do differently",
         paragraphs: [
           "We show all-in prices, inclusive of VAT, and confirm the exact price with the operator before anything is payable. We treat dietary and accessibility needs as filters and confirm them in writing with the operator. We publish pickup coverage before you commit. And we keep a person on WhatsApp during our working hours, because a large family booking is a conversation, not a checkout.",
-          "We also keep the catalogue deliberately small and curated, from operators we contract with directly. A traveller with three hundred options and no way to tell them apart books nothing.",
+          "We work with operators we contract with directly, and we organise the catalogue so a traveller can narrow it down fast. A traveller with three hundred options and no way to tell them apart books nothing.",
         ],
       },
       {

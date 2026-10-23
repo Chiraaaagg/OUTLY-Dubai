@@ -49,19 +49,37 @@ export interface CsvTable {
 
 const DELIMITERS = [",", ";", "\t"] as const;
 
-/** Most frequent candidate delimiter outside quotes in the first lines; comma on a tie. */
+/**
+ * The delimiter that splits the first lines most consistently: the one whose
+ * per-line count (outside quotes) is the same non-zero number on the most
+ * lines. A comma inside tab-separated prose, or in a semicolon file's title
+ * row, therefore does not win. Comma on a tie.
+ */
 function sniffDelimiter(text: string): string {
-  const counts = new Map<string, number>(DELIMITERS.map((d) => [d, 0]));
+  const perLine: Map<string, number>[] = [];
+  let cur = new Map<string, number>(DELIMITERS.map((d) => [d, 0]));
   let inQuotes = false;
-  let lines = 0;
-  for (let i = 0; i < text.length && lines < 5; i++) {
+  for (let i = 0; i < text.length && perLine.length < 6; i++) {
     const ch = text[i];
     if (ch === '"') inQuotes = !inQuotes;
-    else if (!inQuotes && ch === "\n") lines++;
-    else if (!inQuotes && counts.has(ch)) counts.set(ch, counts.get(ch)! + 1);
+    else if (!inQuotes && ch === "\n") {
+      perLine.push(cur);
+      cur = new Map<string, number>(DELIMITERS.map((d) => [d, 0]));
+    } else if (!inQuotes && cur.has(ch)) cur.set(ch, cur.get(ch)! + 1);
   }
+  if (perLine.length < 6) perLine.push(cur);
   let best = ",";
-  for (const d of DELIMITERS) if (counts.get(d)! > counts.get(best)!) best = d;
+  let bestScore: [number, number] = [0, 0];
+  for (const d of DELIMITERS) {
+    const counts = perLine.map((m) => m.get(d)!).filter((n) => n > 0);
+    const freq = new Map<number, number>();
+    for (const n of counts) freq.set(n, (freq.get(n) ?? 0) + 1);
+    let mode = 0;
+    let lines = 0;
+    for (const [n, f] of freq) if (f > lines || (f === lines && n > mode)) (mode = n), (lines = f);
+    const score: [number, number] = [lines, mode];
+    if (score[0] > bestScore[0] || (score[0] === bestScore[0] && score[1] > bestScore[1])) (best = d), (bestScore = score);
+  }
   return best;
 }
 
@@ -116,18 +134,21 @@ function splitRecords(text: string, delimiter: string): string[][] {
   return rows;
 }
 
-/** The first row (of the first ten) that reads as a header — at least two cells name a known field. Title rows above it are skipped. */
+/**
+ * The first row (of the first ten) that reads as a header — at least two
+ * cells name a known field. Title rows above it are skipped. The first such
+ * row wins, not the best-scoring one: data cells such as "Private" or
+ * "Pickup" also match field names and must never outrank the real header.
+ */
 function detectHeaderRow(rows: string[][]): number {
-  let best = 0;
-  let bestScore = 1;
+  const filled = (r: string[]) => r.filter((c) => c.trim()).length;
   for (let i = 0; i < Math.min(rows.length, 10); i++) {
-    const score = rows[i].filter((c) => c.trim() && matchHeader(c)).length;
-    if (score > bestScore) {
-      best = i;
-      bestScore = score;
-    }
+    if (rows[i].filter((c) => c.trim() && matchHeader(c)).length < 2) continue;
+    // Only title-like rows (a cell or two) may be skipped; a full row above is the real header even if we do not know its names.
+    const cap = Math.max(1, Math.floor(filled(rows[i]) / 2));
+    return rows.slice(0, i).every((r) => filled(r) <= cap) ? i : 0;
   }
-  return best;
+  return 0;
 }
 
 export function parseCsv(input: string): CsvTable {
@@ -163,7 +184,9 @@ export function parseCsv(input: string): CsvTable {
 }
 
 function csvEscape(v: string): string {
-  return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  // Text a spreadsheet would run as a formula (=HYPERLINK(…) in a supplier title) is prefixed with ' — readRow strips it again.
+  const safe = /^[=+\-@]/.test(v) && !/^-?\d/.test(v) ? `'${v}` : v;
+  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 /* -------------------------------------------------------------- mapping */
@@ -403,30 +426,45 @@ function withoutHints(h: string): string {
  * (hrs)"). A price header without a currency is read as INR and flagged.
  */
 export function matchHeader(header: string): HeaderMatch | null {
+  const m = matchHeaderRaw(header);
+  // A price column that is not the customer price ("Price (Net)", "Supplier Rate") or is in a third currency is never auto-mapped.
+  if (m?.field.startsWith("price.") && NOT_SELLING_PRICE.test(header)) return null;
+  return m;
+}
+
+/** Words that make a price column something other than the all-in customer price, or a currency we do not store. */
+const NOT_SELLING_PRICE = /\b(net|cost|costs|b2b|supplier|buying|buy|purchase|wholesale|agent|agency|commission|margin|markup|usd|eur|gbp|sar|omr|qar)\b|[$€£]/i;
+
+/** "Duration (hours)", "Time in hrs", "Length (days)" → the unit a bare number in that column is in. */
+export function durationUnitOf(header: string): "hours" | "days" | undefined {
+  const s = header.toLowerCase();
+  if (/\b(hours?|hrs?|h)\b/.test(s)) return "hours";
+  if (/\bdays?\b/.test(s)) return "days";
+  return undefined;
+}
+
+function matchHeaderRaw(header: string): HeaderMatch | null {
   const full = norm(header);
   if (!full) return null;
   const base = norm(withoutHints(header));
-  const durationUnit = (): HeaderMatch["unit"] => {
-    const s = header.toLowerCase();
-    if (/\b(hours?|hrs?|h)\b/.test(s)) return "hours";
-    if (/\bdays?\b/.test(s)) return "days";
-    return undefined;
-  };
+  const named = currencyIn(header);
   for (const key of [full, base]) {
     const f = FIELD_BY_NORM.get(key) ?? ALIASES[key];
     if (f) {
-      // "Price (AED)" → norm "priceaed" is an alias already; "Price (Dirhams)" falls through to the price rule below.
-      if (f.startsWith("price.") && key === base && base !== full) break;
-      if (f.startsWith("price.") && !/inr|aed/.test(key) && !currencyIn(header)) return { field: f, assumedCurrency: true };
-      return f === "durationMinutes" && key !== norm("durationMinutes") ? { field: f, unit: durationUnit() } : { field: f };
+      if (f.startsWith("price.")) {
+        // The header's own currency word wins over the alias's default ("Price (Dirhams)", "Price (د.إ)").
+        if (named && !f.endsWith(`.${named}`)) break;
+        if (!named && !/inr|aed/.test(key)) return { field: f, assumedCurrency: true };
+        return { field: f };
+      }
+      return f === "durationMinutes" && key !== norm("durationMinutes") ? { field: f, unit: durationUnitOf(header) } : { field: f };
     }
   }
-  const currency = currencyIn(header);
-  const priceBase = norm(withoutHints(header).replace(/₹|\b(inr|rs|rupees?|aed|dhs?|dirhams?|in)\b/gi, " "));
+  const priceBase = norm(withoutHints(header).replace(/₹|د\.إ|\b(inr|rs|rupees?|aed|dhs?|dirhams?|in)\b/gi, " "));
   const pax = PRICE_BASES[priceBase];
-  if (pax) return { field: `price.${pax}.${currency ?? "inr"}` as ImportField, ...(currency ? {} : { assumedCurrency: true }) };
+  if (pax) return { field: `price.${pax}.${named ?? "inr"}` as ImportField, ...(named ? {} : { assumedCurrency: true }) };
   const durBase = norm(withoutHints(header).replace(/\b(in|hours?|hrs?|mins?|minutes?|days?)\b/gi, " "));
-  if (durBase === "duration" || durBase === "tourduration" || durBase === "activityduration" || durBase === "length") return { field: "durationMinutes", unit: durationUnit() };
+  if (durBase === "duration" || durBase === "tourduration" || durBase === "activityduration" || durBase === "length") return { field: "durationMinutes", unit: durationUnitOf(header) };
   return null;
 }
 
@@ -476,10 +514,15 @@ function splitList(v: string): string[] {
 /** Leading yes/no word; text after it is returned so it can be kept. Unknown → undefined. */
 export function parseBool(v: string): { value?: boolean; rest: string } {
   const s = v.trim();
-  const m = /^(yes|y|true|1|on|included|available|no|n|false|0|off|not included|not available|n\/a|na)\b[\s,.;:–—-]*(.*)$/is.exec(s);
+  // Longest alternatives first so "N/A" is not read as "N" + "/A". "On request" / "Available on request" are not a yes.
+  const m = /^(not included|not available|n\/a|yes|true|included|false|no|na|y|n|1|0)(?![\w/])[\s,.;:–—-]*(.*)$/is.exec(s);
   if (!m) return { rest: s };
   const word = m[1].toLowerCase();
-  return { value: ["yes", "y", "true", "1", "on", "included", "available"].includes(word), rest: m[2].trim() };
+  const rest = m[2].trim();
+  const value = ["yes", "y", "true", "1", "included"].includes(word);
+  // "Yes, at extra cost" / "Yes, on request" is not included.
+  if (value && /extra|additional|surcharge|charge|cost|paid|request/i.test(rest)) return { rest: s };
+  return { value, rest };
 }
 
 function toBool(v: string): boolean | undefined {
@@ -493,6 +536,7 @@ export interface Amount {
 
 const CUR = String.raw`₹|inr|rs\.?|rupees?|aed|dhs?\.?|dirhams?|د\.إ`;
 const AMOUNT_RE = new RegExp(String.raw`(${CUR})?\s*(\d[\d,]*(?:\.\d+)?)\s*(${CUR})?`, "gi");
+const WELL_GROUPED = /^(?:\d+|\d{1,3}(?:,\d{3})+|\d{1,2}(?:,\d{2})*,\d{3})(?:\.\d+)?$/;
 const PRICE_NOISE = /\b(from|starting(?: at| from)?|only|approx\.?|approximately|around|onwards|per (?:person|adult|pax|head|ticket)|pp|each|net)\b|\/-|\/\s*(?:person|pax|adult)/gi;
 
 /**
@@ -505,14 +549,18 @@ export function parseAmounts(cell: string): { amounts: Amount[]; readable: boole
   const s = cell.replace(PRICE_NOISE, " ").trim();
   if (/^free$/i.test(s)) return { amounts: [{ value: 0, currency: null }], readable: true };
   const amounts: Amount[] = [];
+  let ambiguous = false;
   const rest = s.replace(AMOUNT_RE, (_m, pre: string | undefined, num: string, post: string | undefined) => {
     const label = pre ?? post;
+    // Only plain, western (1,234,567) or Indian (12,34,567) grouping is read. "149,50" (decimal comma) and
+    // "1.490" (dot as thousands) cannot be told from 14950 / 1.49 — refuse rather than guess.
+    if (!WELL_GROUPED.test(num) || /^\d{1,3}\.\d{3}$/.test(num)) ambiguous = true;
     amounts.push({ value: Number(num.replace(/,/g, "")), currency: label ? currencyIn(label === "rs." || /^rs/i.test(label) ? "rs" : label) : null });
     return " ";
   });
   const leftover = rest.replace(/[\s/|,;:+=]|\b(or|and)\b/gi, "");
   const unlabelled = amounts.filter((a) => a.currency === null).length;
-  return { amounts, readable: amounts.length > 0 && !leftover && amounts.every((a) => Number.isFinite(a.value)) && unlabelled <= 1 };
+  return { amounts, readable: amounts.length > 0 && !ambiguous && !leftover && amounts.every((a) => Number.isFinite(a.value)) && unlabelled <= 1 };
 }
 
 function toNumber(v: string): number | undefined {
@@ -766,7 +814,8 @@ const DIETARY_RULES: [RegExp, string][] = [
   [/\bjain\b/, "jain"],
   [/\bhalal\b/, "halal"],
   [/non[- ]?veg|non[- ]?vegetarian|\bmeat\b|chicken|mutton|\bbeef\b|\bfish\b/, "non-veg"],
-  [/\bveg\b|vegetarian|vegan|pure[- ]veg/, "veg"],
+  // "veg" inside "non-veg" / "non-vegetarian" is not veg.
+  [/(?<!non[- ]?)\b(?:veg|vegetarian|vegan)\b|pure[- ]veg/, "veg"],
 ];
 const SUITABILITY_RULES: [RegExp, string][] = [
   [/\bkids?\b|children|child[- ]friendly|family|families/, "kids"],
@@ -793,8 +842,9 @@ export function normaliseEnumList(items: string[], rules: [RegExp, string][], al
       if (!values.includes(s)) values.push(s);
       continue;
     }
-    // "not recommended for kids" / "not suitable for seniors" is an exclusion, not a suitability.
-    const negated = /\b(not|no|un)[- ]?(recommended|suitable|allowed|permitted|for)\b|cannot|must not|prohibited/.test(s);
+    // "not recommended for kids", "Not wheelchair accessible", "No infants" are exclusions, not suitabilities.
+    // "non-veg" is a value, not a negation, so "non" is not in the list.
+    const negated = /\b(not|no|never|without|unsuitable|cannot|can't|isn't|prohibited|restricted|excluded)\b|\bun(?:suitable|accessible)\b|must not/.test(s);
     let hit = false;
     for (const [re, v] of rules) {
       if (re.test(s)) {
@@ -845,16 +895,25 @@ export function normaliseBadges(raw: string): Record<string, boolean> {
 /** "Free cancellation up to 48 hours before" → 48; "Non refundable" → 0; no stated hours → undefined (never a guessed 24). */
 export function cancellationHoursFromPolicy(policy: string): number | undefined {
   const s = policy.toLowerCase();
+  const toHours = (n: string, unit: string) => (/^d/.test(unit) ? Number(n) * 24 : Number(n));
+  // The free-cancellation window wins: "Free cancellation up to 24 hours before. No refund for no-shows." → 24;
+  // "Full refund 7 days prior; 50% within 72 hours" → 168.
+  const free = /(?:free(?:\s+of\s+charge)?\s+cancel\w*|full\s+refund|100%\s+refund|cancel\w*\s+(?:for\s+)?free)[^.;]*?(\d{1,3})\s*(hours?|hrs?|h|days?)\b/.exec(s);
+  if (free) return toHours(free[1], free[2]);
   if (/non[- ]?refundable|no refund|cannot be cancelled|non[- ]?cancell/.test(s)) return 0;
-  const m = /(\d{1,3})\s*(?:hours?|hrs?|h)\b/.exec(s);
-  if (m) return Number(m[1]);
-  const d = /(\d{1,2})\s*days?\b/.exec(s);
-  if (d) return Number(d[1]) * 24;
-  return undefined;
+  const first = /(\d{1,3})\s*(hours?|hrs?|h|days?)\b/.exec(s);
+  return first ? toHours(first[1], first[2]) : undefined;
+}
+
+/** More than one time window in a policy ("…24 hours…; 50% within 72 hours") — the hours read from it deserve a look. */
+function policyIsAmbiguous(policy: string): boolean {
+  return (policy.toLowerCase().match(/\d{1,3}\s*(?:hours?|hrs?|h|days?)\b/g) ?? []).length > 1;
 }
 
 /** Alt text: first item of a `|` list, trimmed to the schema cap at a word boundary. */
 export function normaliseAlt(raw: string, max = 200): string {
+  // A short alt text is kept whole, "|" included (the export round-trips it); a long one is usually several alts joined.
+  if (raw.trim().length <= max) return raw.trim();
   const first = splitList(raw)[0] ?? raw.trim();
   if (first.length <= max) return first;
   const cut = first.slice(0, max);
@@ -875,6 +934,8 @@ export interface RowRead {
   mealNoteHint?: string;
   /** Fields that have a mapped column in this file (blank or not). */
   mapped: ImportField[];
+  /** A duration cell with no length in it ("Half day"): a new listing stores 0, an update keeps its minutes. */
+  durationText?: string;
 }
 
 /**
@@ -888,12 +949,15 @@ export function readRow(headers: string[], row: string[], mapping: Mapping): Row
   const errors: RowError[] = [];
   const extraInfo: string[] = [];
   let mealNoteHint: string | undefined;
+  let durationText: string | undefined;
   const warn = (field: string, message: string) => warnings.push({ field, message });
   const fail = (field: string, message: string, cell: string) => errors.push({ field, message, cell: cell.length > 120 ? `${cell.slice(0, 120)}…` : cell });
   const cell = (header: string | null | undefined) => {
     if (!header) return "";
     const i = headers.indexOf(header);
-    return i >= 0 ? (row[i] ?? "").trim() : "";
+    const v = i >= 0 ? (row[i] ?? "").trim() : "";
+    // The export prefixes text starting with = + - @ with ' so spreadsheets do not run it as a formula; take it off again.
+    return /^'[=+\-@]/.test(v) ? v.slice(1) : v;
   };
   const out: Record<string, unknown> = {};
   const mapped = IMPORT_FIELDS.filter((f) => Boolean(mapping[f] && headers.includes(mapping[f]!)));
@@ -917,7 +981,7 @@ export function readRow(headers: string[], row: string[], mapping: Mapping): Row
       continue;
     }
     if (!readable || !pick) {
-      fail(f, `not a single ${label} amount — write a number such as 1490 (₹, Rs, AED and thousands commas are fine)`, raw);
+      fail(f, `not a single ${label} amount — write a number such as 1490 or 149.50 (₹, Rs, AED and thousands commas are fine; a decimal comma is not)`, raw);
       continue;
     }
     const value = Math.round(pick.value);
@@ -999,17 +1063,19 @@ export function readRow(headers: string[], row: string[], mapping: Mapping): Row
       }
       value = Math.round(n);
     } else if (f === "durationMinutes") {
-      const unit = header ? matchHeader(header)?.unit : undefined;
+      const unit = header ? durationUnitOf(header) : undefined;
       const minutes = parseDuration(raw, unit);
       if (minutes === undefined) {
         // "Half day", "Flexible": no number to store. Keep the words where a traveller sees them; 0 = not stated.
+        // (An update keeps the listing's current minutes instead — see mergeIntoExisting.)
         value = 0;
+        durationText = raw;
         extraInfo.push(`Duration: ${raw}`);
         warn(f, `“${raw.slice(0, 40)}” has no length in it — saved as “not stated” and kept as important info`);
       } else {
         value = minutes;
-        if (/^\d+(\.\d+)?$/.test(raw) && unit && unit !== "minutes") warn(f, `${raw} ${unit} (from the column name) = ${minutes} minutes`);
-        else if (/^\d+$/.test(raw) && !unit && minutes > 0 && minutes <= 12) warn(f, `read as ${minutes} minutes — write “${raw}h” if you meant hours`);
+        if (/^\d+(\.\d+)?$/.test(raw) && unit) warn(f, `${raw} ${unit} (from the column name) = ${minutes} minutes`);
+        else if (/^\d+$/.test(raw) && !unit && minutes > 0 && minutes <= 12) warnings.push({ field: f, message: `read as ${minutes} minutes — write “${raw}h” (or name the column “Duration (hours)”) if you meant hours`, review: true });
         else if (!/^\d+$/.test(raw)) warn(f, `“${raw.slice(0, 40)}” → ${minutes} minutes`);
       }
     } else if (f === "tier") {
@@ -1066,13 +1132,16 @@ export function readRow(headers: string[], row: string[], mapping: Mapping): Row
     // ₹ per dirham has stayed in the low-to-high 20s; far outside that is a swapped or mistyped column.
     if (ratio < 12 || ratio > 40) warnings.push({ field: "price.adult", message: `₹${inr} vs AED ${aed} is ${ratio.toFixed(1)} ₹ per dirham — check the two prices are not swapped or in the wrong currency`, review: true });
   }
-  return { input: out, warnings, errors, extraInfo, mealNoteHint, mapped };
+  return { input: out, warnings, errors, extraInfo, mealNoteHint, mapped, durationText };
 }
 
-function appendInfo(input: Record<string, unknown>, extra: string[]) {
+function appendInfo(input: Record<string, unknown>, extra: string[], warnings: RowWarning[]) {
   if (!extra.length) return;
   const info = Array.isArray(input.importantInfo) ? (input.importantInfo as string[]) : [];
-  input.importantInfo = [...info, ...extra.filter((x) => !info.includes(x))].slice(0, 30);
+  const all = [...info, ...extra.filter((x) => !info.includes(x))];
+  // The schema caps importantInfo at 30 items; say what did not fit instead of dropping it quietly.
+  if (all.length > 30) warnings.push({ field: "importantInfo", message: `more than 30 items — not kept: ${all.slice(30).map((x) => `“${x.slice(0, 40)}”`).join(", ")}`, review: true });
+  input.importantInfo = all.slice(0, 30);
 }
 
 /**
@@ -1089,10 +1158,11 @@ export function completeNewActivity(read: RowRead): RowRead {
     errors.push({ field: f, message: read.mapped.includes(f) ? "required for a new listing — the cell is blank" : "required for a new listing — no column is mapped to it" });
   };
 
-  appendInfo(out, read.extraInfo);
+  appendInfo(out, read.extraInfo, warnings);
   if (read.mealNoteHint && !out.mealNote) out.mealNote = read.mealNoteHint;
 
-  if (!out.slug && typeof out.title === "string") out.slug = slugify(out.title);
+  const fromTitle: string[] = [];
+  if (!out.slug && typeof out.title === "string") (out.slug = slugify(out.title)), fromTitle.push("slug");
   for (const f of IMPORT_REQUIRED) required(f);
 
   // Cancellation: one of policy text / hours, the other is read from it. Neither = error, never a guessed 24h.
@@ -1102,7 +1172,8 @@ export function completeNewActivity(read: RowRead): RowRead {
     if (h === undefined) errors.push({ field: "freeCancellationHours", message: "the cancellation policy states no hours — fill freeCancellationHours (0 = non-refundable)" });
     else {
       out.freeCancellationHours = h;
-      note("freeCancellationHours", `blank — read ${h}h from the cancellation policy`);
+      const ambiguous = policyIsAmbiguous(policy);
+      note("freeCancellationHours", `blank — read ${h}h from the cancellation policy${ambiguous ? " (it names more than one time window — check)" : ""}`, ambiguous);
     }
   }
   if (!policy && typeof out.freeCancellationHours === "number") {
@@ -1114,7 +1185,7 @@ export function completeNewActivity(read: RowRead): RowRead {
     errors.push({ field: "cancellationPolicy", message: "required for a new listing — fill cancellationPolicy or freeCancellationHours" });
   }
 
-  if (!out.imageAlt && typeof out.title === "string") out.imageAlt = out.title;
+  if (!out.imageAlt && typeof out.title === "string") (out.imageAlt = out.title), fromTitle.push("imageAlt");
   if (!out.images && typeof out.slug === "string") {
     out.images = [`img:activity:${out.slug}:0`];
     note("images", "blank — placeholder image until photos are added", true);
@@ -1135,14 +1206,18 @@ export function completeNewActivity(read: RowRead): RowRead {
     note("meetingPoint", "blank — set to the location; give the exact meeting point before publishing", true);
   }
   const seo = (out.seo ?? {}) as Record<string, unknown>;
-  if (!seo.title && typeof out.title === "string") seo.title = shortenText(`${out.title} — Book with OUTLYY`, 120);
-  if (!seo.description && typeof out.subtitle === "string") seo.description = out.subtitle;
-  if (!seo.keywords && typeof out.title === "string") seo.keywords = [String(out.title).toLowerCase().slice(0, 80)];
+  if (!seo.title && typeof out.title === "string") (seo.title = shortenText(`${out.title} — Book with OUTLYY`, 120)), fromTitle.push("seo.title");
+  if (!seo.keywords && typeof out.title === "string") (seo.keywords = [String(out.title).toLowerCase().slice(0, 80)]), fromTitle.push("seo.keywords");
+  if (!seo.description && typeof out.subtitle === "string") {
+    seo.description = out.subtitle;
+    note("seo.description", "blank — set to the subtitle");
+  }
   out.seo = seo;
+  if (fromTitle.length) note(fromTitle.join(", "), "blank — derived from the title");
   const supplier = (out.supplier ?? {}) as Record<string, unknown>;
   if (supplier.name) {
     const filled: string[] = [];
-    if (!supplier.id) supplier.id = slugify(String(supplier.name));
+    if (!supplier.id) (supplier.id = slugify(String(supplier.name))), filled.push(`id ${String(supplier.id)}`);
     if (!supplier.source) (supplier.source = "direct"), filled.push("source direct");
     if (supplier.reliability === undefined) (supplier.reliability = 80), filled.push("reliability 80");
     if (!supplier.verifiedSince) (supplier.verifiedSince = String(new Date().getFullYear())), filled.push(`verified since ${new Date().getFullYear()}`);
@@ -1172,11 +1247,22 @@ function deepMerge(base: Record<string, unknown>, over: Record<string, unknown>)
  */
 export function mergeIntoExisting(existing: ActivityInput, read: RowRead): RowRead {
   const merged = deepMerge(structuredClone(existing) as unknown as Record<string, unknown>, read.input);
-  // A badges cell states the full set; a new supplier name gets its own id.
+  // A badges cell states the full set.
   if (read.input.badges) merged.badges = read.input.badges;
+  // A different supplier name gets its own id; its source/reliability/verified date were the old supplier's — say so.
   const sup = read.input.supplier as Record<string, unknown> | undefined;
-  if (sup?.name && !sup.id) (merged.supplier as Record<string, unknown>).id = slugify(String(sup.name));
-  appendInfo(merged, read.extraInfo);
+  if (typeof sup?.name === "string" && sup.name !== existing.supplier.name) {
+    if (!sup.id) (merged.supplier as Record<string, unknown>).id = slugify(sup.name);
+    const kept = (["source", "reliability", "verifiedSince"] as const).filter((k) => sup[k] === undefined);
+    if (kept.length) read.warnings.push({ field: "supplier", message: `supplier changed to “${sup.name}” — ${kept.join(", ")} kept from “${existing.supplier.name}”; check them`, review: true });
+  }
+  // "Half day" in an update: the cell has no length, so the listing keeps its minutes (the words still go to important info).
+  if (read.durationText !== undefined) {
+    merged.durationMinutes = existing.durationMinutes;
+    const w = read.warnings.find((x) => x.field === "durationMinutes");
+    if (w) w.message = `“${read.durationText.slice(0, 40)}” has no length in it — kept ${existing.durationMinutes} minutes and added the words to important info`;
+  }
+  appendInfo(merged, read.extraInfo, read.warnings);
   if (read.mealNoteHint && !merged.mealNote) merged.mealNote = read.mealNoteHint;
   const explicitPolicy = typeof read.input.cancellationPolicy === "string";
   const explicitHours = typeof read.input.freeCancellationHours === "number";
@@ -1184,7 +1270,8 @@ export function mergeIntoExisting(existing: ActivityInput, read: RowRead): RowRe
     const h = cancellationHoursFromPolicy(read.input.cancellationPolicy as string);
     if (h !== undefined && h !== merged.freeCancellationHours) {
       merged.freeCancellationHours = h;
-      read.warnings.push({ field: "freeCancellationHours", message: `read ${h}h from the new cancellation policy` });
+      const ambiguous = policyIsAmbiguous(read.input.cancellationPolicy as string);
+      read.warnings.push({ field: "freeCancellationHours", message: `read ${h}h from the new cancellation policy${ambiguous ? " (it names more than one time window — check)" : ""}`, ...(ambiguous ? { review: true } : {}) });
     } else if (h === undefined) read.warnings.push({ field: "freeCancellationHours", message: `new policy states no hours — kept ${String(merged.freeCancellationHours)}h; check it`, review: true });
   } else if (explicitHours && !explicitPolicy && read.input.freeCancellationHours !== existing.freeCancellationHours) {
     read.warnings.push({ field: "cancellationPolicy", message: `hours changed to ${String(read.input.freeCancellationHours)} but the policy text was kept — check it still matches`, review: true });
@@ -1284,8 +1371,14 @@ export function parseDocToDraft(text: string): DocDraft {
     }
     return null;
   };
+  let preamble: string | undefined;
+  const listSection = (f: string | null) => f !== null && (f === "highlights" || f === "description" || LIST_FIELDS.has(f as ImportField) || ["faqs", "itinerary", "addOns", "variants", "cancellationPolicy"].includes(f));
   for (const line of lines) {
-    const h = headingOf(line);
+    let h = headingOf(line);
+    // Inside a list or prose section, "Pickup: from Deira hotels" is a line of that section, not a new one —
+    // only a heading for a single-value field ("Price: …", "Tier: …") or a bare heading line ends it.
+    const listHeading = h !== null && (h === "highlights" || LIST_FIELDS.has(h as ImportField) || ["faqs", "itinerary", "addOns", "variants"].includes(h));
+    if (h && listHeading && listSection(current) && line.slice(line.indexOf(":") + 1).trim() && line.includes(":")) h = null;
     if (h) {
       flush();
       current = h;
@@ -1296,13 +1389,14 @@ export function parseDocToDraft(text: string): DocDraft {
       continue;
     }
     if (current === null) {
-      // First non-empty line before any heading is treated as the title.
-      if (line.trim() && !sections.title) sections.title = line.trim().replace(/^#+\s*/, "");
+      // The first non-empty line before any heading is the title — unless the doc has a "Title:" heading.
+      if (line.trim() && preamble === undefined) preamble = line.trim().replace(/^#+\s*/, "");
       continue;
     }
     buf.push(line);
   }
   flush();
+  if (!sections.title && preamble) sections.title = preamble;
 
   const listOf = (v: string | undefined) =>
     v

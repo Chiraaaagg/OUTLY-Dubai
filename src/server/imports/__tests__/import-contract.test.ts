@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { activities } from "@/lib/data/activities";
 import { activityInputSchema, IMPORT_DERIVED, IMPORT_FIELDS, IMPORT_REQUIRED, IMPORT_REQUIRED_ONE_OF, type ActivityInput } from "@/server/schemas/activity.schema";
-import { completeNewActivity, decodeCsvBytes, matchHeader, mergeIntoExisting, parseAmounts, parseCsv, parseDocToDraft, parseDuration, readRow, rowToInputWithWarnings, suggestMapping, toCsv, CSV_TEMPLATE_HEADERS } from "../parsers";
+import { cancellationHoursFromPolicy, completeNewActivity, decodeCsvBytes, matchHeader, mergeIntoExisting, normaliseEnumList, parseAmounts, parseBool, parseCsv, parseDocToDraft, parseDuration, readRow, rowToInputWithWarnings, suggestMapping, toCsv, CSV_TEMPLATE_HEADERS } from "../parsers";
 import { googleExportUrl } from "../google";
 
 /**
@@ -183,6 +183,11 @@ describe("CSV reading: delimiters, encodings, header row, quotes, duplicates", (
     expect(t.rows).toEqual([["X", "desert-safari", "150"]]);
     expect(t.notes?.[0]).toMatch(/Skipped 1 row above/);
   });
+  it("never takes a data row for the header", () => {
+    const t = parseCsv("Name,Category,Notes\nPrivate Yacht,Private,Pickup | Meal\n");
+    expect(t.headers).toEqual(["Name", "Category", "Notes"]);
+    expect(t.rows).toHaveLength(1);
+  });
   it("keeps a stray quote inside an unquoted cell instead of swallowing the next rows", () => {
     const t = parseCsv('title,tier\nKids 6" tablet tour,B\nNext,C\n');
     expect(t.rows).toEqual([
@@ -311,5 +316,108 @@ describe("Google links", () => {
   });
   it("still refuses other hosts", () => {
     expect(() => googleExportUrl("https://evil.example.com/spreadsheets/d/1AbCdEfGhIjKlMnOp/edit", "sheet")).toThrow();
+  });
+});
+
+/** Independent review (Mercury) findings — each one pinned. */
+describe("review findings", () => {
+  it("1. a decimal comma or dot-thousands price is refused, not read as 8950 / 1.49", () => {
+    for (const c of ["89,50", "AED 149,50", "1.490", "12,34"]) expect(parseAmounts(c).readable, c).toBe(false);
+    for (const c of ["1,490", "1,23,456", "12,345,678", "5,600.40"]) expect(parseAmounts(c).readable, c).toBe(true);
+    const [r] = importNew(csvOf(["title;tier;categorySlug;location;price.adult.inr;price.adult.aed;freeCancellationHours;inclusions".split(";")].flat(), "X;B;desert-safari;Dubai;3400;149,50;24;Dunes".split(";")));
+    expect(r.errors).toEqual([expect.objectContaining({ field: "price.adult.aed", cell: "149,50" })]);
+  });
+
+  it("2. negations and non-veg are not read as the opposite", () => {
+    const suit: [RegExp, string][] = [
+      [/wheelchair|accessible/, "wheelchair"],
+      [/infant/, "infant"],
+    ];
+    expect(normaliseEnumList(["Not wheelchair accessible", "No infants"], suit, ["wheelchair", "infant"]).values).toEqual([]);
+    const [r] = importNew(csvOf([...H, "dietary"], [...R, "Non-vegetarian buffet"]));
+    expect(r.input.dietary).toEqual(["non-veg"]);
+    const [b] = importNew(csvOf([...H, "dietary"], [...R, "Vegetarian and non-vegetarian buffet"]));
+    expect([...(b.input.dietary as string[])].sort()).toEqual(["non-veg", "veg"]);
+  });
+
+  it("3. net/cost/B2B and third-currency price columns are never mapped to the selling price", () => {
+    for (const h of ["Price (Net)", "Price (B2B)", "Price (cost)", "Rate (Supplier)", "Adult Price (USD)", "Price ($)"]) expect(matchHeader(h), h).toBeNull();
+    expect(suggestMapping(["Title", "Price (Net)", "Selling Price"])["price.adult.inr"]).toBe("Selling Price");
+    expect(matchHeader("Price (د.إ)")).toEqual({ field: "price.adult.aed" });
+  });
+
+  it("6. the free-cancellation window wins over other numbers in the policy", () => {
+    expect(cancellationHoursFromPolicy("Free cancellation up to 24 hours before. No refund for no-shows.")).toBe(24);
+    expect(cancellationHoursFromPolicy("Full refund 7 days prior; 50% within 72 hours")).toBe(168);
+    expect(cancellationHoursFromPolicy("Non refundable")).toBe(0);
+    const [r] = importNew(csvOf(H, [...R.slice(0, 6), "Full refund 7 days prior; 50% within 72 hours", R[7]]));
+    expect(r.warnings.find((w) => w.field === "freeCancellationHours")).toMatchObject({ review: true });
+  });
+
+  it("7. yes/no reads only real yes/no words", () => {
+    expect(parseBool("On request").value).toBeUndefined();
+    expect(parseBool("Available on request").value).toBeUndefined();
+    expect(parseBool("Yes, at extra cost").value).toBeUndefined();
+    expect(parseBool("N/A")).toEqual({ value: false, rest: "" });
+    expect(parseBool("Yes, from Deira hotels")).toEqual({ value: true, rest: "from Deira hotels" });
+  });
+
+  it("9. durations: an update keeps its minutes for wordy cells; a bare small number is held for review; manual headers carry units", () => {
+    const existing = fixtures.find((a) => a.durationMinutes > 0)!;
+    const h = ["slug", "durationMinutes"];
+    const merged = mergeIntoExisting(existing, readRow(h, [existing.slug, "Half day"], suggestMapping(h)));
+    expect(merged.input.durationMinutes).toBe(existing.durationMinutes);
+    const [r] = importNew(csvOf([...H, "Duration"], [...R, "6"]));
+    expect(r.warnings.find((w) => w.field === "durationMinutes")).toMatchObject({ review: true });
+    const t = parseCsv(csvOf([...H, "Time (hrs)"], [...R, "6"]));
+    const read = readRow(t.headers, t.rows[0], { ...suggestMapping(t.headers), durationMinutes: "Time (hrs)" });
+    expect(read.input.durationMinutes).toBe(360);
+  });
+
+  it("10. a supplier cell on an update keeps the id unless the name changes, and flags inherited details", () => {
+    const existing = { ...fixtures[0], supplier: { ...fixtures[0].supplier, id: "rt-001" } };
+    const h = ["slug", "supplier.name"];
+    const same = mergeIntoExisting(existing, readRow(h, [existing.slug, existing.supplier.name], suggestMapping(h)));
+    expect((same.input.supplier as { id: string }).id).toBe("rt-001");
+    const other = mergeIntoExisting(existing, readRow(h, [existing.slug, "Brand New Tours"], suggestMapping(h)));
+    expect((other.input.supplier as { id: string }).id).toBe("brand-new-tours");
+    expect(other.warnings.find((w) => w.field === "supplier")).toMatchObject({ review: true });
+  });
+
+  it("11. Doc: a preamble line does not beat Title:, and a 'Key: value' line inside a list stays in the list", () => {
+    const d = parseDocToDraft("OUTLYY product sheet v2\nTitle: Desert Safari\nInclusions\n- Dinner\nPickup: from Deira hotels\n- Camel ride\nTier: B\n");
+    expect(d.input.title).toBe("Desert Safari");
+    expect(d.input.inclusions).toEqual(["Dinner", "Pickup: from Deira hotels", "Camel ride"]);
+    expect(d.input.tier).toBe("B");
+  });
+
+  it("12. tab files with commas in prose, and a full unknown header row, are read right", () => {
+    expect(parseCsv("title\ttier\tinclusions\nA\tB\tWater, soda, BBQ, guide, photos\n").headers).toEqual(["title", "tier", "inclusions"]);
+    expect(parseCsv("Product,Cost,Where\nDesert Safari,Included,Excluded\n").headers).toEqual(["Product", "Cost", "Where"]);
+  });
+
+  it("13. alt text with a | survives the export", () => {
+    const a = { ...fixtures[0], imageAlt: "Burj | At the Top" };
+    const t = parseCsv(toCsv([a]));
+    expect(readRow(t.headers, t.rows[0], suggestMapping(t.headers)).input.imageAlt).toBe("Burj | At the Top");
+  });
+
+  it("14. every derivation is noted, and importantInfo overflow is reported", () => {
+    const [r] = importNew(csvOf(H, R));
+    const fields = r.warnings.map((w) => w.field).join(" ");
+    for (const f of ["slug", "imageAlt", "seo.title", "seo.keywords", "seo.description"]) expect(fields).toContain(f);
+    const thirty = Array.from({ length: 30 }, (_v, i) => `Info ${i}`).join(" | ");
+    const [o] = importNew(csvOf([...H, "importantInfo", "suitability"], [...R, thirty, "No pregnant women"]));
+    expect(o.warnings.find((w) => w.field === "importantInfo")).toMatchObject({ review: true, message: expect.stringContaining("No pregnant women") });
+  });
+
+  it("15. formula-looking text is exported inert and read back unchanged", () => {
+    const a = { ...fixtures[0], title: '=HYPERLINK("http://evil","x")', inclusions: ["- dash bullet", "+91 helpline"] };
+    const csv = toCsv([a]);
+    expect(csv).toContain(`"'=HYPERLINK(""http://evil"",""x"")"`);
+    const t = parseCsv(csv);
+    const back = readRow(t.headers, t.rows[0], suggestMapping(t.headers)).input;
+    expect(back.title).toBe(a.title);
+    expect(back.inclusions).toEqual(a.inclusions);
   });
 });

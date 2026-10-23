@@ -189,7 +189,7 @@ async function validateCandidates(candidates: Candidate[]): Promise<ImportPrevie
   };
   const slugs = candidates.map(slugOf).filter(Boolean);
   const [existing, categories] = await Promise.all([
-    prisma.product.findMany({ where: { slug: { in: slugs } }, select: { slug: true, deletedAt: true, content: true, version: true } }),
+    prisma.product.findMany({ where: { slug: { in: slugs } }, select: { slug: true, deletedAt: true, content: true, version: true, status: true } }),
     prisma.category.findMany({ where: { deletedAt: null, status: { not: "archived" } }, select: { slug: true, name: true, shortName: true } }),
   ]);
   const existingBySlug = new Map(existing.map((e) => [e.slug, e]));
@@ -211,7 +211,7 @@ async function validateCandidates(candidates: Candidate[]): Promise<ImportPrevie
         if (current) mergeIntoExisting(current, read);
         else errors.push({ row: c.row, field: "slug", message: "The existing listing with this slug has no valid content document — fix it in the editor first" });
         if (!read.input.slug) read.input.slug = slugGuess;
-        if (!explicitSlug) read.warnings.push({ field: "slug", message: `no slug column — matched the existing listing “${slugGuess}” by its title; this row updates it` });
+        if (!explicitSlug) read.warnings.push({ field: "slug", message: `no slug — matched the existing listing “${slugGuess}” by its title, so this row UPDATES it; add a slug column if it is a different activity`, review: true });
       } else completeNewActivity(read);
       errors.push(...read.errors.map((e) => ({ row: c.row, ...e })));
       warnings = read.warnings;
@@ -241,6 +241,8 @@ async function validateCandidates(candidates: Candidate[]): Promise<ImportPrevie
     const ok = errors.length === 0;
     const onlyCategory = !ok && parsed.success && errors.every((e) => e.field === "categorySlug");
     const update = Boolean(exNow && !exNow.deletedAt);
+    const review = warnings.some((w) => w.review);
+    if (update && review && exNow!.status === "published") warnings.push({ field: "status", message: "this listing is live — applying puts these values on the site now; check the ⚑ notes before applying" });
     rows.push({
       row: c.row,
       slug,
@@ -253,7 +255,7 @@ async function validateCandidates(candidates: Candidate[]): Promise<ImportPrevie
       errors,
       warnings,
       raw: ok ? undefined : c.raw,
-      review: warnings.some((w) => w.review) || undefined,
+      review: review || undefined,
       baseVersion: update ? exNow!.version : undefined,
     });
   }
@@ -405,6 +407,10 @@ export const importService = {
     const now = new Date();
 
     const result = await prisma.$transaction(async (tx) => {
+      // Claim the batch first: of two concurrent Apply clicks only one gets past this line; the other
+      // waits on the row lock, finds it no longer "previewed" and stops without writing anything.
+      const claimed = await tx.importBatch.updateMany({ where: { id: batchId, status: "previewed" }, data: { status: "applied", appliedAt: now } });
+      if (claimed.count !== 1) throw Errors.conflict("This batch is being applied or was already applied");
       // Re-parse: the preview was validated, but the stored JSON is re-checked against a tampered row.
       const inputs = todo.map((r) => ({ row: r.row, input: activityInputSchema.parse(r.input) }));
       const heldSlugs: string[] = [];
@@ -455,7 +461,9 @@ export const importService = {
       for (const { row, input } of inputs) {
         const prev = existing.get(input.slug);
         const publishRow = Boolean(opts.publish) && !held.has(row);
-        if (opts.publish && held.has(row)) heldSlugs.push(input.slug);
+        // "Held" = this import did not publish it. A listing that is already live stays live with the new values;
+        // the preview marks those rows so nobody reads "held" as "not on the site".
+        if (opts.publish && held.has(row) && prev?.status !== "published") heldSlugs.push(input.slug);
         const supplierId = supplierIds.get(input.supplier.name);
         if (prev) {
           const prevDoc = activitySchema.safeParse(prev.content);
@@ -469,8 +477,9 @@ export const importService = {
           // way a catalogue goes live, and leaving those rows draft made the
           // checkbox look broken.
           const rowStatus = publishRow ? "published" : prev.status;
-          await tx.product.update({
-            where: { id: prev.id },
+          // Version-guarded write: a save that lands between the read above and this write makes the count 0.
+          const written = await tx.product.updateMany({
+            where: { id: prev.id, version: prev.version, deletedAt: null },
             data: {
               ...projectActivity(content),
               content: content as unknown as Prisma.InputJsonValue,
@@ -479,6 +488,7 @@ export const importService = {
               publishedAt: rowStatus === "published" ? (prev.publishedAt ?? now) : prev.publishedAt,
             },
           });
+          if (written.count !== 1) throw Errors.conflict(`"${input.slug}" changed while this batch was being applied — preview the file again`);
           versions.push({ id: uuidv7(), productId: prev.id, version, content: content as unknown as Prisma.InputJsonValue, status: rowStatus, actorId: actor.id, reason });
           audits.push({ actorType: actor.type, actorId: actor.id, action: "activity.update", entityType: "product", entityId: prev.id, before: { version: prev.version, title: prev.title, status: prev.status } as Prisma.InputJsonValue, after: { version, title: content.title, status: rowStatus, source: "import" } as Prisma.InputJsonValue, reason, ipHash: actor.ipHash, userAgent: actor.userAgent });
           if (supplierId) mappings.push({ productId: prev.id, supplierId });
@@ -503,12 +513,13 @@ export const importService = {
         if (fresh.length) await tx.productSupplierMapping.createMany({ data: fresh.map((m) => ({ id: uuidv7(), productId: m.productId, supplierId: m.supplierId, priority: 1, externalRef: {} })) });
       }
       await tx.importBatchItem.createMany({ data: items.map((i) => ({ id: uuidv7(), batchId, productId: i.id, action: i.action, beforeVersion: i.before, afterVersion: i.after, slug: i.slug })) });
-      await tx.importBatch.update({ where: { id: batchId }, data: { status: "applied", appliedAt: now, rowsOk: items.length, rowsFailed: preview.length - items.length } });
+      await tx.importBatch.update({ where: { id: batchId }, data: { rowsOk: items.length, rowsFailed: preview.length - items.length } });
       audits.push({ actorType: actor.type, actorId: actor.id, action: "import.apply", entityType: "import_batch", entityId: batchId, after: { applied: items.length, created: creates.length, updated: items.length - creates.length, publish: Boolean(opts.publish), heldForReview: heldSlugs, categoriesCreated: missing } as Prisma.InputJsonValue, reason, ipHash: actor.ipHash, userAgent: actor.userAgent });
       await tx.auditLog.createMany({ data: audits });
       return { items, categoriesCreated: missing, heldForReview: heldSlugs };
     }, IMPORT_TX).catch(async (error) => {
-      await prisma.importBatch.update({ where: { id: batchId }, data: { status: "failed", errors: [{ row: 0, field: "_", message: error instanceof Error ? error.message : "apply failed" }] as unknown as Prisma.InputJsonValue } }).catch(() => {});
+      // Only a batch still "previewed" (this transaction rolled back) becomes failed — never one another call applied.
+      await prisma.importBatch.updateMany({ where: { id: batchId, status: "previewed" }, data: { status: "failed", errors: [{ row: 0, field: "_", message: error instanceof Error ? error.message : "apply failed" }] as unknown as Prisma.InputJsonValue } }).catch(() => {});
       log.error("import.apply_failed", { batchId, error });
       throw error;
     });

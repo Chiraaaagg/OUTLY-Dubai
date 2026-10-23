@@ -232,6 +232,30 @@ Free until 24h before.
     expect((await activityService.get(admin, before.id)).content.title).toBe("Edited in the console");
   }, 90_000);
 
+  it("two concurrent applies: one writes, the other is refused and the batch stays revertible", async () => {
+    const preview = await importService.preview(admin, { source: "bulk", items: [input(13, "twice")] });
+    const results = await Promise.allSettled([importService.apply(admin, preview.batchId), importService.apply(admin, preview.batchId)]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((r) => r.status === "rejected")).toHaveLength(1);
+    expect(await prisma.product.count({ where: { slug: slug("twice") } })).toBe(1);
+    const batch = await importService.get(admin, preview.batchId);
+    expect(batch.status).toBe("applied");
+    expect(batch.items).toHaveLength(1);
+    await expect(importService.revert(admin, preview.batchId)).resolves.toMatchObject({ reverted: 1 });
+  }, 90_000);
+
+  it("a title-matched update is flagged, and a live listing is never reported as held", async () => {
+    const live = await activityService.get(admin, (await activityService.create(admin, { ...input(14, "live"), title: `Zz Test ${RUN} Live` }, { status: "published" })).id);
+    const preview = await importService.preview(admin, { source: "csv", text: `title,price.adult.inr,price.adult.aed\nZz Test ${RUN} Live,5000,220\n` });
+    expect(preview.rows[0]).toMatchObject({ action: "update", ok: true, review: true });
+    expect(preview.rows[0].warnings.map((w) => w.field)).toEqual(expect.arrayContaining(["slug", "status"]));
+    const result = await importService.apply(admin, preview.batchId, { publish: true });
+    expect(result.heldForReview).toEqual([]);
+    const after = await activityService.get(admin, live.id);
+    expect(after.status).toBe("published");
+    expect(after.content.price.adult).toEqual({ inr: 5000, aed: 220 });
+  }, 90_000);
+
   it("rejects non-Google URLs and agents", async () => {
     await expect(importService.fetch(admin, "https://evil.example.com/spreadsheets/d/abc123456789/edit")).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
     await expect(importService.fetch(admin, "http://docs.google.com/spreadsheets/d/abc123456789/edit")).rejects.toMatchObject({ code: "VALIDATION_FAILED" });

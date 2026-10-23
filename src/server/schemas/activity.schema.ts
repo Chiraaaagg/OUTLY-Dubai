@@ -213,7 +213,10 @@ export type ImportField = (typeof IMPORT_FIELDS)[number];
 export const IMPORT_REQUIRED: ImportField[] = ["title", "tier", "categorySlug", "location", "price.adult.inr", "price.adult.aed"];
 
 /** Fill at least one cell of each group for a new listing. */
-export const IMPORT_REQUIRED_ONE_OF: ImportField[][] = [["cancellationPolicy", "freeCancellationHours"]];
+export const IMPORT_REQUIRED_ONE_OF: ImportField[][] = [
+  ["cancellationPolicy", "freeCancellationHours"],
+  ["subtitle", "inclusions"],
+];
 
 /** What a blank cell of a new listing becomes. `review: true` = held back from "publish immediately". */
 export const IMPORT_DERIVED: Partial<Record<ImportField, { from: string; review?: boolean }>> = {

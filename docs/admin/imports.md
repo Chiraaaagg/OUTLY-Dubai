@@ -25,7 +25,7 @@ One list of columns is shared by the template, the importer, the wizard and thes
 
 **New listing** (no listing has the row's slug):
 
-- Required — never filled in for you, a blank cell is an error on that row: `title`, `tier`, `categorySlug`, `location`, `price.adult.inr`, `price.adult.aed`, and one of `cancellationPolicy` / `freeCancellationHours`.
+- Required — never filled in for you, a blank cell is an error on that row: `title`, `tier`, `categorySlug`, `location`, `price.adult.inr`, `price.adult.aed`, one of `cancellationPolicy` / `freeCancellationHours`, and one of `subtitle` / `inclusions`.
 - Derived when blank, from the same row, always shown as a note. ⚑ = a person must check it, so the row stays a draft even if you tick *Publish immediately*:
 
 | Blank cell | Becomes |
@@ -36,18 +36,20 @@ One list of columns is shared by the template, the importer, the wizard and thes
 | `images` ⚑ | a placeholder image ref |
 | `imageAlt` | the title |
 | `durationMinutes` | 0 = "not stated" (storefront shows "Duration on request") |
-| `freeCancellationHours` | the hours stated in the policy text ("Non refundable" → 0, "48 hours" → 48); a policy with no hours is an error, never a guessed 24 |
+| `freeCancellationHours` | the free-cancellation window stated in the policy text ("Free cancellation up to 48 hours before" → 48, "Full refund 7 days prior; 50% within 72 hours" → 168, "Non refundable" → 0); a policy naming several windows is flagged ⚑; a policy with no hours is an error, never a guessed 24 |
 | `cancellationPolicy` | written from the hours ("Free cancellation up to 48 hours before the activity; no refund after that.") |
 | `seo.title` / `seo.description` / `seo.keywords` | the title / the subtitle / the title |
 | `supplier.*` | "OUTLYY direct" (or, with a supplier name: source direct, reliability 80, verified this year) |
 
-**Update** (the slug exists, or — with no slug column — the title slugifies to an existing slug, which the preview says): only the cells the row fills change. Blank and unmapped cells keep the listing's current value, so a sheet with five columns changes five fields. A list cell replaces the whole list. If someone saves the listing between preview and apply, apply refuses (409) — preview again.
+**Update** (the slug exists, or — with no slug — the title slugifies to an existing slug; that match is flagged ⚑ so a different activity with the same name is not overwritten unnoticed): only the cells the row fills change. Blank and unmapped cells keep the listing's current value, so a sheet with five columns changes five fields. A list cell replaces the whole list. If someone saves the listing between preview and apply, apply refuses (409) — preview again. A duration cell with no length in it ("Half day") keeps the listing's minutes. A new supplier name gets its own id and is flagged ⚑ because its source/reliability/verified date are still the old supplier's.
+
+**"Check first" and live listings.** ⚑ keeps a *new or draft* listing out of "publish immediately". It cannot hold back an update to a listing that is already published — applying puts the values on the site — so such rows carry a "this listing is live" note; read the ⚑ notes before applying.
 
 **Populated cells are never dropped.** A cell that cannot be read (`"On request"` as a price, `"platinum"` as a tier, broken JSON in `variants`) is an error on that row showing the cell, not a silent blank that then gets a default.
 
 ## Column mapping (CSV / Sheet)
 
-Headers are matched automatically: the canonical field name first (the template maps 1:1), then common aliases (`Tour Name`, `Activity Name → title`; `What's included → inclusions`; `Meeting Point / Pickup`, `Pickup Point → meetingPoint`; `Cancellation Terms`, `Refund Policy → cancellationPolicy`; …), then the same with bracketed hints removed (`Tier (A–E)`, `Subtitle (max 200)`, `Location *`). Price and duration headers carry their currency and unit: `Selling Price (AED)`, `Child Rate in Dirhams`, `Adult Price (₹)`, `Duration (hours)`. A price header with no currency (`Selling Price`) is read as INR and the preview says so; a header naming one currency mapped onto the other currency's price stops the preview. Columns with no field are listed as "Not imported". Anything can be remapped by hand in step 2; choosing a new file or link resets the mapping.
+Headers are matched automatically: the canonical field name first (the template maps 1:1), then common aliases (`Tour Name`, `Activity Name → title`; `What's included → inclusions`; `Meeting Point / Pickup`, `Pickup Point → meetingPoint`; `Cancellation Terms`, `Refund Policy → cancellationPolicy`; …), then the same with bracketed hints removed (`Tier (A–E)`, `Subtitle (max 200)`, `Location *`). Price and duration headers carry their currency and unit: `Selling Price (AED)`, `Child Rate in Dirhams`, `Adult Price (₹)`, `Duration (hours)`. A price header with no currency (`Selling Price`) is read as INR and the preview says so; a header that is not the customer price (`Price (Net)`, `B2B Rate`, `Supplier Cost`) or names another currency (`USD`, `$`) is never mapped automatically; a header naming one currency mapped onto the other currency's price stops the preview. Columns with no field are listed as "Not imported". Anything can be remapped by hand in step 2; choosing a new file or link resets the mapping.
 
 ### Vocabulary — what the parser maps for you
 
@@ -55,15 +57,15 @@ Headers are matched automatically: the canonical field name first (the template 
 |---|---|
 | `tier` | `A–E`, `Tier B`, `C - Combos`; words: attraction/ticket/budget → A, standard/tour → B, premium/combo → C, luxury/vip/private → D, transfer/sim → E. Anything else → error. Blank on a new listing → error. |
 | `categorySlug` | a live category slug or name; common supplier names are mapped (`dhow-cruise` → cruises-yachts, `water-parks` → theme-parks, `city-tours` → dubai-city-tours, `burj-khalifa-tickets` → dubai-attractions, …); otherwise keywords in the category text, then in the title (`… Buggy Ride` → desert-safari, flagged ⚑). Unresolved → error listing the valid slugs (or create it as a draft on apply). `secondaryCategorySlugs` are resolved the same way; unknown ones are errors. |
-| `price.*` | one amount per currency: `₹2,990`, `Rs. 3,400/-`, `From AED 150`, `INR 3400 per person`, `1,23,456`; decimals are rounded to whole rupees/dirhams (noted). A cell with both currencies (`AED 89 / ₹1,990`) fills a blank sibling column. `On request`, `150-200`, `150 + VAT` → error. INR and AED are both required; one is never converted from the other. An INR/AED pair far from the usual ₹-per-dirham ratio is flagged ⚑. |
+| `price.*` | one amount per currency: `₹2,990`, `Rs. 3,400/-`, `From AED 150`, `INR 3400 per person`, `1,23,456`; decimals are rounded to whole rupees/dirhams (noted). A cell with both currencies (`AED 89 / ₹1,990`) fills a blank sibling column. `On request`, `150-200`, `150 + VAT`, a decimal comma (`149,50`) or a dot as thousands separator (`1.490`) → error. INR and AED are both required; one is never converted from the other. An INR/AED pair far from the usual ₹-per-dirham ratio is flagged ⚑. |
 | `durationMinutes` | minutes, `2h 30m`, `1.5h`, `1:30`, `2-3 hours` (the longer end), `1 day`; a bare number is minutes unless the header names hours/days (`Duration (hours)`). Words with no length (`Half day`, `Flexible`) → "not stated" and the words are kept in `importantInfo`. |
 | `confirmation` | "Instant Confirmation" → instant; "On request", "Confirmation within 24hrs", "voucher by email" → manual. Blank → manual. Anything else → error. |
-| yes/no columns | `yes/no`, `true/false`, `1/0`, `included`; a remark after the word is kept (`Yes, from Deira hotels` → pickup yes + "Pickup: from Deira hotels" in `importantInfo`). Anything else → error. |
+| yes/no columns | `yes/no`, `true/false`, `1/0`, `included`, `N/A` (no); a remark after the word is kept (`Yes, from Deira hotels` → pickup yes + "Pickup: from Deira hotels" in `importantInfo`). `On request`, `Yes, at extra cost` and anything else → error. |
 | `dietary` | free text scanned for veg / jain / halal / non-veg; unmatched text becomes `mealNote` if the listing has none. |
-| `suitability` | free text scanned for kids / seniors / wheelchair / infant / couples / groups (negations such as "not recommended for kids" are ignored); unmatched lines are appended to `importantInfo`. |
+| `suitability` | free text scanned for kids / seniors / wheelchair / infant / couples / groups (negated lines such as "not recommended for kids", "Not wheelchair accessible", "No infants" give no value and are kept as text; "non-vegetarian" is non-veg, not veg); unmatched lines are appended to `importantInfo`. |
 | `subtitle`, `seo.title`, `seo.description` | over the limit (200 / 120 / 320) → shortened at the last sentence end that fits, else at a word with "…" (noted). Titles, prices and policies are never shortened. |
 | `inclusions`, `exclusions`, `importantInfo` | an item over the limit (300 / 300 / 600) is split at sentence ends (noted). |
-| `imageAlt` | a `|` list keeps the first item; trimmed to 200 characters at a word boundary. |
+| `imageAlt` | kept whole up to 200 characters; a longer `|` list keeps the first item, trimmed at a word boundary. |
 | `images` | spaces inside URLs are percent-encoded; `http://` and non-URL text are errors. |
 | `timeSlots` | items over 80 characters are moved to `importantInfo`; `16:00:00` (a time cell re-exported by Sheets) → `16:00`. |
 | `supplier.source` | "raynatours.com" → rayna; "direct"/"own contract" → direct; other domains/portals → portal. |
@@ -76,7 +78,8 @@ Cell formats:
 - `faqs`: `Question? :: Answer | Question? :: Answer` or a JSON array; questions are kept exactly as written.
 - `itinerary`: `09:00 :: Pickup :: detail | 10:30 :: Dunes :: detail` (or JSON).
 - `variants`: `id :: Name :: deltaInr :: deltaAed :: blurb` or JSON (a blank delta = same price); `addOns`: `id :: Name :: inr :: aed :: perPerson :: category :: description` or JSON — both add-on prices are required.
-- The export writes `faqs`, `itinerary`, `variants`, `addOns` and `badges` as JSON so any text survives a round trip.
+- The export writes `faqs`, `itinerary`, `variants`, `addOns` and `badges` as JSON so any text survives a round trip, and prefixes text starting with `= + - @` with `'` so a spreadsheet does not run it as a formula (the importer removes the `'`).
+- Two people clicking Apply on the same batch: one applies it, the other gets 409.
 
 ## Google Doc structure
 

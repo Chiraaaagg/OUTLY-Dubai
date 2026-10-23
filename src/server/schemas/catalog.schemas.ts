@@ -50,8 +50,8 @@ export const deleteCategorySchema = z.object({ reason }).strict();
 
 export const importSourceSchema = z.enum(["csv", "sheet", "doc", "bulk", "manual"]);
 
-/** Column mapping: target field → source header (null = not mapped). */
-export const mappingSchema = z.record(z.enum(IMPORT_FIELDS), z.string().trim().max(120).nullable());
+/** Column mapping: target field → source header (null = not mapped; an omitted field keeps the suggested column). */
+export const mappingSchema = z.partialRecord(z.enum(IMPORT_FIELDS), z.string().trim().max(120).nullable());
 
 const googleUrl = z
   .string()

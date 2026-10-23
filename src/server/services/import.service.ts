@@ -8,9 +8,10 @@ import { Errors } from "../lib/errors";
 import { uuidv7 } from "../lib/ids";
 import { log } from "../lib/logger";
 import { revalidateCatalog } from "../lib/catalog-cache";
-import { activityInputSchema, activitySchema, buildActivityContent, projectActivity, toActivity, type ActivityInput } from "../schemas/activity.schema";
-import { parseCsv, parseDocToDraft, rowToInputWithWarnings, suggestMapping, toCsv, type Mapping, type RowWarning } from "../imports/parsers";
+import { activityInputSchema, activitySchema, buildActivityContent, projectActivity, toActivity, type ActivityInput, type ImportField } from "../schemas/activity.schema";
+import { completeNewActivity, currencyIn, matchHeader, mergeIntoExisting, parseCsv, parseDocToDraft, readRow, slugify, suggestMapping, toCsv, type Mapping, type RowRead, type RowWarning } from "../imports/parsers";
 import { resolveCategory } from "../imports/categories";
+import { googleExportUrl } from "../imports/google";
 
 /**
  * Listing imports — CSV upload, Google Sheet link, Google Doc link/paste,
@@ -37,6 +38,8 @@ export interface ImportRowError {
   row: number;
   field: string;
   message: string;
+  /** The cell as read, when the error is about one cell. */
+  cell?: string;
 }
 
 export interface ImportPreviewRow {
@@ -53,6 +56,10 @@ export interface ImportPreviewRow {
   raw?: Record<string, string>;
   /** Set when the row is valid except that this category does not exist yet (apply can create it). */
   missingCategory?: string;
+  /** A derived value needs a person's check: "publish immediately" leaves this row a draft. */
+  review?: boolean;
+  /** Version of the listing the update was computed from; apply refuses if it moved since. */
+  baseVersion?: number;
 }
 
 export interface ImportPreview {
@@ -75,41 +82,6 @@ const FETCH_MAX_BYTES = 5 * 1024 * 1024;
 const MAX_ROWS = 500;
 
 /* ------------------------------------------------------------- google */
-
-function googleExportUrl(raw: string, kind: "sheet" | "doc"): string {
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    throw Errors.validation({ url: "Not a valid URL" });
-  }
-  if (url.protocol === "https:" && url.hostname === "drive.google.com") {
-    throw Errors.validation({ url: "This is a Drive link. Open the file in Google Sheets/Docs and paste the docs.google.com link (an uploaded .xlsx must be saved as a Google Sheet first)" });
-  }
-  if (url.protocol !== "https:" || url.hostname !== "docs.google.com") throw Errors.validation({ url: "Only https://docs.google.com links are accepted" });
-  // "Publish to the web" links carry a different id namespace (/d/e/2PACX-…) and export through /pub.
-  const published = /^\/(spreadsheets|document)\/d\/e\/([a-zA-Z0-9_-]{20,})/.exec(url.pathname);
-  const m = published ? null : /^\/(spreadsheets|document)\/d\/([a-zA-Z0-9_-]{10,})/.exec(url.pathname);
-  const found = published ?? m;
-  if (!found) {
-    if (/^\/file\/d\//.test(url.pathname)) {
-      throw Errors.validation({ url: "This is a Drive file link. Open the file in Google Sheets/Docs (File → Save as Google Sheets) and paste that link" });
-    }
-    throw Errors.validation({ url: kind === "sheet" ? "Paste the Google Sheet link (…/spreadsheets/d/<id>/…)" : "Paste the Google Doc link (…/document/d/<id>/…)" });
-  }
-  if (kind === "sheet" && found[1] !== "spreadsheets") throw Errors.validation({ url: "This is a Google Doc link — use the Doc import" });
-  if (kind === "doc" && found[1] !== "document") throw Errors.validation({ url: "This is a Google Sheet link — use the Sheet import" });
-  const id = found[2];
-  // Only forward a gid the operator's link actually names. Google answers 400
-  // for a gid that does not exist in the file, and "0" is not guaranteed to
-  // exist (any recreated first tab gets a random gid); omitted = first tab.
-  const gid = url.searchParams.get("gid") ?? url.hash.match(/gid=(\d+)/)?.[1] ?? null;
-  const gidParam = gid && /^\d{1,12}$/.test(gid) ? `&gid=${gid}` : "";
-  if (kind === "sheet") {
-    return published ? `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv${gidParam}` : `https://docs.google.com/spreadsheets/d/${id}/export?format=csv${gidParam}`;
-  }
-  return published ? `https://docs.google.com/document/d/e/${id}/pub?output=txt` : `https://docs.google.com/document/d/${id}/export?format=txt`;
-}
 
 async function fetchGoogle(exportUrl: string): Promise<string> {
   const controller = new AbortController();
@@ -161,17 +133,63 @@ function issuesToErrors(row: number, issues: { path: PropertyKey[]; message: str
   return issues.slice(0, 12).map((i) => ({ row, field: i.path.map(String).join(".") || "_", message: i.message }));
 }
 
+/**
+ * A row on its way to validation. Sheet/CSV/Doc rows carry what their cells
+ * stated (`read`): create vs update decides what blank cells become. Bulk
+ * JSON items are whole documents (`input`) and are validated as given.
+ */
 interface Candidate {
   row: number;
-  input: Record<string, unknown>;
-  warnings: RowWarning[];
+  read?: RowRead;
+  input?: Record<string, unknown>;
   raw?: Record<string, string>;
 }
 
+const DERIVED_KEYS = ["id", "rating", "reviewCount", "bookedThisMonth"] as const;
+
+/** Stored document → the editable input it was built from (derived fields and the hinge stripped by the schema). */
+function storedInput(content: unknown): ActivityInput | null {
+  if (!content || typeof content !== "object") return null;
+  const rest = { ...(content as Record<string, unknown>) };
+  for (const k of DERIVED_KEYS) delete rest[k];
+  const parsed = activityInputSchema.safeParse(rest);
+  return parsed.success ? parsed.data : null;
+}
+
+/** Category resolution onto the live taxonomy; a guess from the title alone is flagged for review. */
+function resolveCategories(input: Record<string, unknown>, warnings: RowWarning[], categories: { slug: string; name: string; shortName: string }[], unknownSecondary: string[]) {
+  const categorySlugs = new Set(categories.map((c) => c.slug));
+  const rawCat = typeof input.categorySlug === "string" ? input.categorySlug : "";
+  const title = typeof input.title === "string" ? input.title : "";
+  if (rawCat && !categorySlugs.has(rawCat)) {
+    const r = resolveCategory(rawCat, title, categories);
+    if (r.slug) {
+      input.categorySlug = r.slug;
+      warnings.push({ field: "categorySlug", message: `"${rawCat}" → ${r.slug} (matched by ${r.how})`, ...(r.how === "title" ? { review: true } : {}) });
+    }
+  }
+  if (Array.isArray(input.secondaryCategorySlugs)) {
+    const out: string[] = [];
+    for (const s of input.secondaryCategorySlugs as string[]) {
+      const r = categorySlugs.has(s) ? { slug: s, how: "exact" } : resolveCategory(s, "", categories);
+      if (!r.slug) unknownSecondary.push(s);
+      else {
+        if (r.slug !== s) warnings.push({ field: "secondaryCategorySlugs", message: `"${s}" → ${r.slug} (matched by ${r.how})` });
+        if (r.slug !== input.categorySlug && !out.includes(r.slug)) out.push(r.slug);
+      }
+    }
+    input.secondaryCategorySlugs = out;
+  }
+}
+
 async function validateCandidates(candidates: Candidate[]): Promise<ImportPreviewRow[]> {
-  const slugs = candidates.map((c) => (typeof c.input.slug === "string" ? c.input.slug : "")).filter(Boolean);
+  const slugOf = (c: Candidate) => {
+    const v = c.read?.input ?? c.input ?? {};
+    return typeof v.slug === "string" && v.slug ? v.slug : typeof v.title === "string" ? slugify(v.title) : "";
+  };
+  const slugs = candidates.map(slugOf).filter(Boolean);
   const [existing, categories] = await Promise.all([
-    prisma.product.findMany({ where: { slug: { in: slugs } }, select: { slug: true, deletedAt: true } }),
+    prisma.product.findMany({ where: { slug: { in: slugs } }, select: { slug: true, deletedAt: true, content: true, version: true, status: true } }),
     prisma.category.findMany({ where: { deletedAt: null, status: { not: "archived" } }, select: { slug: true, name: true, shortName: true } }),
   ]);
   const existingBySlug = new Map(existing.map((e) => [e.slug, e]));
@@ -179,37 +197,57 @@ async function validateCandidates(candidates: Candidate[]): Promise<ImportPrevie
   const seen = new Map<string, number>();
   const rows: ImportPreviewRow[] = [];
   for (const c of candidates) {
-    const warnings = [...c.warnings];
-    // Category vocabulary: resolve supplier taxonomy onto ours before validation.
-    const rawCat = typeof c.input.categorySlug === "string" ? c.input.categorySlug : "";
-    const rawTitle = typeof c.input.title === "string" ? c.input.title : "";
-    if (rawCat && !categorySlugs.has(rawCat)) {
-      const r = resolveCategory(rawCat, rawTitle, categories);
-      if (r.slug) {
-        c.input.categorySlug = r.slug;
-        warnings.push({ field: "categorySlug", message: `"${rawCat}" → ${r.slug} (matched by ${r.how})` });
-      }
-    }
-    const parsed = activityInputSchema.safeParse(c.input);
-    const errors: ImportRowError[] = parsed.success ? [] : issuesToErrors(c.row, parsed.error.issues);
-    const slug = parsed.success ? parsed.data.slug : typeof c.input.slug === "string" ? c.input.slug : "";
-    const title = parsed.success ? parsed.data.title : rawTitle;
-    const catNow = parsed.success ? parsed.data.categorySlug : typeof c.input.categorySlug === "string" ? c.input.categorySlug : "";
+    const slugGuess = slugOf(c);
+    const ex = existingBySlug.get(slugGuess);
+    const isUpdate = Boolean(ex && !ex.deletedAt);
+    const errors: ImportRowError[] = [];
+    let warnings: RowWarning[] = [];
+    let input: Record<string, unknown>;
+    if (c.read) {
+      const read = c.read;
+      if (isUpdate) {
+        const explicitSlug = typeof read.input.slug === "string";
+        const current = storedInput(ex!.content);
+        if (current) mergeIntoExisting(current, read);
+        else errors.push({ row: c.row, field: "slug", message: "The existing listing with this slug has no valid content document — fix it in the editor first" });
+        if (!read.input.slug) read.input.slug = slugGuess;
+        if (!explicitSlug) read.warnings.push({ field: "slug", message: `no slug — matched the existing listing “${slugGuess}” by its title, so this row UPDATES it; add a slug column if it is a different activity`, review: true });
+      } else completeNewActivity(read);
+      errors.push(...read.errors.map((e) => ({ row: c.row, ...e })));
+      warnings = read.warnings;
+      input = read.input;
+    } else input = c.input ?? {};
+
+    const unknownSecondary: string[] = [];
+    resolveCategories(input, warnings, categories, unknownSecondary);
+    if (unknownSecondary.length) errors.push({ row: c.row, field: "secondaryCategorySlugs", message: `Unknown categor${unknownSecondary.length === 1 ? "y" : "ies"} ${unknownSecondary.map((s) => `"${s}"`).join(", ")} — use one of: ${[...categorySlugs].join(", ")}` });
+
+    const parsed = activityInputSchema.safeParse(input);
+    // A cell already reported as unreadable or missing is not reported again as "expected number, received undefined",
+    // nor is what was to be derived from it (no subtitle → no SEO description).
+    const reported = errors.map((e) => e.field).flatMap((f) => (f === "subtitle" ? [f, "seo.description"] : [f]));
+    if (!parsed.success) errors.push(...issuesToErrors(c.row, parsed.error.issues).filter((e) => !reported.some((f) => e.field === f || e.field.startsWith(`${f}.`) || f.startsWith(`${e.field}.`))));
+    const slug = parsed.success ? parsed.data.slug : typeof input.slug === "string" ? input.slug : "";
+    const title = parsed.success ? parsed.data.title : typeof input.title === "string" ? input.title : "";
+    const catNow = parsed.success ? parsed.data.categorySlug : typeof input.categorySlug === "string" ? input.categorySlug : "";
     if (catNow && !categorySlugs.has(catNow)) errors.push({ row: c.row, field: "categorySlug", message: `Unknown category "${catNow}" — use one of: ${[...categorySlugs].join(", ")}` });
     if (slug) {
       const dup = seen.get(slug);
       if (dup !== undefined) errors.push({ row: c.row, field: "slug", message: `Duplicate slug in this file (also row ${dup})` });
       seen.set(slug, c.row);
     }
-    const ex = existingBySlug.get(slug);
-    if (ex?.deletedAt) errors.push({ row: c.row, field: "slug", message: "This slug belongs to a deleted activity — restore it from the console instead" });
+    const exNow = existingBySlug.get(slug);
+    if (exNow?.deletedAt) errors.push({ row: c.row, field: "slug", message: "This slug belongs to a deleted activity — restore it from the console instead" });
     const ok = errors.length === 0;
     const onlyCategory = !ok && parsed.success && errors.every((e) => e.field === "categorySlug");
+    const update = Boolean(exNow && !exNow.deletedAt);
+    const review = warnings.some((w) => w.review);
+    if (update && review && exNow!.status === "published") warnings.push({ field: "status", message: "this listing is live — applying puts these values on the site now; check the ⚑ notes before applying" });
     rows.push({
       row: c.row,
       slug,
       title,
-      action: ex && !ex.deletedAt ? "update" : "create",
+      action: update ? "update" : "create",
       ok,
       // Kept for rows whose only problem is an unknown category so apply can create it on request.
       input: parsed.success && (ok || onlyCategory) ? parsed.data : undefined,
@@ -217,9 +255,29 @@ async function validateCandidates(candidates: Candidate[]): Promise<ImportPrevie
       errors,
       warnings,
       raw: ok ? undefined : c.raw,
+      review: review || undefined,
+      baseVersion: update ? exNow!.version : undefined,
     });
   }
   return rows;
+}
+
+/**
+ * Mapping sanity before any row is read: a column whose name states one
+ * currency mapped onto the other currency's price would misprice every row,
+ * so it stops the preview; a price column with no currency in its name is
+ * read as INR and said so.
+ */
+function checkMapping(headers: string[], mapping: Mapping, warnings: string[]) {
+  for (const [f, h] of Object.entries(mapping) as [ImportField, string | null][]) {
+    if (!h || !f.startsWith("price.")) continue;
+    const want = f.endsWith(".inr") ? "inr" : "aed";
+    const named = currencyIn(h);
+    if (named && named !== want) throw Errors.validation({ [`mapping.${f}`]: `Column "${h}" is in ${named.toUpperCase()} but is mapped to the ${want.toUpperCase()} price ${f}` });
+    if (!named && want === "inr" && matchHeader(h)?.assumedCurrency) warnings.push(`Column “${h}” names no currency, so it is read as INR (₹). If it holds dirhams, rename it “${h} (AED)” or map it to the AED price.`);
+  }
+  const unmapped = headers.filter((h) => !Object.values(mapping).includes(h));
+  if (unmapped.length) warnings.push(`Not imported (no field mapped): ${unmapped.slice(0, 12).map((h) => `“${h}”`).join(", ")}${unmapped.length > 12 ? ` and ${unmapped.length - 12} more` : ""}.`);
 }
 
 function toPreview(batchId: string, source: ImportSource, headers: string[], mapping: Mapping, rows: ImportPreviewRow[], warnings: string[]): ImportPreview {
@@ -236,7 +294,7 @@ export const importService = {
     requirePermission(actor, "imports.run");
     if (/\/spreadsheets\//.test(url)) {
       const table = parseCsv(await fetchGoogleSheetCsv(url));
-      return { kind: "sheet" as const, headers: table.headers, sample: table.rows.slice(0, 5), rows: table.rows.length, mapping: suggestMapping(table.headers) };
+      return { kind: "sheet" as const, headers: table.headers, sample: table.rows.slice(0, 5), rows: table.rows.length, mapping: suggestMapping(table.headers), notes: table.notes ?? [] };
     }
     const draft = parseDocToDraft(await fetchGoogleDocText(url));
     return { kind: "doc" as const, draft: draft.input, warnings: draft.warnings, sections: Object.keys(draft.sections) };
@@ -245,7 +303,7 @@ export const importService = {
   async preview(
     actor: Actor,
     req:
-      | { source: "csv"; text: string; fileName?: string; mapping?: Mapping }
+      | { source: "csv"; text: string; fileName?: string; mapping?: Mapping; notes?: string[] }
       | { source: "sheet"; url: string; mapping?: Mapping }
       | { source: "doc"; url?: string; text?: string; mapping?: Mapping }
       | { source: "bulk"; items: unknown[] },
@@ -264,21 +322,23 @@ export const importService = {
       const text = req.source === "csv" ? req.text : await fetchGoogleSheetCsv(req.url);
       fileName = req.source === "csv" ? req.fileName : undefined;
       sourceRef = req.source === "sheet" ? req.url : undefined;
+      if (req.source === "csv" && req.notes) warnings.push(...req.notes);
       const table = parseCsv(text);
+      warnings.push(...(table.notes ?? []));
       if (table.headers.length === 0) throw Errors.validation({ file: "The file is empty" });
-      if (table.rows.length === 0) throw Errors.validation({ file: "The file has a header row but no data rows" });
+      if (table.rows.length === 0) throw Errors.validation({ file: "The file has a header row but no data rows — add one row per activity under the header" });
       if (table.rows.length > MAX_ROWS) throw Errors.validation({ file: `Up to ${MAX_ROWS} rows per import — split the file` });
       headers = table.headers;
       mapping = { ...suggestMapping(headers), ...(req.mapping ?? {}) };
-      for (const [f, h] of Object.entries(mapping)) if (h && !headers.includes(h)) throw Errors.validation({ [`mapping.${f}`]: `Column "${h}" is not in the file` });
+      for (const [f, h] of Object.entries(mapping)) if (h && !headers.includes(h)) throw Errors.validation({ [`mapping.${f}`]: `Column "${h}" is not in the file — the mapping is from another file; reset it and preview again` });
       if (!mapping.title && !mapping.slug) throw Errors.validation({ mapping: "Map at least a Title (or Slug) column" });
+      checkMapping(headers, mapping, warnings);
       candidates = table.rows.map((r, i) => {
-        const { input, warnings: w } = rowToInputWithWarnings(headers, r, mapping);
         const raw: Record<string, string> = {};
         headers.forEach((h, j) => {
           if (r[j]) raw[h] = r[j].length > 300 ? r[j].slice(0, 300) + "…" : r[j];
         });
-        return { row: i + 2, input, warnings: w, raw };
+        return { row: i + 2, read: readRow(headers, r, mapping), raw };
       });
     } else if (req.source === "doc") {
       const text = req.text ?? (req.url ? await fetchGoogleDocText(req.url) : "");
@@ -287,10 +347,11 @@ export const importService = {
       const draft = parseDocToDraft(text);
       warnings.push(...draft.warnings);
       headers = Object.keys(draft.sections);
-      candidates = [{ row: 1, input: draft.input, warnings: [] }];
+      mapping = draft.table.mapping;
+      candidates = [{ row: 1, read: readRow(draft.table.headers, draft.table.row, draft.table.mapping) }];
     } else {
       if (req.items.length > MAX_ROWS) throw Errors.validation({ items: `Up to ${MAX_ROWS} items per import` });
-      candidates = req.items.map((item, i) => ({ row: i + 1, input: item && typeof item === "object" ? (item as Record<string, unknown>) : {}, warnings: [] }));
+      candidates = req.items.map((item, i) => ({ row: i + 1, input: item && typeof item === "object" ? (item as Record<string, unknown>) : {} }));
     }
 
     const rows = await validateCandidates(candidates);
@@ -308,7 +369,7 @@ export const importService = {
         rowsOk: ok,
         rowsFailed: rows.length - ok,
         errors: rows.flatMap((r) => r.errors) as unknown as Prisma.InputJsonValue,
-        preview: rows.map((r) => ({ row: r.row, slug: r.slug, title: r.title, action: r.action, ok: r.ok, input: r.input ?? null, warnings: r.warnings, raw: r.raw ?? null, missingCategory: r.missingCategory ?? null })) as unknown as Prisma.InputJsonValue,
+        preview: rows.map((r) => ({ row: r.row, slug: r.slug, title: r.title, action: r.action, ok: r.ok, input: r.input ?? null, warnings: r.warnings, raw: r.raw ?? null, missingCategory: r.missingCategory ?? null, review: r.review ?? false, baseVersion: r.baseVersion ?? null })) as unknown as Prisma.InputJsonValue,
         createdBy: actor.id,
       },
     });
@@ -331,7 +392,7 @@ export const importService = {
     const batch = await prisma.importBatch.findUnique({ where: { id: batchId } });
     if (!batch) throw Errors.notFound("Import batch");
     if (batch.status !== "previewed") throw Errors.conflict(`This batch was already ${batch.status}`);
-    type StoredRow = { row: number; slug: string; action: "create" | "update"; ok: boolean; input: unknown; missingCategory?: string | null };
+    type StoredRow = { row: number; slug: string; action: "create" | "update"; ok: boolean; input: unknown; missingCategory?: string | null; review?: boolean; baseVersion?: number | null };
     const preview = (Array.isArray(batch.preview) ? batch.preview : []) as StoredRow[];
 
     const usable = (r: StoredRow) => r.ok || (Boolean(opts.createMissingCategories) && Boolean(r.input) && Boolean(r.missingCategory));
@@ -343,12 +404,16 @@ export const importService = {
     if (todo.length === 0) throw Errors.conflict("No valid rows to apply");
 
     const reason = opts.reason ?? `import ${batch.source}${batch.fileName ? ` ${batch.fileName}` : ""}`;
-    const status = opts.publish ? "published" : "draft";
     const now = new Date();
 
     const result = await prisma.$transaction(async (tx) => {
+      // Claim the batch first: of two concurrent Apply clicks only one gets past this line; the other
+      // waits on the row lock, finds it no longer "previewed" and stops without writing anything.
+      const claimed = await tx.importBatch.updateMany({ where: { id: batchId, status: "previewed" }, data: { status: "applied", appliedAt: now } });
+      if (claimed.count !== 1) throw Errors.conflict("This batch is being applied or was already applied");
       // Re-parse: the preview was validated, but the stored JSON is re-checked against a tampered row.
       const inputs = todo.map((r) => ({ row: r.row, input: activityInputSchema.parse(r.input) }));
+      const heldSlugs: string[] = [];
 
       // Categories — create the missing ones as drafts when asked.
       const wanted = [...new Set(inputs.map((i) => i.input.categorySlug))];
@@ -366,6 +431,13 @@ export const importService = {
       const existing = new Map((await tx.product.findMany({ where: { slug: { in: slugs } } })).map((p) => [p.slug, p]));
       const deleted = inputs.find((i) => existing.get(i.input.slug)?.deletedAt);
       if (deleted) throw Errors.conflict(`Row ${deleted.row}: slug "${deleted.input.slug}" belongs to a deleted activity — restore it from the console instead`);
+      // An update row was merged onto the listing as it was at preview time; if someone saved it since, applying would undo their edit.
+      const moved = todo.filter((r) => r.baseVersion != null && existing.get(r.slug) && existing.get(r.slug)!.version !== r.baseVersion);
+      if (moved.length) throw Errors.conflict(`${moved.map((r) => `"${r.slug}"`).join(", ")} changed after this preview — preview the file again`, { slugs: moved.map((r) => r.slug) });
+      const created = todo.find((r) => r.action === "create" && existing.has(r.slug));
+      if (created) throw Errors.conflict(`Row ${created.row}: "${created.slug}" was created after this preview — preview the file again`);
+      // Rows with derived values a person must check stay drafts even when the batch is published.
+      const held = new Set(opts.publish ? todo.filter((r) => r.review).map((r) => r.row) : []);
 
       // Suppliers — one upsert per distinct supplier (a handful), one mapping query.
       const supplierIds = new Map<string, string>();
@@ -386,8 +458,12 @@ export const importService = {
       const audits: Prisma.AuditLogCreateManyInput[] = [];
       const mappings: { productId: string; supplierId: string }[] = [];
 
-      for (const { input } of inputs) {
+      for (const { row, input } of inputs) {
         const prev = existing.get(input.slug);
+        const publishRow = Boolean(opts.publish) && !held.has(row);
+        // "Held" = this import did not publish it. A listing that is already live stays live with the new values;
+        // the preview marks those rows so nobody reads "held" as "not on the site".
+        if (opts.publish && held.has(row) && prev?.status !== "published") heldSlugs.push(input.slug);
         const supplierId = supplierIds.get(input.supplier.name);
         if (prev) {
           const prevDoc = activitySchema.safeParse(prev.content);
@@ -400,9 +476,10 @@ export const importService = {
           // new ones: re-importing a sheet over existing drafts is the normal
           // way a catalogue goes live, and leaving those rows draft made the
           // checkbox look broken.
-          const rowStatus = opts.publish ? "published" : prev.status;
-          await tx.product.update({
-            where: { id: prev.id },
+          const rowStatus = publishRow ? "published" : prev.status;
+          // Version-guarded write: a save that lands between the read above and this write makes the count 0.
+          const written = await tx.product.updateMany({
+            where: { id: prev.id, version: prev.version, deletedAt: null },
             data: {
               ...projectActivity(content),
               content: content as unknown as Prisma.InputJsonValue,
@@ -411,6 +488,7 @@ export const importService = {
               publishedAt: rowStatus === "published" ? (prev.publishedAt ?? now) : prev.publishedAt,
             },
           });
+          if (written.count !== 1) throw Errors.conflict(`"${input.slug}" changed while this batch was being applied — preview the file again`);
           versions.push({ id: uuidv7(), productId: prev.id, version, content: content as unknown as Prisma.InputJsonValue, status: rowStatus, actorId: actor.id, reason });
           audits.push({ actorType: actor.type, actorId: actor.id, action: "activity.update", entityType: "product", entityId: prev.id, before: { version: prev.version, title: prev.title, status: prev.status } as Prisma.InputJsonValue, after: { version, title: content.title, status: rowStatus, source: "import" } as Prisma.InputJsonValue, reason, ipHash: actor.ipHash, userAgent: actor.userAgent });
           if (supplierId) mappings.push({ productId: prev.id, supplierId });
@@ -418,9 +496,10 @@ export const importService = {
         } else {
           const id = uuidv7();
           const content = buildActivityContent({ ...input, fulfilmentMode: "inquiry" }, { id, rating: 0, reviewCount: 0, bookedThisMonth: 0 });
-          creates.push({ id, slug: content.slug, ...projectActivity(content), content: content as unknown as Prisma.InputJsonValue, status, version: 1, fulfilmentMode: "inquiry", publishedAt: status === "published" ? now : null });
-          versions.push({ id: uuidv7(), productId: id, version: 1, content: content as unknown as Prisma.InputJsonValue, status, actorId: actor.id, reason });
-          audits.push({ actorType: actor.type, actorId: actor.id, action: "activity.create", entityType: "product", entityId: id, after: { slug: content.slug, title: content.title, status, source: "import" } as Prisma.InputJsonValue, reason, ipHash: actor.ipHash, userAgent: actor.userAgent });
+          const rowStatus = publishRow ? "published" : "draft";
+          creates.push({ id, slug: content.slug, ...projectActivity(content), content: content as unknown as Prisma.InputJsonValue, status: rowStatus, version: 1, fulfilmentMode: "inquiry", publishedAt: rowStatus === "published" ? now : null });
+          versions.push({ id: uuidv7(), productId: id, version: 1, content: content as unknown as Prisma.InputJsonValue, status: rowStatus, actorId: actor.id, reason });
+          audits.push({ actorType: actor.type, actorId: actor.id, action: "activity.create", entityType: "product", entityId: id, after: { slug: content.slug, title: content.title, status: rowStatus, source: "import" } as Prisma.InputJsonValue, reason, ipHash: actor.ipHash, userAgent: actor.userAgent });
           if (supplierId) mappings.push({ productId: id, supplierId });
           items.push({ slug: input.slug, action: "create", before: null, after: 1, id });
         }
@@ -434,18 +513,19 @@ export const importService = {
         if (fresh.length) await tx.productSupplierMapping.createMany({ data: fresh.map((m) => ({ id: uuidv7(), productId: m.productId, supplierId: m.supplierId, priority: 1, externalRef: {} })) });
       }
       await tx.importBatchItem.createMany({ data: items.map((i) => ({ id: uuidv7(), batchId, productId: i.id, action: i.action, beforeVersion: i.before, afterVersion: i.after, slug: i.slug })) });
-      await tx.importBatch.update({ where: { id: batchId }, data: { status: "applied", appliedAt: now, rowsOk: items.length, rowsFailed: preview.length - items.length } });
-      audits.push({ actorType: actor.type, actorId: actor.id, action: "import.apply", entityType: "import_batch", entityId: batchId, after: { applied: items.length, created: creates.length, updated: items.length - creates.length, publish: Boolean(opts.publish), categoriesCreated: missing } as Prisma.InputJsonValue, reason, ipHash: actor.ipHash, userAgent: actor.userAgent });
+      await tx.importBatch.update({ where: { id: batchId }, data: { rowsOk: items.length, rowsFailed: preview.length - items.length } });
+      audits.push({ actorType: actor.type, actorId: actor.id, action: "import.apply", entityType: "import_batch", entityId: batchId, after: { applied: items.length, created: creates.length, updated: items.length - creates.length, publish: Boolean(opts.publish), heldForReview: heldSlugs, categoriesCreated: missing } as Prisma.InputJsonValue, reason, ipHash: actor.ipHash, userAgent: actor.userAgent });
       await tx.auditLog.createMany({ data: audits });
-      return { items, categoriesCreated: missing };
+      return { items, categoriesCreated: missing, heldForReview: heldSlugs };
     }, IMPORT_TX).catch(async (error) => {
-      await prisma.importBatch.update({ where: { id: batchId }, data: { status: "failed", errors: [{ row: 0, field: "_", message: error instanceof Error ? error.message : "apply failed" }] as unknown as Prisma.InputJsonValue } }).catch(() => {});
+      // Only a batch still "previewed" (this transaction rolled back) becomes failed — never one another call applied.
+      await prisma.importBatch.updateMany({ where: { id: batchId, status: "previewed" }, data: { status: "failed", errors: [{ row: 0, field: "_", message: error instanceof Error ? error.message : "apply failed" }] as unknown as Prisma.InputJsonValue } }).catch(() => {});
       log.error("import.apply_failed", { batchId, error });
       throw error;
     });
     revalidateCatalog();
     const created = result.items.filter((i) => i.action === "create").length;
-    return { batchId, applied: result.items.length, created, updated: result.items.length - created, published: opts.publish ? result.items.length : 0, categoriesCreated: result.categoriesCreated, items: result.items };
+    return { batchId, applied: result.items.length, created, updated: result.items.length - created, published: opts.publish ? result.items.length - result.heldForReview.length : 0, heldForReview: result.heldForReview, categoriesCreated: result.categoriesCreated, items: result.items };
   },
 
   async revert(actor: Actor, batchId: string, reason?: string) {
@@ -487,18 +567,25 @@ export const importService = {
     return batch;
   },
 
-  /** Export every non-deleted activity as an import-compatible CSV (template + round-trip). */
-  async exportCsv(actor: Actor) {
+  /**
+   * Every non-deleted activity as an import-compatible CSV — the template and
+   * the round-trip format. `blank: true` is the header row alone. A listing
+   * whose stored document no longer validates cannot be written as a row;
+   * it is counted in `skipped` (and logged) instead of vanishing silently.
+   */
+  async exportCsv(actor: Actor, opts: { blank?: boolean } = {}): Promise<{ csv: string; rows: number; skipped: string[] }> {
     requirePermission(actor, "products.edit");
+    if (opts.blank) return { csv: toCsv([]), rows: 0, skipped: [] };
     const rows = await prisma.product.findMany({ where: { deletedAt: null }, select: { content: true, slug: true }, orderBy: { slug: "asc" } });
     const items: ActivityInput[] = [];
+    const skipped: string[] = [];
     for (const r of rows) {
-      const c = r.content as Record<string, unknown>;
-      const { id: _id, rating: _r, reviewCount: _rc, bookedThisMonth: _b, ...rest } = c;
-      const parsed = activityInputSchema.safeParse(rest);
-      if (parsed.success) items.push(parsed.data);
+      const input = storedInput(r.content);
+      if (input) items.push(input);
+      else skipped.push(r.slug);
     }
-    return toCsv(items);
+    if (skipped.length) log.warn("import.export_skipped_invalid", { count: skipped.length, slugs: skipped.slice(0, 20) });
+    return { csv: toCsv(items), rows: items.length, skipped };
   },
 };
 

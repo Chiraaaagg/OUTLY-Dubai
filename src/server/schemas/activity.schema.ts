@@ -176,7 +176,26 @@ export const activitySchema = z
   .strict()
   .superRefine(refineActivity);
 
-/** Fields the import wizard can map a column onto (order = wizard order). */
+/**
+ * The import contract. One list shared by the template download, the CSV /
+ * Sheet / Doc importer, the wizard and the docs:
+ *
+ *  - `IMPORT_FIELDS`   every column the importer reads, in template order.
+ *                      The template header is exactly this list, so a
+ *                      downloaded template (or catalogue export) re-imports
+ *                      without remapping and without losing a field.
+ *  - `IMPORT_REQUIRED` cells a NEW listing must fill. Nothing here is ever
+ *                      defaulted: a blank required cell is a row error.
+ *  - `IMPORT_REQUIRED_ONE_OF` groups where one cell is enough because the
+ *                      other is read from it (policy text ⇄ hours).
+ *  - `IMPORT_DERIVED`  blank cells a new listing may derive from other cells
+ *                      of the same row. Every derivation is shown as a note;
+ *                      the ones marked `review` keep the row out of
+ *                      "publish immediately" until a person has checked it.
+ *
+ * An UPDATE row (its slug already exists) only changes the cells it fills:
+ * blank or unmapped cells keep the listing's current value.
+ */
 export const IMPORT_FIELDS = [
   "slug", "title", "subtitle", "tier", "categorySlug", "secondaryCategorySlugs", "attractionSlug", "collectionSlugs",
   "images", "imageAlt", "video", "durationMinutes", "isPrivate", "pickupIncluded", "pickupZones", "confirmation",
@@ -190,8 +209,30 @@ export const IMPORT_FIELDS = [
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
-/** Columns that must be present for a row to be importable as a new activity. */
-export const IMPORT_REQUIRED: ImportField[] = ["slug", "title", "subtitle", "tier", "categorySlug", "durationMinutes", "location", "meetingPoint", "price.adult.inr", "price.adult.aed", "cancellationPolicy", "seo.title", "seo.description"];
+/** Cells a new listing must fill (see the contract note above). */
+export const IMPORT_REQUIRED: ImportField[] = ["title", "tier", "categorySlug", "location", "price.adult.inr", "price.adult.aed"];
+
+/** Fill at least one cell of each group for a new listing. */
+export const IMPORT_REQUIRED_ONE_OF: ImportField[][] = [
+  ["cancellationPolicy", "freeCancellationHours"],
+  ["subtitle", "inclusions"],
+];
+
+/** What a blank cell of a new listing becomes. `review: true` = held back from "publish immediately". */
+export const IMPORT_DERIVED: Partial<Record<ImportField, { from: string; review?: boolean }>> = {
+  slug: { from: "the title" },
+  subtitle: { from: "the first inclusion", review: true },
+  meetingPoint: { from: "the location", review: true },
+  images: { from: "a placeholder image ref", review: true },
+  imageAlt: { from: "the title" },
+  durationMinutes: { from: "0 = not stated (storefront shows “Duration on request”)" },
+  cancellationPolicy: { from: "freeCancellationHours" },
+  freeCancellationHours: { from: "the cancellation policy text" },
+  "seo.title": { from: "the title" },
+  "seo.description": { from: "the subtitle" },
+  "seo.keywords": { from: "the title" },
+  "supplier.name": { from: "OUTLYY direct" },
+};
 
 /* --------------------------------------------------------------- category */
 

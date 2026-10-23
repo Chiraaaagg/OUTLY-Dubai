@@ -59,8 +59,9 @@ describe("supplier-vocabulary normalisation", () => {
   });
 
   it("treats a blank duration as not stated and derives a policy from the hours", () => {
-    const h = ["title", "categorySlug", "location", "price.adult.inr", "price.adult.aed", "freeCancellationHours"];
-    const { input, warnings } = rowToInputWithWarnings(h, ["Deep Dive Dubai", "water-activities", "Dubai", "10281", "394", "48"], suggestMapping(h));
+    const h = ["title", "tier", "categorySlug", "location", "price.adult.inr", "price.adult.aed", "freeCancellationHours", "inclusions"];
+    const { input, warnings, errors } = rowToInputWithWarnings(h, ["Deep Dive Dubai", "A", "water-activities", "Dubai", "10281", "394", "48", "Guided dive in the deepest pool"], suggestMapping(h));
+    expect(errors).toEqual([]);
     expect(input.durationMinutes).toBe(0);
     expect(input.cancellationPolicy).toContain("48 hours");
     expect(warnings.some((w) => w.field === "durationMinutes")).toBe(true);
@@ -83,12 +84,11 @@ describe("supplier-vocabulary normalisation", () => {
 
   it("still rejects what cannot be normalised (tier, confirmation) instead of guessing", () => {
     const h = ["title", "tier", "confirmation", "categorySlug", "location", "price.adult.inr", "price.adult.aed"];
-    const { input } = rowToInputWithWarnings(h, ["X", "platinum", "maybe later", "desert-safari", "Dubai", "1", "1"], suggestMapping(h));
-    expect(input.tier).toBe("PLATINUM");
-    expect(input.confirmation).toBe("manual"); // blank/unknown → manual is the safe default
-    const r = activityInputSchema.safeParse(input);
-    expect(r.success).toBe(false);
-    expect(r.error?.issues.map((i) => i.path.join("."))).toContain("tier");
+    const { input, errors } = rowToInputWithWarnings(h, ["X", "platinum", "maybe later", "desert-safari", "Dubai", "1", "1"], suggestMapping(h));
+    // A populated cell that cannot be read is an error that names the cell — never undefined-then-defaulted.
+    expect(input.tier).toBeUndefined();
+    expect(input.confirmation).toBeUndefined();
+    expect(errors).toEqual(expect.arrayContaining([expect.objectContaining({ field: "tier", cell: "platinum" }), expect.objectContaining({ field: "confirmation", cell: "maybe later" })]));
   });
 });
 

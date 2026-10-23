@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/primitives";
-import { IMPORT_FIELDS, IMPORT_REQUIRED, type ImportField } from "@/server/schemas/activity.schema";
+import { IMPORT_DERIVED, IMPORT_FIELDS, IMPORT_REQUIRED, IMPORT_REQUIRED_ONE_OF, type ImportField } from "@/server/schemas/activity.schema";
 import { FormField, INPUT_CLASS, Panel, StatusPill } from "../../_components/ui";
 
 /**
@@ -22,10 +22,11 @@ interface PreviewRow {
   title: string;
   action: "create" | "update";
   ok: boolean;
-  errors: { row: number; field: string; message: string }[];
-  warnings: { field: string; message: string }[];
+  errors: { row: number; field: string; message: string; cell?: string }[];
+  warnings: { field: string; message: string; review?: boolean }[];
   raw?: Record<string, string>;
   missingCategory?: string;
+  review?: boolean;
 }
 
 interface Preview {
@@ -49,7 +50,20 @@ interface FetchResult {
   mapping?: Mapping;
   warnings?: string[];
   sections?: string[];
+  notes?: string[];
 }
+
+interface Applied {
+  batchId: string;
+  applied: number;
+  created: number;
+  updated: number;
+  published: number;
+  heldForReview?: string[];
+}
+
+const ONE_OF = new Set(IMPORT_REQUIRED_ONE_OF.flat());
+const requiredMark = (f: ImportField) => (IMPORT_REQUIRED.includes(f) ? "*" : ONE_OF.has(f) ? "†" : "");
 
 interface ApiError {
   error: { code: string; message: string; recovery?: string; details?: { fields?: Record<string, string> } };
@@ -98,7 +112,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
   const [partial, setPartial] = useState(false);
   const [publish, setPublish] = useState(false);
   const [createCats, setCreateCats] = useState(true);
-  const [applied, setApplied] = useState<{ batchId: string; applied: number; created: number; updated: number; published: number } | null>(null);
+  const [applied, setApplied] = useState<Applied | null>(null);
 
   const reset = () => {
     setFetched(null);
@@ -161,7 +175,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
     setBusy("apply");
     setError(null);
     try {
-      const r = await api<{ batchId: string; applied: number; created: number; updated: number; published: number }>(`/api/admin/imports/${preview.batchId}/apply`, {
+      const r = await api<Applied>(`/api/admin/imports/${preview.batchId}/apply`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ partial, publish: publish && canPublish, createMissingCategories: createCats && (preview.missingCategories?.length ?? 0) > 0 }),
@@ -182,17 +196,21 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
     <div className="space-y-4">
       <details className="rounded-[var(--radius-card)] border border-ink-200 bg-paper p-4 text-sm text-ink-700">
         <summary className="cursor-pointer font-semibold text-ink-900">Column reference, what each value should look like</summary>
+        <p className="mt-2">
+          A <b>new</b> listing needs: <span className="font-mono text-xs">{IMPORT_REQUIRED.join(", ")}</span>, and one of <span className="font-mono text-xs">{IMPORT_REQUIRED_ONE_OF.map((g) => g.join(" / ")).join("; ")}</span>. These are never filled in for you: a blank one is an error on that row. A row whose slug already exists <b>updates</b> that listing and only changes the cells it fills; blank or unmapped cells keep the current value.
+        </p>
         <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-          <li><b>tier</b>: A–E (A attractions/tickets, B tours, C combos, D luxury, E transfers). Words like <i>budget / standard / premium / luxury</i> are mapped.</li>
-          <li><b>categorySlug</b>: one of the slugs on the Categories page. Common supplier names (dhow-cruise, water-parks, city-tours…) are mapped; unknown ones are errors.</li>
+          <li><b>tier</b>: A–E (A attractions/tickets, B tours, C combos, D luxury, E transfers). <i>Tier B</i>, <i>C - Combos</i>, <i>luxury</i> are read; anything else is an error.</li>
+          <li><b>categorySlug</b>: one of the slugs on the Categories page. Common supplier names (dhow-cruise, water-parks, city-tours…) are mapped; a guess from the title alone is held for review.</li>
+          <li><b>prices</b>: one amount per cell, ₹ / Rs / AED / commas / “From” / “/-” are fine; decimals are rounded. Column names may carry the currency: <i>Selling Price (AED)</i>. INR and AED are both required; one is never converted from the other.</li>
+          <li><b>durationMinutes</b>: minutes, “2h 30m”, “1:30”, or hours if the column says so (<i>Duration (hours)</i>). Words like “Half day” are kept as important info; blank = “not stated”.</li>
+          <li><b>cancellationPolicy / freeCancellationHours</b>: fill either; the other is read from it. A policy with no hours in it needs the hours column.</li>
           <li><b>confirmation</b>: <i>instant</i> or <i>manual</i> (“Instant Confirmation” → instant; “On request / within 24h” → manual).</li>
-          <li><b>dietary</b>: veg, jain, halal, non-veg (free text is scanned for these; the rest becomes the meal note).</li>
-          <li><b>suitability</b>: kids, seniors, wheelchair, infant, couples, groups (free text is scanned; age/medical notes move to important info).</li>
-          <li><b>prices</b>: whole rupees/dirhams; decimals are rounded. <b>durationMinutes</b>: minutes or “2h 30m”; blank = “not stated”.</li>
-          <li><b>lists</b> (inclusions, exclusions, importantInfo, images, timeSlots, pickupZones, keywords): items separated by <code>|</code>.</li>
-          <li><b>images</b>: https URLs (or <code>img:activity:&lt;slug&gt;:0</code>). <b>imageAlt</b>: one sentence ≤ 200 chars (a <code>|</code> list keeps the first).</li>
-          <li><b>faqs</b>: <code>Question? :: Answer | …</code>. <b>itinerary</b>: <code>09:00 :: Title :: detail | …</code>. <b>variants / addOns</b>: JSON arrays.</li>
-          <li><b>blank subtitle / meetingPoint / cancellationPolicy</b> are derived (from the first inclusion, the location, the cancellation hours) and flagged as notes, rewrite before publishing.</li>
+          <li><b>dietary / suitability</b>: veg, jain, halal, non-veg / kids, seniors, wheelchair, infant, couples, groups; free text is scanned, the rest is kept as meal note / important info.</li>
+          <li><b>lists</b> (inclusions, exclusions, importantInfo, images, timeSlots, pickupZones, keywords): items separated by <code>|</code> or new lines.</li>
+          <li><b>yes/no</b> columns: yes/no, true/false, 1/0; “Yes, from Deira hotels” keeps the remark as important info.</li>
+          <li><b>faqs / itinerary / variants / addOns</b>: <code>Question? :: Answer | …</code>, <code>09:00 :: Title :: detail | …</code>, or JSON arrays (the template uses JSON).</li>
+          <li><b>Filled in when blank</b> (shown as a note; ⚑ = held back from “publish immediately” until checked): {Object.entries(IMPORT_DERIVED).map(([f, d]) => `${f} ← ${d!.from}${d!.review ? " ⚑" : ""}`).join("; ")}.</li>
         </ul>
       </details>
 
@@ -217,13 +235,46 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
 
         <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           {source === "csv" && (
-            <FormField label="CSV file" htmlFor="csv-file" hint={<a href="/api/admin/imports/export" className="underline">Download the template / current catalogue as CSV</a>}>
-              <input id="csv-file" type="file" accept=".csv,text/csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={`${INPUT_CLASS} py-2`} />
+            <FormField
+              label="CSV file"
+              htmlFor="csv-file"
+              hint={
+                <>
+                  <a href="/api/admin/imports/export?template=blank" className="underline">Blank template</a> (every column) ·{" "}
+                  <a href="/api/admin/imports/export" className="underline">Current catalogue as CSV</a> (edit and re-upload to update)
+                </>
+              }
+            >
+              <input
+                id="csv-file"
+                type="file"
+                accept=".csv,.tsv,.txt,text/csv"
+                onChange={(e) => {
+                  // A mapping belongs to the file it was made for; carrying it to a new file hides that file's columns.
+                  setFile(e.target.files?.[0] ?? null);
+                  setMapping({});
+                  setPreview(null);
+                  setApplied(null);
+                }}
+                className={`${INPUT_CLASS} py-2`}
+              />
             </FormField>
           )}
           {(source === "sheet" || source === "doc") && (
             <FormField label={source === "sheet" ? "Google Sheet link" : "Google Doc link (or paste text below)"} htmlFor="g-url" hint="Share → Anyone with the link → Viewer. Only docs.google.com links are accepted.">
-              <input id="g-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://docs.google.com/…" className={INPUT_CLASS} />
+              <input
+                id="g-url"
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setFetched(null);
+                  setMapping({});
+                  setPreview(null);
+                  setApplied(null);
+                }}
+                placeholder="https://docs.google.com/…"
+                className={INPUT_CLASS}
+              />
             </FormField>
           )}
           {source === "sheet" && (
@@ -261,9 +312,9 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {IMPORT_FIELDS.map((f) => (
               <label key={f} className="flex items-center gap-2 text-sm">
-                <span className={`w-40 shrink-0 truncate font-mono text-xs ${IMPORT_REQUIRED.includes(f) ? "font-bold text-ink-900" : "text-ink-600"}`} title={f}>
+                <span className={`w-40 shrink-0 truncate font-mono text-xs ${requiredMark(f) ? "font-bold text-ink-900" : "text-ink-600"}`} title={f}>
                   {f}
-                  {IMPORT_REQUIRED.includes(f) ? "*" : ""}
+                  {requiredMark(f)}
                 </span>
                 <select value={mapping[f] ?? ""} onChange={(e) => setMapping((m) => ({ ...m, [f]: e.target.value || null }))} className={`${INPUT_CLASS} min-h-9 text-sm`}>
                   <option value="">— not mapped —</option>
@@ -276,6 +327,12 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
               </label>
             ))}
           </div>
+          <p className="mt-3 text-xs text-ink-500">* required for a new listing · † fill at least one of the pair</p>
+          {fetched?.notes?.map((n) => (
+            <p key={n} className="mt-1 text-xs text-ink-600">
+              {n}
+            </p>
+          ))}
           {fetched?.sample && (
             <p className="mt-3 text-xs text-ink-500">
               {fetched.rows} rows found. First row: <span className="font-mono">{fetched.sample[0]?.slice(0, 6).join(" | ")}</span>
@@ -294,6 +351,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
               <StatusPill tone="success">{preview.rowsOk} ok</StatusPill>
               {preview.rowsFailed > 0 && <StatusPill tone="danger">{preview.rowsFailed} with errors</StatusPill>}
               {preview.rows.some((r) => r.warnings?.length) && <StatusPill tone="warning">{preview.rows.filter((r) => r.warnings?.length).length} with notes</StatusPill>}
+              {preview.rows.some((r) => r.ok && r.review) && <StatusPill tone="warning">{preview.rows.filter((r) => r.ok && r.review).length} to check before publishing</StatusPill>}
               <span className="text-xs text-ink-500">batch {preview.batchId.slice(0, 8)}</span>
             </>
           )}
@@ -329,12 +387,17 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
                     </td>
                     <td className="px-3 py-2">
                       {r.ok ? <StatusPill tone="success">valid</StatusPill> : null}
+                      {r.ok && r.review ? (
+                        <StatusPill tone="warning" className="ml-1">
+                          check first
+                        </StatusPill>
+                      ) : null}
                       {!r.ok && (
                         <ul className="space-y-0.5 text-xs text-[var(--color-danger)]">
                           {r.errors.map((e, i) => (
                             <li key={i}>
                               <span className="font-mono">{e.field}</span>: {e.message}
-                              {r.raw && r.raw[e.field] !== undefined && <span className="ml-1 text-ink-500">(cell: “{r.raw[e.field].slice(0, 80)}”)</span>}
+                              {e.cell !== undefined ? <span className="ml-1 text-ink-500">(cell: “{e.cell.slice(0, 80)}”)</span> : r.raw && r.raw[e.field] !== undefined && <span className="ml-1 text-ink-500">(cell: “{r.raw[e.field].slice(0, 80)}”)</span>}
                             </li>
                           ))}
                         </ul>
@@ -346,7 +409,8 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
                           </summary>
                           <ul className="mt-1 space-y-0.5">
                             {r.warnings.map((w, i) => (
-                              <li key={i}>
+                              <li key={i} className={w.review ? "font-semibold text-[var(--color-warning)]" : undefined}>
+                                {w.review ? "⚑ " : ""}
                                 <span className="font-mono">{w.field}</span>: {w.message}
                               </li>
                             ))}
@@ -377,7 +441,7 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
             )}
             {canPublish && (
               <label className="inline-flex items-center gap-2 text-sm text-ink-800">
-                <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} className="h-4 w-4" /> Publish every listing in this batch immediately, new <em>and</em> updated (otherwise they stay drafts)
+                <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} className="h-4 w-4" /> Publish every listing in this batch immediately, new <em>and</em> updated (otherwise they stay drafts). Rows marked “check first” stay drafts.
               </label>
             )}
             <Button
@@ -399,7 +463,13 @@ export function ImportWizard({ canPublish }: { canPublish: boolean }) {
                 to review or revert.{" "}
                 {applied.published > 0 ? (
                   <>
-                    All {applied.published} are <strong>live now</strong>. Check that their categories are published too, or the category pages will be missing.
+                    {applied.published} are <strong>live now</strong>. Check that their categories are published too, or the category pages will be missing.
+                    {(applied.heldForReview?.length ?? 0) > 0 && (
+                      <>
+                        {" "}
+                        {applied.heldForReview!.length} stayed drafts because a derived value needs checking: <span className="font-mono text-xs">{applied.heldForReview!.join(", ")}</span>.
+                      </>
+                    )}
                   </>
                 ) : (
                   <>

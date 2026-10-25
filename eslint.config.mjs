@@ -6,6 +6,9 @@ import nextConfig from "eslint-config-next";
  * docs/backend/19-implementation-conventions.md §1 are enforced here:
  *   - only src/server/lib/db.ts instantiates PrismaClient
  *   - route handlers never import repositories
+ * and one security rule: raw JSON.stringify output never goes into
+ * dangerouslySetInnerHTML (JSON escaping leaves </script> intact; use
+ * serializeJsonLd from src/lib/json-ld.ts).
  */
 export default [
   ...nextConfig,
@@ -19,6 +22,18 @@ export default [
     rules: {
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/purity": "warn",
+    },
+  },
+  {
+    files: ["src/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML'] CallExpression[callee.object.name='JSON'][callee.property.name='stringify']",
+          message: "JSON.stringify does not escape </script>. Use serializeJsonLd() from @/lib/json-ld.",
+        },
+      ],
     },
   },
   {

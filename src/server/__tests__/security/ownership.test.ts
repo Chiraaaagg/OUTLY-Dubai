@@ -363,11 +363,10 @@ describe.skipIf(!dbEnabled)("staff object permissions (H07, H10, G03)", () => {
     });
 
     // KNOWN GAP (reported to the Lead; notification.service.ts is not Mercury's file):
-    // `resend` restricts agents to their own inquiries only when they lack
-    // `inquiries.view_all`, but every agent role holds view_all, so agent A
-    // can re-send B's customer messages. `it.fails` flips to a failure once
-    // the service applies the update-ownership rule instead.
-    it.fails("KNOWN GAP: agent A cannot resend a notification on agent B's inquiry", async () => {
+    // `resend` used to restrict agents only when they lacked `inquiries.view_all`,
+    // which every agent holds, so agent A could re-send B's customer messages.
+    // It now applies the update-ownership rule.
+    it("agent A cannot resend a notification on agent B's inquiry", async () => {
       const { POST } = await import("@/app/api/agent/notifications/[id]/resend/route");
       const res = await POST(apiRequest("/x", { cookie: staff.agentA.cookie, body: {} }), params({ id: notificationId }));
       expect(res.status).toBe(403);

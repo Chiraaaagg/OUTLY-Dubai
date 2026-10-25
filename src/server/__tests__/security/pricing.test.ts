@@ -208,10 +208,9 @@ describe.skipIf(!dbEnabled)("pricing and money (H12, G05, family H)", () => {
       expect((await submit(submission([cartItem()]))).status).toBe(201);
     });
 
-    // KNOWN GAP (catalog.service.ts, not Mercury's file): `priceCartItems`
-    // filters products on `status = published` but combos only on
-    // `deleted_at IS NULL`, so an unpublished package still prices.
-    it.fails("KNOWN GAP: a draft combo is refused", async () => {
+    // `priceCartItems` used to filter combos only on `deleted_at IS NULL`, so an
+    // unpublished package still priced; it now requires `status = published`.
+    it("a draft combo is refused", async () => {
       const prisma = await db();
       const combo = await prisma.combo.findFirstOrThrow({ where: { deletedAt: null, status: "published" }, orderBy: { slug: "asc" } });
       try {

@@ -51,18 +51,37 @@ function shouldRedact(key: string) {
   return REDACT_KEYS.some((r) => k === r || k.endsWith(r));
 }
 
+/**
+ * Error texts are free-form, so key-based redaction cannot see into them:
+ * Postgres constraint errors quote the offending row ("Failing row contains
+ * (…, +9199…, Name, a@b.c …)") or key value, and wrapped provider errors can
+ * carry addresses. Scrub those shapes from error messages, stacks and
+ * error-like string fields before they are written.
+ */
+export function scrubText(text: string): string {
+  return text
+    .replace(/Failing row contains \([^)]*\)/g, "Failing row contains ([redacted])")
+    .replace(/(Key \([^)]*\)=)\([^)]*\)/g, "$1([redacted])")
+    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
+    .replace(/\+?\d[\d\s-]{8,16}\d/g, "[number]");
+}
+
+const ERROR_TEXT_KEYS = /(^|_)(error|message|reason|detail)s?$|error$/i;
+
 export function redact<T>(value: T, depth = 0): T {
   if (depth > 6 || value === null || value === undefined) return value;
   if (Array.isArray(value)) return value.map((v) => redact(v, depth + 1)) as T;
   if (typeof value === "bigint") return value.toString() as unknown as T;
   if (value instanceof Date) return value.toISOString() as unknown as T;
   if (value instanceof Error) {
-    return { name: value.name, message: value.message, stack: value.stack } as unknown as T;
+    return { name: value.name, message: scrubText(value.message), stack: value.stack ? scrubText(value.stack) : undefined } as unknown as T;
   }
   if (typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = shouldRedact(k) ? "[redacted]" : redact(v, depth + 1);
+      if (shouldRedact(k)) out[k] = "[redacted]";
+      else if (typeof v === "string" && ERROR_TEXT_KEYS.test(k)) out[k] = scrubText(v);
+      else out[k] = redact(v, depth + 1);
     }
     return out as T;
   }

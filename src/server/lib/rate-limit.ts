@@ -11,9 +11,16 @@ import { Errors } from "./errors";
  * limiting can be a Postgres table at your volumes"). This module is the port;
  * `@upstash/ratelimit` slots in behind the same `rateLimit()` signature later.
  *
- * Failure policy (§14.4 "Redis outage → degraded, not down"): if the counter
- * cannot be read, the request is allowed and the failure is logged. A broken
- * limiter must never take the inquiry form down.
+ * Failure policy — chosen per call, never implied:
+ *   - `closed` (the default): if the counter cannot be read, the action is
+ *     refused with 503 + Retry-After. Login, TOTP, OTP request/verify,
+ *     inquiry submission, reference lookup and heavy admin writes use it — an
+ *     outage of the limiter store must not make them unlimited.
+ *   - `open`: low-risk telemetry (analytics events) stays available, but is
+ *     held to the same budget by a per-instance in-memory counter while the
+ *     store is down. That fallback is local to one instance and is not a
+ *     global guarantee; it only bounds what a single instance accepts.
+ * Every store failure is logged with the key's scope, never its identifier.
  */
 
 export interface RateLimitResult {
@@ -21,7 +28,14 @@ export interface RateLimitResult {
   remaining: number;
   retryAfterSeconds: number;
   limit: number;
+  /** True when the Postgres store could not be read and no count was taken. */
+  storeUnavailable?: boolean;
 }
+
+export type RateLimitFailureMode = "closed" | "open";
+
+/** What a refused caller is told to wait while the limiter store is down. */
+const STORE_RETRY_SECONDS = 30;
 
 export async function rateLimit(opts: {
   key: string;
@@ -52,8 +66,8 @@ export async function rateLimit(opts: {
 
     return { allowed, remaining: Math.max(0, opts.limit - count), retryAfterSeconds, limit: opts.limit };
   } catch (error) {
-    log.error("rate_limit.unavailable — failing open", { error, key: opts.key.split(":")[0] });
-    return { allowed: true, remaining: opts.limit, retryAfterSeconds: 0, limit: opts.limit };
+    log.error("rate_limit.unavailable", { error, scope: opts.key.split(":")[0] });
+    return { allowed: false, remaining: 0, retryAfterSeconds: STORE_RETRY_SECONDS, limit: opts.limit, storeUnavailable: true };
   }
 }
 
@@ -90,9 +104,18 @@ export function enforceMemoryRateLimit(opts: { key: string; limit: number; windo
   return r;
 }
 
-/** Throws the 429 envelope with Retry-After details when exceeded. */
-export async function enforceRateLimit(opts: { key: string; limit: number; windowSeconds: number }) {
-  const r = await rateLimit(opts);
+/**
+ * Throws the 429 envelope with Retry-After details when exceeded. When the
+ * store is down: `closed` (default) throws 503 UNAVAILABLE; `open` falls back
+ * to the in-memory counter for the same key and budget.
+ */
+export async function enforceRateLimit(opts: { key: string; limit: number; windowSeconds: number; onStoreFailure?: RateLimitFailureMode }) {
+  const { onStoreFailure = "closed", ...limit } = opts;
+  const r = await rateLimit(limit);
+  if (r.storeUnavailable) {
+    if (onStoreFailure === "open") return enforceMemoryRateLimit(limit);
+    throw Errors.unavailable(r.retryAfterSeconds);
+  }
   if (!r.allowed) throw Errors.rateLimited(r.retryAfterSeconds);
   return r;
 }

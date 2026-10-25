@@ -51,6 +51,8 @@ const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   APP_ENV: z.enum(["development", "staging", "production"]).default("development"),
   NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
+  /** Extra origins allowed to send cookie-authenticated mutations (comma-separated), e.g. a staging host. */
+  APP_ALLOWED_ORIGINS: csv,
   NEXT_PUBLIC_WHATSAPP_NUMBER: optionalStr,
   NEXT_PUBLIC_SUPPORT_EMAIL: optionalStr,
 

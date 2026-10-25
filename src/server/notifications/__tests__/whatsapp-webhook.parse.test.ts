@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isStopKeyword, parseWhatsAppWebhook, providerEventIdOf, signMetaPayload, toE164, verifyMetaSignature } from "../whatsapp-webhook.parse";
+import { checkMetaSignature, isStopKeyword, parseWhatsAppWebhook, providerEventIdOf, signMetaPayload, toE164, verifyMetaSignature } from "../whatsapp-webhook.parse";
 
 const SECRET = "test-app-secret";
 
@@ -31,16 +31,19 @@ const envelope = {
   ],
 };
 
+const bytes = (s: string) => Buffer.from(s, "utf8");
+
 describe("verifyMetaSignature", () => {
-  const body = JSON.stringify(envelope);
+  const body = bytes(JSON.stringify(envelope));
 
   it("accepts a correct sha256= header and rejects everything else", () => {
     const header = signMetaPayload(body, SECRET);
     expect(header).toMatch(/^sha256=[0-9a-f]{64}$/);
     expect(verifyMetaSignature(body, header, SECRET)).toBe(true);
     expect(verifyMetaSignature(body, header.toUpperCase().replace("SHA256=", "sha256="), SECRET)).toBe(true);
+    expect(verifyMetaSignature(body, `  ${header}  `, SECRET)).toBe(true);
     expect(verifyMetaSignature(body, header, "other-secret")).toBe(false);
-    expect(verifyMetaSignature(`${body} `, header, SECRET)).toBe(false);
+    expect(verifyMetaSignature(Buffer.concat([body, bytes(" ")]), header, SECRET)).toBe(false);
     expect(verifyMetaSignature(body, null, SECRET)).toBe(false);
     expect(verifyMetaSignature(body, "", SECRET)).toBe(false);
     expect(verifyMetaSignature(body, "sha256=notahex", SECRET)).toBe(false);
@@ -48,10 +51,30 @@ describe("verifyMetaSignature", () => {
     expect(verifyMetaSignature(body, header, "")).toBe(false);
   });
 
+  it("explains why a header was refused, without needing the header to be logged", () => {
+    const header = signMetaPayload(body, SECRET);
+    expect(checkMetaSignature(body, header, SECRET)).toBe("ok");
+    expect(checkMetaSignature(body, undefined, SECRET)).toBe("missing");
+    expect(checkMetaSignature(body, "   ", SECRET)).toBe("missing");
+    expect(checkMetaSignature(body, "sha256=abc", SECRET)).toBe("malformed");
+    expect(checkMetaSignature(body, header.slice(7), SECRET)).toBe("malformed");
+    expect(checkMetaSignature(body, `${header}00`, SECRET)).toBe("malformed");
+    expect(checkMetaSignature(body, signMetaPayload(body, "nope"), SECRET)).toBe("mismatch");
+  });
+
   it("is computed over the raw bytes, not a re-serialised object", () => {
-    const pretty = JSON.stringify(envelope, null, 2);
+    const pretty = bytes(JSON.stringify(envelope, null, 2));
     expect(verifyMetaSignature(pretty, signMetaPayload(body, SECRET), SECRET)).toBe(false);
     expect(verifyMetaSignature(pretty, signMetaPayload(pretty, SECRET), SECRET)).toBe(true);
+  });
+
+  it("covers bytes that are not valid UTF-8 exactly as received", () => {
+    const raw = Uint8Array.from([0x7b, 0xff, 0xfe, 0x7d]);
+    const header = signMetaPayload(raw, SECRET);
+    expect(verifyMetaSignature(raw, header, SECRET)).toBe(true);
+    // Decoding to text and re-encoding replaces the invalid bytes, so the signature no longer matches.
+    const roundTripped = bytes(new TextDecoder().decode(raw));
+    expect(verifyMetaSignature(roundTripped, header, SECRET)).toBe(false);
   });
 });
 

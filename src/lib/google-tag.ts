@@ -32,17 +32,24 @@
  * and cost the whole statically prerendered catalogue.
  */
 
+import { serializeJsonLd } from "@/lib/json-ld";
+
 /** Queued before the loader, so the first GA call is already "denied". */
 export function googleTagBootstrap(measurementId: string): string {
+  // The id comes from deployment config, not from visitors, but it is still
+  // data written into an executable script: emit it as an escaped JS string
+  // literal rather than splicing it between quotes, so a malformed value can
+  // only break analytics, never the page.
+  const id = serializeJsonLd(measurementId);
   return [
     `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}`,
     `gtag('consent','default',{'analytics_storage':'denied','ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','wait_for_update':500});`,
     `gtag('js',new Date());`,
     // Storefront only. Under /admin the library loads but is never configured.
-    `if(!location.pathname.startsWith('/admin')){gtag('config','${measurementId}',{'anonymize_ip':true});}`,
+    `if(!location.pathname.startsWith('/admin')){gtag('config',${id},{'anonymize_ip':true});}`,
   ].join("");
 }
 
 export function googleTagSrc(measurementId: string): string {
-  return `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+  return `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
 }

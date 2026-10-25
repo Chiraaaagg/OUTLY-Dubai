@@ -48,7 +48,7 @@ export const catalogService = {
     const slugs = items.map((i) => i.slug);
     const [products, combos] = await Promise.all([
       prisma.product.findMany({ where: { slug: { in: slugs }, deletedAt: null, status: "published" }, select: { id: true, slug: true, fulfilmentMode: true, tier: true, content: true } }),
-      prisma.combo.findMany({ where: { slug: { in: slugs }, deletedAt: null }, select: { id: true, slug: true, fulfilmentMode: true, tier: true } }),
+      prisma.combo.findMany({ where: { slug: { in: slugs }, deletedAt: null, status: "published" }, select: { id: true, slug: true, fulfilmentMode: true, tier: true } }),
     ]);
     const productBySlug = new Map(products.map((p) => [p.slug, p]));
     const comboBySlugDb = new Map(combos.map((c) => [c.slug, c]));

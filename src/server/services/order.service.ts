@@ -94,6 +94,11 @@ export const orderService = {
   async createOrder(input: CreateOrderInput, actor: Actor, tx?: Tx): Promise<CreateOrderResult> {
     requirePermission(actor, "orders.create");
     if (!input.items.length) throw Errors.validation({ items: "An order needs at least one item" });
+    // Minor units are BigInt and never negative; the database checks agree, but
+    // a caller gets a validation error here rather than a constraint failure.
+    if (input.items.some((i) => i.unitInr < 0n || i.unitAed < 0n || i.totalInr < 0n || i.totalAed < 0n || (i.netCostAed ?? 0n) < 0n)) {
+      throw Errors.validation({ items: "Amounts cannot be negative" });
+    }
 
     if (input.idempotencyKey) {
       // Read through the caller's transaction when there is one: inside
@@ -193,6 +198,7 @@ export const orderService = {
     tx?: Tx,
   ) {
     requirePermission(actor, "payments.record");
+    if (input.amountMinor < 0n) throw Errors.validation({ amount: "Cannot be negative" });
     const run = async (t: Tx) => {
       const payment = await t.payment.create({
         data: {

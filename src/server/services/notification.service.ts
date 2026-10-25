@@ -271,10 +271,14 @@ export const notificationService = {
     requirePermission(actor, "notifications.resend");
     const n = await prisma.notification.findUnique({ where: { id: notificationId } });
     if (!n) throw Errors.notFound("Notification");
-    // Ownership mirrors the inquiry rule: agents may only act on inquiries assigned to them (§13.3).
-    if (!hasPermission(actor, "inquiries.view_all")) {
+    // Ownership mirrors the inquiry *update* rule (§13.3): resending messages a
+    // customer, so reading every inquiry (`view_all`, which every agent holds)
+    // is not enough. Leads/ops (`inquiries.assign`) may resend anything; an
+    // agent only on inquiries assigned to them. Messages with no inquiry
+    // (order or ops alerts) are lead/ops only.
+    if (!hasPermission(actor, "inquiries.assign")) {
       const owner = n.inquiryId ? await prisma.inquiry.findUnique({ where: { id: n.inquiryId }, select: { assignedAgentId: true } }) : null;
-      if (!owner || !actor.id || owner.assignedAgentId !== actor.id) throw Errors.forbidden("inquiries.view_all");
+      if (!owner || !actor.id || owner.assignedAgentId !== actor.id) throw Errors.forbidden("inquiries.assign");
     }
     if (n.channel !== "email" && n.channel !== "whatsapp") throw Errors.conflict("Only email and WhatsApp can be resent");
     const result = await notificationService.dispatch({

@@ -11,7 +11,9 @@ import { hashIp } from "./crypto";
  * needs — session, permission, per-actor rate limit — so a handler cannot
  * forget one. Public routes use `publicRateLimit` keyed on the caller's IP.
  *
- * Budgets (fixed windows, Postgres-backed, fail open):
+ * Budgets (fixed windows). Hour-long budgets are Postgres-backed and fail
+ * closed (503) when the store is down; per-minute budgets are per-instance
+ * in-memory counters:
  *   admin default   300 / min per user  (console clicks, list refreshes)
  *   admin.heavy      20 / hour per user (imports, exports, bulk writes)
  *   public.search   120 / min per IP

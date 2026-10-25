@@ -7,7 +7,7 @@ import { idSchema, importApplySchema } from "@/server/schemas/catalog.schemas";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** POST /api/admin/imports/:id/apply — `{ partial?, publish?, reason? }`; all-or-nothing unless `partial` (`imports.run`, 20/hour). */
+/** POST /api/admin/imports/:id/apply — `{ partial?, publish?, createMissingCategories?, reason? }`; all-or-nothing unless `partial` (`imports.run` + `products.edit`, 20/hour; `products.publish` / `categories.edit` for those options). */
 export const POST = handle<{ params: Promise<{ id: string }> }>(async (req: NextRequest, { params }) => {
   assertSameOrigin(req);
   const { actor } = await requireAdmin(req, "imports.run", RATE.adminHeavy);

@@ -13,6 +13,7 @@ import { Alert, Breadcrumbs, Card, EmptyState, Prose, SectionHeading } from "@/c
 import { Scene } from "@/components/ui/scene";
 import { getActivities, getActivitiesBySlugs, getCategories, getCategoryBySlug } from "@/lib/catalog/server";
 import { searchActivities } from "@/lib/search";
+import { serializeJsonLd } from "@/lib/json-ld";
 import type { Dietary, SearchFilters, SortKey, Suitability } from "@/lib/types";
 import { Suspense } from "react";
 
@@ -258,7 +259,7 @@ export default async function CategoryPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: serializeJsonLd({
             "@context": "https://schema.org",
             "@graph": [
               {

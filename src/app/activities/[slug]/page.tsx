@@ -39,6 +39,7 @@ import { Rail, RailItem } from "@/components/ui/rail";
 import { getActivities, getActivityBySlug, getActivitiesBySlugs, getCategoryBySlug } from "@/lib/catalog/server";
 import { combos } from "@/lib/data/combos";
 import { formatDuration } from "@/lib/utils";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 export const revalidate = 60;
 
@@ -463,7 +464,7 @@ export default async function ActivityPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: serializeJsonLd({
             "@context": "https://schema.org",
             "@graph": [
               {

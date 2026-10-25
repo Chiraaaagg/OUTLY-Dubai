@@ -15,6 +15,12 @@ import { ANALYTICS_EVENT_NAMES, type AnalyticsEvent } from "@/lib/analytics";
  */
 
 export const MAX_EVENTS_PER_REQUEST = 50;
+/** Body ceiling for one collector request — the browser's own sendBeacon quota (64 KiB). */
+export const MAX_EVENTS_BODY_BYTES = 64 * 1024;
+/** Per-IP quota as a multiple of the per-identity `EVENTS_RATE_LIMIT_PER_HOUR` (H08), so a NAT full of visitors still fits. */
+export const EVENTS_IP_QUOTA_MULTIPLIER = 5;
+/** Requests per minute one server instance accepts in total, across every caller (H08). */
+export const EVENTS_INSTANCE_LIMIT_PER_MINUTE = 600;
 export const MAX_PROP_KEYS = 40;
 export const MAX_STRING_LENGTH = 500;
 export const MAX_EVENT_ID_LENGTH = 80;

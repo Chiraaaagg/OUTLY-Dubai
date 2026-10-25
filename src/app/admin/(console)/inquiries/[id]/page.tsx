@@ -76,7 +76,11 @@ export default async function InquiryDetailPage({ params }: { params: Promise<{ 
     reopen: has("inquiries.assign") && has("inquiries.update"),
     spam: has("inquiries.mark_spam") && inquiry.status !== "won",
     convert: has("inquiries.convert") && has("inquiries.update") && (has("inquiries.assign") || mine),
-    resend: has("notifications.resend"),
+    // Notes are collaborative (owner decision 2026-10-25): anyone who can see
+    // the inquiry and holds inquiries.update may add one, not only the assignee.
+    note: has("inquiries.update"),
+    // Resending messages the customer, so it follows the update rule.
+    resend: has("notifications.resend") && (has("inquiries.assign") || mine),
     pii: has("customers.view_pii"),
   };
 
@@ -309,7 +313,7 @@ export default async function InquiryDetailPage({ params }: { params: Promise<{ 
           )}
 
           <Panel title="Notes">
-            {can.update ? <NotesComposer inquiryId={inquiry.id} /> : <p className="text-sm text-ink-500">Only the assigned agent or a lead can add notes.</p>}
+            {can.note ? <NotesComposer inquiryId={inquiry.id} /> : <p className="text-sm text-ink-500">Your role cannot add notes.</p>}
           </Panel>
 
           <Panel title="Notifications">

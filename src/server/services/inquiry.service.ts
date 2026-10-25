@@ -127,6 +127,27 @@ function assertCanUpdate(actor: Actor, inquiry: { assignedAgent?: { id: string }
   if (inquiry.assignedAgent?.id !== actor.id) throw Errors.forbidden("inquiries.assign");
 }
 
+/**
+ * Internal notes are collaborative — a deliberate exception to `assertCanUpdate`.
+ *
+ * Policy decision "Allow collaboration" (product owner, 2026-10-25, security
+ * remediation H07): any staff member who can view the inquiry (`inquiries.view_all`,
+ * or `inquiries.view_own` on their own assigned inquiry) AND holds
+ * `inquiries.update` may add a note, including on an inquiry assigned to
+ * another agent. A note changes nothing about the inquiry itself; it is an
+ * append-only `inquiry_events` row (immutable by trigger) and is audited with
+ * the author as actor. Every other mutation — status, items, contact, spam,
+ * conversion, assignment — keeps the ownership rule in `assertCanUpdate` /
+ * `assertCanModerate`.
+ *
+ * Returns whether the author is collaborating on someone else's inquiry, for the audit row.
+ */
+function assertCanAddNote(actor: Actor, inquiry: { assignedAgent?: { id: string } }): { collaborator: boolean } {
+  assertCanView(actor, inquiry);
+  requirePermission(actor, "inquiries.update");
+  return { collaborator: inquiry.assignedAgent?.id !== actor.id };
+}
+
 /** Spam moderation follows the same ownership rule as updates: leads/ops anywhere, agents on their own inquiries. */
 function assertCanModerate(actor: Actor, inquiry: { assignedAgent?: { id: string } }) {
   requirePermission(actor, "inquiries.mark_spam");
@@ -149,6 +170,31 @@ function redactDetail(d: InquiryDetail): InquiryDetail {
 
 function forActor<T extends InquirySummary>(actor: Actor, s: T): T {
   return hasPermission(actor, "customers.view_pii") ? s : redactSummary(s);
+}
+
+/**
+ * Catalogue-owned display fields for priced cart items.
+ *
+ * The cart item's `title` and `confirmation` are whatever the browser sent.
+ * They are copied into the item snapshot, rendered in the console, carried
+ * onto the order, and quoted back to the customer in the acknowledgement
+ * message — so they are taken from the product / combo row that priced the
+ * item, never from the request.
+ */
+async function catalogueSnapshots(priced: { productId?: string; comboId?: string }[]) {
+  const productIds = [...new Set(priced.flatMap((p) => (p.productId ? [p.productId] : [])))];
+  const comboIds = [...new Set(priced.flatMap((p) => (p.comboId ? [p.comboId] : [])))];
+  const [products, combos] = await Promise.all([
+    productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, title: true, confirmation: true } }) : [],
+    comboIds.length ? prisma.combo.findMany({ where: { id: { in: comboIds } }, select: { id: true, name: true, confirmation: true } }) : [],
+  ]);
+  const byProduct = new Map(products.map((p) => [p.id, { title: p.title, confirmation: p.confirmation }]));
+  const byCombo = new Map(combos.map((c) => [c.id, { title: c.name, confirmation: c.confirmation }]));
+  return (p: { productId?: string; comboId?: string }) => {
+    const found = p.productId ? byProduct.get(p.productId) : p.comboId ? byCombo.get(p.comboId) : undefined;
+    if (!found) throw Errors.validation({ items: "One of these items is no longer available" });
+    return found;
+  };
 }
 
 /** Scope for the create-inquiry idempotency rows (`src/server/lib/idempotency.ts`). */
@@ -244,6 +290,7 @@ export const inquiryService = {
     const totalInr = priced.reduce((s, p) => s + p.totalMinor.inr, 0n);
     const totalAed = priced.reduce((s, p) => s + p.totalMinor.aed, 0n);
     if (priced.some((p) => p.clientMismatch)) verdict.signals.priceMismatch = true;
+    const snapshotOf = await catalogueSnapshots(priced);
 
     // 5. SLA + routing
     const [sla, routing] = await Promise.all([settingsService.sla(), settingsService.routing()]);
@@ -324,13 +371,13 @@ export const inquiryService = {
               timeslot: p.cartItem.time,
               pax: p.cartItem.pax as unknown as Prisma.InputJsonValue,
               addons: p.cartItem.addOnIds as unknown as Prisma.InputJsonValue,
-              titleSnapshot: p.cartItem.title,
+              titleSnapshot: snapshotOf(p).title,
               tierSnapshot: p.tier,
               slugSnapshot: p.cartItem.slug,
               kindSnapshot: p.cartItem.kind,
               imageSnapshot: p.cartItem.image,
               variantNameSnapshot: p.cartItem.variantName,
-              confirmationSnapshot: p.cartItem.confirmation,
+              confirmationSnapshot: snapshotOf(p).confirmation,
               fulfilmentModeSnapshot: p.fulfilmentMode,
               freeCancellationHoursSnapshot: p.cartItem.freeCancellationHours,
               durationMinutesSnapshot: p.cartItem.durationMinutes,
@@ -730,11 +777,15 @@ export const inquiryService = {
   async addNote(actor: Actor, id: string, note: string): Promise<InquiryDetail> {
     const d = await inquiryRepo.findById(id);
     if (!d) throw Errors.notFound("Inquiry");
-    assertCanView(actor, d);
-    requirePermission(actor, "inquiries.update");
+    const { collaborator } = assertCanAddNote(actor, d);
     const text = cleanText(note, 2000);
     if (!text) throw Errors.validation({ note: "Write something first" });
-    await addEvent(prisma, id, { kind: "note", actor, note: text });
+    await prisma.$transaction(async (tx) => {
+      await addEvent(tx, id, { kind: "note", actor, note: text });
+      // The note text stays on the timeline only: it may carry customer details,
+      // and audit rows are not scrubbed by the deletion flow (impl/database.md §5).
+      await audit(actor, "inquiry.note_added", { type: "inquiry", id }, { after: { collaborator, assignedAgentId: d.assignedAgent?.id ?? null, length: text.length } }, tx);
+    }, TX_OPTIONS);
     return (await inquiryRepo.findById(id))!;
   },
 
@@ -887,6 +938,14 @@ export const inquiryService = {
     if (Number.isNaN(paidAt.getTime())) throw Errors.validation({ paidAt: "Enter a valid date and time" });
 
     const result = await prisma.$transaction(async (tx) => {
+      // Re-check the precondition inside the transaction, under the row lock.
+      // `d` was read before the transaction: a second convert that read the
+      // inquiry before the first committed would otherwise pass the "won"
+      // check above, get the first order back from createOrder's idempotency
+      // key, and record a second payment against it. A concurrent request
+      // blocks here until the first commits, then matches nothing.
+      const claimed = await tx.inquiry.updateMany({ where: { id, status: d.status, convertedOrderId: null }, data: { updatedAt: new Date() } });
+      if (claimed.count !== 1) throw Errors.conflict("Already converted or changed by someone else — reload the inquiry");
       const order = await orderService.createOrder(
         {
           rail: "assisted",

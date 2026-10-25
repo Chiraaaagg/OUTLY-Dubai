@@ -6,6 +6,9 @@ import nextConfig from "eslint-config-next";
  * docs/backend/19-implementation-conventions.md §1 are enforced here:
  *   - only src/server/lib/db.ts instantiates PrismaClient
  *   - route handlers never import repositories
+ * and one security rule: raw JSON.stringify output never goes into
+ * dangerouslySetInnerHTML (JSON escaping leaves </script> intact; use
+ * serializeJsonLd from src/lib/json-ld.ts).
  */
 export default [
   ...nextConfig,
@@ -19,6 +22,23 @@ export default [
     rules: {
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/purity": "warn",
+    },
+  },
+  {
+    // Inline HTML/script bodies come only from reviewed producers: structured
+    // data through serializeJsonLd, and the two fixed bootstrap scripts. Any
+    // other value (a variable, a template literal, raw JSON.stringify) is an
+    // error, wherever the __html object is built.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["**/__tests__/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Property[key.name='__html'] > .value:not(CallExpression[callee.name=/^(serializeJsonLd|googleTagBootstrap)$/]):not(Identifier[name='CURRENCY_BOOTSTRAP_SCRIPT'])",
+          message: "Inline HTML must come from serializeJsonLd() (@/lib/json-ld) or a reviewed fixed script. JSON.stringify does not escape </script>.",
+        },
+      ],
     },
   },
   {

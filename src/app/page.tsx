@@ -27,6 +27,7 @@ import { collections } from "@/lib/data/collections";
 import { combos } from "@/lib/data/combos";
 import type { Faq } from "@/lib/types";
 import { Amount } from "@/components/commerce/price";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "OUTLYY: Dubai Experiences, One All-In Price",
@@ -575,7 +576,7 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: serializeJsonLd({
             "@context": "https://schema.org",
             "@graph": [
               {

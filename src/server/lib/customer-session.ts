@@ -23,7 +23,9 @@ export const CUSTOMER_HINT_COOKIE = "outlyy_customer";
 
 const base = () => ({
   sameSite: "lax" as const,
-  secure: env().APP_ENV !== "development",
+  // Secure outside development, and always in a production build even if
+  // APP_ENV was left at its default (same rule as the admin cookies).
+  secure: env().APP_ENV !== "development" || process.env.NODE_ENV === "production",
   path: "/",
 });
 

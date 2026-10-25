@@ -1,19 +1,20 @@
 import "server-only";
-import { env } from "../lib/env";
 import { log } from "../lib/logger";
 import { sha256Hex } from "../lib/crypto";
 import { notificationsRepo } from "../repositories/notifications.repo";
 import { recordConsent } from "../repositories/consent.repo";
-import { isStopKeyword, parseWhatsAppWebhook, providerEventIdOf, verifyMetaSignature, type WebhookItem } from "./whatsapp-webhook.parse";
+import { isStopKeyword, parseWhatsAppWebhook, providerEventIdOf, type WebhookItem } from "./whatsapp-webhook.parse";
 
 /**
  * Inbound WhatsApp webhook processing (§08.5.2, §13.4, §19 §3).
  *
- *   verify signature → persist raw to webhook_events (dedup) → apply → done
+ *   (route) bounded raw read → verify signature over those bytes
+ *     → (here) parse → persist each item to webhook_events (dedup) → apply
  *
  * What is real today:
- *  - Signature verification over the raw body; unsigned/invalid payloads are
- *    persisted with signature_valid=false and never processed.
+ *  - Nothing is persisted before the signature is verified. A request that
+ *    fails provider authentication gets a 401 and leaves no row behind; the
+ *    only trace is a sampled, metadata-only log line (`recordRejection`).
  *  - Delivery receipts → notifications.status / delivered_at (match on
  *    provider_id = message id).
  *  - STOP / UNSUBSCRIBE → consent rows (granted=false) for whatsapp
@@ -26,65 +27,48 @@ import { isStopKeyword, parseWhatsAppWebhook, providerEventIdOf, verifyMetaSigna
  */
 
 const PROVIDER = "whatsapp";
-const MAX_BODY_BYTES = 1_000_000;
+/** Hard ceiling for one delivery; Meta batches stay far below it. Enforced while streaming by the route. */
+export const MAX_BODY_BYTES = 1_000_000;
 
 export interface IngestResult {
-  signatureValid: boolean;
-  /** Why the payload was not processed, when it was not. */
-  skipped?: "secret_not_configured" | "invalid_signature" | "invalid_json" | "body_too_large";
+  /** Always true here: callers only reach ingestion after verifying the signature. */
+  signatureValid: true;
+  /** Why the verified payload was not stored, when it was not. */
+  skipped?: "invalid_json";
   stored: number;
   duplicates: number;
   processed: number;
   errors: number;
 }
 
-export async function ingestWhatsAppWebhook(input: { rawBody: string; signatureHeader: string | null }): Promise<IngestResult> {
-  const result: IngestResult = { signatureValid: false, stored: 0, duplicates: 0, processed: 0, errors: 0 };
-  const bodyHash = sha256Hex(input.rawBody).slice(0, 32);
+/** Short, non-reversible fingerprint of a body for log correlation. Never the body itself. */
+export function bodyFingerprint(body: Uint8Array): string {
+  return sha256Hex(Buffer.from(body.buffer, body.byteOffset, body.byteLength)).slice(0, 16);
+}
 
-  if (Buffer.byteLength(input.rawBody) > MAX_BODY_BYTES) {
-    log.warn("whatsapp.webhook.body_too_large", { bytes: Buffer.byteLength(input.rawBody) });
-    result.skipped = "body_too_large";
-    return result;
-  }
+/**
+ * Process a delivery whose signature the caller has ALREADY verified over
+ * `rawBody`. Never call this with unverified bytes.
+ *
+ * A correctly signed body that is not JSON (or not UTF-8) is acknowledged
+ * and dropped with one bounded log line: it came from the provider, retrying
+ * cannot make it parse, and a non-2xx would only start a retry loop. Its
+ * contents are not stored.
+ */
+export async function ingestVerifiedWhatsAppWebhook(rawBody: Uint8Array): Promise<IngestResult> {
+  const result: IngestResult = { signatureValid: true, stored: 0, duplicates: 0, processed: 0, errors: 0 };
+  const bodyHash = bodyFingerprint(rawBody);
 
-  // 1. Signature. Without a configured secret nothing is trusted (§13.4).
-  const secret = env().WHATSAPP_WEBHOOK_SECRET;
-  if (!secret) {
-    result.skipped = "secret_not_configured";
-  } else if (!verifyMetaSignature(input.rawBody, input.signatureHeader, secret)) {
-    result.skipped = "invalid_signature";
-  } else {
-    result.signatureValid = true;
-  }
-
-  // 2. Parse. Invalid JSON is still recorded so ops can see what arrived.
   let payload: unknown;
   try {
-    payload = JSON.parse(input.rawBody);
+    payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(rawBody));
   } catch {
-    result.skipped ??= "invalid_json";
-    payload = { raw: input.rawBody.slice(0, 10_000) };
-  }
-
-  if (result.skipped) {
-    // Keyed by body hash, not by message id, so a later correctly-signed
-    // redelivery of the same event is not deduplicated against this one.
-    log.warn("whatsapp.webhook.not_processed", { reason: result.skipped, bodyHash });
-    const id = await notificationsRepo.insertWebhookEvent({
-      provider: PROVIDER,
-      providerEventId: `unverified:${bodyHash}`,
-      eventType: result.skipped,
-      payload,
-      signatureValid: result.signatureValid,
-      processingError: result.skipped,
-    });
-    if (id) result.stored++;
-    else result.duplicates++;
+    log.warn("whatsapp.webhook.invalid_json", { bytes: rawBody.byteLength, bodyHash });
+    result.skipped = "invalid_json";
     return result;
   }
 
-  // 3. Persist each message/status once, then apply.
+  // Persist each message/status once, then apply.
   const parsed = parseWhatsAppWebhook(payload);
   if (!parsed.items.length) {
     const id = await notificationsRepo.insertWebhookEvent({ provider: PROVIDER, providerEventId: `payload:${bodyHash}`, eventType: parsed.object ?? "unknown", payload, signatureValid: true });
@@ -120,6 +104,108 @@ export async function ingestWhatsAppWebhook(input: { rawBody: string; signatureH
     }
   }
   return result;
+}
+
+/* ------------------------------------------------------------------ rejections */
+
+export type RejectionReason =
+  | "secret_not_configured"
+  | "body_too_large"
+  | "body_unreadable"
+  | "signature_missing"
+  | "signature_malformed"
+  | "signature_mismatch";
+
+/**
+ * Per-instance budget for REJECTED deliveries, keyed on the trusted client
+ * IP (`clientIp`, or one shared bucket when the deployment cannot vouch for
+ * an IP). Only failures are counted, and the route consults it only after a
+ * request has already failed verification, so:
+ *   - a valid, correctly signed delivery is never refused because of it;
+ *   - nothing the caller controls (signature header, body, event ids) picks
+ *     or resets the bucket.
+ * An IP over budget gets 429 instead of 401 and stops producing log lines.
+ * Trade-off: callers behind one shared IP (a NAT, a proxy) share one
+ * budget — only for traffic that is being rejected anyway. When no trusted
+ * IP is available every rejected caller shares the single "none" bucket.
+ * It is per instance and in memory: a bound on what one instance spends on
+ * rejected traffic, not a global quota.
+ */
+export const REJECTION_BUDGET_PER_IP = 60;
+export const REJECTION_WINDOW_MS = 60_000;
+/** Bound on distinct budget keys held per instance; beyond it new keys share one overflow bucket. */
+const MAX_BUDGET_KEYS = 5_000;
+/** Log the first rejection per reason per window, then every Nth, with a count of what was skipped. */
+export const REJECTION_LOG_EVERY = 100;
+
+const budget = new Map<string, { windowStart: number; count: number }>();
+const logWindows = new Map<RejectionReason | "rejection_budget_exceeded", { windowStart: number; count: number }>();
+
+function windowOf(now: number): number {
+  return Math.floor(now / REJECTION_WINDOW_MS) * REJECTION_WINDOW_MS;
+}
+
+function takeBudget(ipKey: string, now: number): { allowed: boolean; retryAfterSeconds: number } {
+  const windowStart = windowOf(now);
+  if (budget.size >= MAX_BUDGET_KEYS && !budget.has(ipKey)) {
+    for (const [k, v] of budget) if (v.windowStart !== windowStart) budget.delete(k);
+    if (budget.size >= MAX_BUDGET_KEYS) ipKey = "overflow";
+  }
+  let b = budget.get(ipKey);
+  if (!b || b.windowStart !== windowStart) {
+    b = { windowStart, count: 0 };
+    budget.set(ipKey, b);
+  }
+  b.count++;
+  return { allowed: b.count <= REJECTION_BUDGET_PER_IP, retryAfterSeconds: Math.max(1, Math.ceil((windowStart + REJECTION_WINDOW_MS - now) / 1000)) };
+}
+
+function sampledWarn(reason: RejectionReason | "rejection_budget_exceeded", fields: Record<string, unknown>, now: number) {
+  const windowStart = windowOf(now);
+  let w = logWindows.get(reason);
+  if (!w || w.windowStart !== windowStart) {
+    w = { windowStart, count: 0 };
+    logWindows.set(reason, w);
+  }
+  w.count++;
+  if (w.count === 1 || w.count % REJECTION_LOG_EVERY === 1) {
+    const suppressed = w.count === 1 ? 0 : REJECTION_LOG_EVERY - 1;
+    const level = reason === "secret_not_configured" ? "error" : "warn";
+    log[level]("whatsapp.webhook.rejected", { reason, ...fields, seenInWindow: w.count, suppressed });
+  }
+}
+
+/**
+ * Account for one rejected delivery: charge the caller's rejection budget
+ * and emit (sampled) metadata — reason, byte length, a 16-hex body hash.
+ * Never the signature header, the body or the secret.
+ *
+ * Returns whether the caller is still within budget. A missing secret is a
+ * configuration fault, not abuse, so it is logged but not charged.
+ */
+export function recordRejection(input: { reason: RejectionReason; ip?: string; body?: Uint8Array; bytes?: number }): { withinBudget: boolean; retryAfterSeconds: number } {
+  const now = Date.now();
+  const fields = {
+    bytes: input.body?.byteLength ?? input.bytes,
+    bodyHash: input.body ? bodyFingerprint(input.body) : undefined,
+  };
+  if (input.reason === "secret_not_configured") {
+    sampledWarn(input.reason, fields, now);
+    return { withinBudget: true, retryAfterSeconds: 0 };
+  }
+  const verdict = takeBudget(input.ip ?? "none", now);
+  if (!verdict.allowed) {
+    sampledWarn("rejection_budget_exceeded", { lastReason: input.reason }, now);
+    return { withinBudget: false, retryAfterSeconds: verdict.retryAfterSeconds };
+  }
+  sampledWarn(input.reason, fields, now);
+  return { withinBudget: true, retryAfterSeconds: 0 };
+}
+
+/** Test hook: forget every budget and log window. */
+export function __resetWebhookRejectionState(): void {
+  budget.clear();
+  logWindows.clear();
 }
 
 type DeliveryStatus = "sent" | "delivered" | "read" | "failed";

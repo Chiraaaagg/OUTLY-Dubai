@@ -15,8 +15,11 @@ import { CURRENCY_COOKIE, currencyForCountry, isDisplayCurrency } from "@/lib/cu
  *         nonce can never reach its inline bootstrap scripts; a nonce policy
  *         there would block hydration on every page. It keeps 'unsafe-inline'
  *         for scripts (no eval in production). Accepted deviation from §13.8,
- *         recorded in docs/backend/impl/security.md; the storefront renders
- *         fixture data only — no UGC, no customer text.
+ *         recorded in docs/backend/impl/security.md. The storefront does render
+ *         staff-edited catalogue text from the database, so 'unsafe-inline' is
+ *         not a backstop: every inline sink must encode its data itself (JSON-LD
+ *         goes through serializeJsonLd). Options for removing 'unsafe-inline'
+ *         are in docs/security/csp-storefront-plan.md.
  *       - Development keeps eval for the toolchain.
  *  2. /admin/** — cheap gate: redirect to /admin/login without a valid
  *     session JWT. Real authorisation happens server-side in the admin layout
@@ -147,7 +150,13 @@ async function hasValidSession(req: NextRequest): Promise<boolean> {
   const secret = process.env.AUTH_JWT_SECRET;
   if (!token || !secret) return false;
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret), { issuer: "outlyy-admin", audience: "session" });
+    // Pin the algorithm to what the signer uses (src/server/lib/session.ts), so
+    // the accepted set never depends on jose's defaults for the key type.
+    await jwtVerify(token, new TextEncoder().encode(secret), {
+      issuer: "outlyy-admin",
+      audience: "session",
+      algorithms: ["HS256"],
+    });
     return true;
   } catch {
     return false;

@@ -13,6 +13,13 @@ import { env } from "./env";
  *    before TOTP. Carries `stage: 'totp' | 'enrol'`. Grants no permissions.
  *
  * httpOnly + Secure (outside dev) + SameSite=Lax. Never readable by JS.
+ *
+ * Verification pins the algorithm to HS256 and checks issuer AND audience,
+ * so a pending token can never be presented as a session token (or the
+ * reverse), and a token signed any other way is refused outright. A valid
+ * JWT is still only half the check: `authService` then requires the
+ * `admin_sessions` row to be live and the user active, and reads
+ * permissions from the database on every request.
  */
 
 export const SESSION_COOKIE = "outlyy_admin_session";
@@ -32,12 +39,15 @@ function key() {
   return new TextEncoder().encode(env().AUTH_JWT_SECRET);
 }
 
+const ISSUER = "outlyy-admin";
+const ALGORITHMS = ["HS256"];
+
 export async function signSessionToken(claims: SessionClaims, expiresAt: Date): Promise<string> {
   return new SignJWT({ sid: claims.sid })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(claims.sub)
     .setIssuedAt()
-    .setIssuer("outlyy-admin")
+    .setIssuer(ISSUER)
     .setAudience("session")
     .setExpirationTime(Math.floor(expiresAt.getTime() / 1000))
     .sign(key());
@@ -48,7 +58,7 @@ export async function signPendingToken(claims: PendingClaims): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(claims.sub)
     .setIssuedAt()
-    .setIssuer("outlyy-admin")
+    .setIssuer(ISSUER)
     .setAudience("pending")
     .setExpirationTime("10m")
     .sign(key());
@@ -56,7 +66,7 @@ export async function signPendingToken(claims: PendingClaims): Promise<string> {
 
 export async function verifySessionToken(token: string): Promise<SessionClaims | null> {
   try {
-    const { payload } = await jwtVerify(token, key(), { issuer: "outlyy-admin", audience: "session" });
+    const { payload } = await jwtVerify(token, key(), { algorithms: ALGORITHMS, issuer: ISSUER, audience: "session" });
     if (typeof payload.sid !== "string" || typeof payload.sub !== "string") return null;
     return { sid: payload.sid, sub: payload.sub };
   } catch {
@@ -66,7 +76,7 @@ export async function verifySessionToken(token: string): Promise<SessionClaims |
 
 export async function verifyPendingToken(token: string): Promise<PendingClaims | null> {
   try {
-    const { payload } = await jwtVerify(token, key(), { issuer: "outlyy-admin", audience: "pending" });
+    const { payload } = await jwtVerify(token, key(), { algorithms: ALGORITHMS, issuer: ISSUER, audience: "pending" });
     if (typeof payload.sub !== "string" || (payload.stage !== "totp" && payload.stage !== "enrol")) return null;
     return { sub: payload.sub, stage: payload.stage };
   } catch {
@@ -77,7 +87,8 @@ export async function verifyPendingToken(token: string): Promise<PendingClaims |
 const cookieBase = () => ({
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: env().APP_ENV !== "development",
+  // A production build is always Secure, even if APP_ENV was left at its "development" default.
+  secure: env().APP_ENV !== "development" || process.env.NODE_ENV === "production",
   path: "/",
 });
 

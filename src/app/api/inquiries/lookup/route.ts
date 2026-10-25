@@ -10,8 +10,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Bucket used when no client IP can be determined (local dev without a proxy).
- * Behind Vercel/Netlify x-forwarded-for is always set. A single shared bucket
+ * Bucket used when no trusted client IP is available: `clientIp` only
+ * believes forwarding headers on Vercel or with TRUST_PROXY_IP_HEADERS=true
+ * (local dev, or a proxy nobody vouched for, lands here). A single shared bucket
  * is deliberate: the limiter never fails open to "unlimited" for IP-less
  * traffic — it just shares one 5/15min allowance.
  */

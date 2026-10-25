@@ -199,7 +199,12 @@ export function userAgent(req: NextRequest): string | undefined {
   return req.headers.get("user-agent")?.slice(0, 300) ?? undefined;
 }
 
+/**
+ * Edge geo country. On Vercel only Vercel's own header is read: a
+ * `cf-ipcountry` header there would come from the client, not Cloudflare.
+ */
 export function geoCountry(req: NextRequest): string | undefined {
+  if (process.env.VERCEL === "1") return req.headers.get("x-vercel-ip-country") ?? undefined;
   return req.headers.get("x-vercel-ip-country") ?? req.headers.get("cf-ipcountry") ?? undefined;
 }
 

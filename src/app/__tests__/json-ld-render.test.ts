@@ -110,8 +110,18 @@ const JS_TYPES = new Set(["", "text/javascript", "application/javascript", "modu
 const isExecutable = (s: ScriptEl) => JS_TYPES.has((s.attrs.type ?? "").trim().toLowerCase());
 
 const FLIGHT = [/^\(self\.__next_f=self\.__next_f\|\|\[\]\)\.push\(([\s\S]*)\)$/, /^self\.__next_f\.push\(([\s\S]*)\)$/];
-/** React/Next streaming runtime and dev bootstrap snippets (fixed code, no catalogue data). */
-const RUNTIME = [/^requestAnimationFrame\(function\(\)\{\$RT=/, /^\$RB=\[\];\$RV=/, /^\$R[CSX]\(/, /^self\.__next_r=/];
+/**
+ * React/Next streaming runtime and bootstrap snippets (fixed code, no catalogue
+ * data). The Turbopack chunk-loader push (`<script id="_R_">`) appears only in
+ * production builds (`next start`), not under `next dev`.
+ */
+const RUNTIME = [
+  /^requestAnimationFrame\(function\(\)\{\$RT=/,
+  /^\$RB=\[\];\$RV=/,
+  /^\$R[CSX]\(/,
+  /^self\.__next_r=/,
+  /^\(globalThis\["TURBOPACK"\] \|\| \(globalThis\["TURBOPACK"\] = \[\]\)\)\.push\(\{"otherChunks":/,
+];
 
 function flightArg(body: string): unknown | undefined {
   for (const re of FLIGHT) {

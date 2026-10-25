@@ -16,6 +16,7 @@ import { getActivitiesBySlugs } from "@/lib/catalog/server";
 import { attractions, attractionBySlug } from "@/lib/data/collections";
 import { combos } from "@/lib/data/combos";
 import { Amount } from "@/components/commerce/price";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 export function generateStaticParams() {
   return attractions.map((a) => ({ slug: a.slug }));
@@ -231,7 +232,7 @@ export default async function AttractionPage({ params }: { params: Promise<{ slu
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: serializeJsonLd({
             "@context": "https://schema.org",
             "@type": "FAQPage",
             mainEntity: attraction.faqs.map((f) => ({

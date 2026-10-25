@@ -4,6 +4,7 @@ import { WhatsAppCard } from "@/components/commerce/whatsapp";
 import { Accordion } from "@/components/ui/accordion";
 import { Breadcrumbs, SectionHeading } from "@/components/ui/primitives";
 import type { Faq } from "@/lib/types";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
@@ -212,7 +213,7 @@ export default function FaqPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: serializeJsonLd({
             "@context": "https://schema.org",
             "@type": "FAQPage",
             mainEntity: SECTIONS.flatMap((s) =>

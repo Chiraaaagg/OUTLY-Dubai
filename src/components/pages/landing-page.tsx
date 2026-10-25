@@ -18,6 +18,7 @@ import { Scene } from "@/components/ui/scene";
 import { getActivitiesBySlugs, getCategories } from "@/lib/catalog/server";
 import { combos } from "@/lib/data/combos";
 import { Rail, RailItem } from "@/components/ui/rail";
+import { serializeJsonLd } from "@/lib/json-ld";
 import type { LandingPage } from "@/lib/data/landing-pages";
 
 /**
@@ -252,7 +253,7 @@ export async function LandingPageView({ page }: { page: LandingPage }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: serializeJsonLd({
             "@context": "https://schema.org",
             "@graph": [
               {

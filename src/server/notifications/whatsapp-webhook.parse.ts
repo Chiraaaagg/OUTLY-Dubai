@@ -48,19 +48,37 @@ export interface ParsedWebhook {
   object?: string;
 }
 
-/** Verifies `X-Hub-Signature-256: sha256=<hex>` over the RAW body with a constant-time compare. */
-export function verifyMetaSignature(rawBody: string | Buffer, header: string | null | undefined, secret: string): boolean {
-  if (!header || !secret) return false;
-  const provided = header.trim().replace(/^sha256=/i, "");
-  if (!/^[0-9a-f]{64}$/i.test(provided)) return false;
-  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  const a = Buffer.from(provided.toLowerCase(), "utf8");
-  const b = Buffer.from(expected, "utf8");
-  return a.length === b.length && timingSafeEqual(a, b);
+export type MetaSignatureVerdict = "ok" | "missing" | "malformed" | "mismatch";
+
+const SIGNATURE_HEADER = /^sha256=([0-9a-f]{64})$/i;
+
+/**
+ * Checks `X-Hub-Signature-256: sha256=<hex>` against an HMAC-SHA256 of the
+ * exact request bytes, with a constant-time compare of the two digests.
+ *
+ * Takes bytes, not a string, on purpose: the HMAC must cover what arrived on
+ * the wire. Decoding to text first and re-encoding would silently change any
+ * body that is not clean UTF-8, and a signature over different bytes proves
+ * nothing. The verdict says *why* a header was refused so the caller can log
+ * a reason without ever logging the header itself.
+ */
+export function checkMetaSignature(rawBody: Uint8Array, header: string | null | undefined, secret: string): MetaSignatureVerdict {
+  if (!header || !header.trim()) return "missing";
+  const match = SIGNATURE_HEADER.exec(header.trim());
+  if (!match) return "malformed";
+  if (!secret) return "mismatch";
+  const provided = Buffer.from(match[1], "hex");
+  const expected = createHmac("sha256", secret).update(rawBody).digest();
+  return provided.length === expected.length && timingSafeEqual(provided, expected) ? "ok" : "mismatch";
+}
+
+/** Boolean form of `checkMetaSignature`. */
+export function verifyMetaSignature(rawBody: Uint8Array, header: string | null | undefined, secret: string): boolean {
+  return checkMetaSignature(rawBody, header, secret) === "ok";
 }
 
 /** Builds the header value — for tests and for local replay tooling. */
-export function signMetaPayload(rawBody: string | Buffer, secret: string): string {
+export function signMetaPayload(rawBody: Uint8Array | string, secret: string): string {
   return `sha256=${createHmac("sha256", secret).update(rawBody).digest("hex")}`;
 }
 

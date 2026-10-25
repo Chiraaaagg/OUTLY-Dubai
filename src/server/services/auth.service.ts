@@ -20,6 +20,7 @@ import {
   verifyTotp,
 } from "../lib/crypto";
 import { enforceRateLimit } from "../lib/rate-limit";
+import { clientIp, userAgent } from "../lib/http";
 import { audit } from "../lib/audit";
 import type { Actor } from "../lib/actor";
 import { requirePermission } from "../lib/actor";
@@ -226,8 +227,8 @@ export const authService = {
 
   /** Route handlers. */
   async resolveRequest(req: NextRequest): Promise<ResolvedSession | null> {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-    return resolveFromToken(sessionTokenFromRequest(req), { ipHash: hashIp(ip), userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? undefined });
+    // Audit rows carry this hash, so it must come from the trusted-proxy contract, never a raw client header.
+    return resolveFromToken(sessionTokenFromRequest(req), { ipHash: hashIp(clientIp(req)), userAgent: userAgent(req) });
   },
 
   /** Server Components / Server Actions. */

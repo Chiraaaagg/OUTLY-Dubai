@@ -149,7 +149,9 @@ export const analyticsService = {
     let duplicates = 0;
     for (const ev of events) {
       const props = scrubProps(ev.props);
-      const value = typeof props.value === "number" && Number.isFinite(props.value) ? BigInt(Math.round(props.value * 100)) : undefined;
+      // Client-supplied: only a finite value that fits a BIGINT exactly becomes value_minor.
+      const minor = typeof props.value === "number" ? Math.round(props.value * 100) : Number.NaN;
+      const value = Number.isSafeInteger(minor) ? BigInt(minor) : undefined;
       const occurredAt = ev.ts ? new Date(ev.ts) : new Date();
       const row = {
         eventId: ev.event_id,

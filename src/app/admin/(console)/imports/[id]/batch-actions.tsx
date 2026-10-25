@@ -44,7 +44,9 @@ export function BatchActions({
     try {
       const res = await fetch(path, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+        const data = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string; details?: { permission?: string } } } | null;
+        // A rollback needs the permissions of what it does (products.delete for created rows, products.edit for updated ones).
+        if (data?.error?.code === "FORBIDDEN" && data.error.details?.permission) throw new Error(`Your role is missing ${data.error.details.permission}, which this action needs — ask an administrator to run it.`);
         throw new Error(data?.error?.message ?? `Request failed (${res.status})`);
       }
       const data = (await res.json().catch(() => null)) as { heldForReview?: string[] } | null;

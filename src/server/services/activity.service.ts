@@ -178,6 +178,69 @@ function nextCopySlug(base: string, taken: Set<string>): string {
   throw Errors.conflict("Too many copies of this activity");
 }
 
+/**
+ * Transaction-aware lifecycle steps shared by the console actions
+ * (`activityService.remove` / `restoreVersion`) and indirect paths such as
+ * import rollback, so an indirect path cannot do what the direct action would
+ * refuse. Each step checks the permission its action needs itself, writes the
+ * product row, its version row and its audit row in the caller's transaction,
+ * and never revalidates the catalogue (the caller does, after commit).
+ *
+ * Writes are version-guarded (`updateMany where { id, version }`): a save
+ * that commits between this step's read and its write leaves the count at 0
+ * and the step throws 409 instead of overwriting it. `expectedVersion`
+ * additionally pins the version the caller decided on (rollback passes the
+ * version its import wrote); any other version — or a deleted row — is a 409.
+ */
+export const productLifecycle = {
+  /** Soft delete (`products.delete`, reason required). Idempotent on an already-deleted row unless `expectedVersion` is given. */
+  async softDeleteInTx(tx: Tx, actor: Actor, id: string, reason: string, opts: { expectedVersion?: number } = {}): Promise<ActivityAdminRow> {
+    requirePermission(actor, "products.delete");
+    if (!reason.trim()) throw Errors.validation({ reason: "A reason is required to delete an activity" });
+    const before = await tx.product.findUnique({ where: { id } });
+    if (!before) throw Errors.notFound("Activity");
+    if (opts.expectedVersion !== undefined && (before.deletedAt || before.version !== opts.expectedVersion)) {
+      throw Errors.conflict(`"${before.slug}" was changed after version ${opts.expectedVersion} — reload and try again`, { slug: before.slug, version: before.version, expectedVersion: opts.expectedVersion });
+    }
+    if (before.deletedAt) return toRow(before);
+    const inFlight = await tx.inquiryItem.count({ where: { productId: id, inquiry: { status: { in: ["new", "assigned", "contacted", "quoted", "negotiating", "payment_pending"] } } } });
+    const content = readContent(before);
+    const version = before.version + 1;
+    const deletedAt = new Date();
+    const written = await tx.product.updateMany({ where: { id, version: before.version, deletedAt: null }, data: { deletedAt, status: "archived", version } });
+    if (written.count !== 1) throw Errors.conflict(`"${before.slug}" was changed by someone else while it was being deleted — reload and try again`, { slug: before.slug });
+    await writeVersion(tx, id, version, content, "archived", actor, reason);
+    await audit(actor, "activity.delete", { type: "product", id }, { before: { status: before.status, deletedAt: null }, after: { status: "archived", deletedAt, openInquiries: inFlight }, reason }, tx);
+    return toRow(await tx.product.findUniqueOrThrow({ where: { id }, select: SELECT_ROW }));
+  },
+
+  /** Write a NEW version equal to an earlier one (`products.edit`). The row must not be deleted. */
+  async restoreVersionInTx(tx: Tx, actor: Actor, id: string, version: number, opts: { reason?: string; expectedVersion?: number } = {}): Promise<ActivityAdminRow> {
+    requirePermission(actor, "products.edit");
+    const before = await tx.product.findUnique({ where: { id } });
+    if (!before || (before.deletedAt && opts.expectedVersion === undefined)) throw Errors.notFound("Activity");
+    if (opts.expectedVersion !== undefined && (before.deletedAt || before.version !== opts.expectedVersion)) {
+      throw Errors.conflict(`"${before.slug}" was changed after version ${opts.expectedVersion} — reload and try again`, { slug: before.slug, version: before.version, expectedVersion: opts.expectedVersion });
+    }
+    const old = await tx.productVersion.findUnique({ where: { productId_version: { productId: id, version } } });
+    if (!old) throw Errors.notFound(`Version ${version}`);
+    const restored = { ...toActivity(old.content), fulfilmentMode: before.fulfilmentMode };
+    if (restored.slug !== before.slug) {
+      const clash = await tx.product.findUnique({ where: { slug: restored.slug }, select: { id: true } });
+      if (clash && clash.id !== id) throw Errors.conflict(`Slug "${restored.slug}" from version ${version} is now used by another activity`);
+    }
+    const next = before.version + 1;
+    const written = await tx.product.updateMany({
+      where: { id, version: before.version, deletedAt: null },
+      data: { slug: restored.slug, ...projectActivity(restored), content: restored as unknown as Prisma.InputJsonValue, version: next },
+    });
+    if (written.count !== 1) throw Errors.conflict(`"${before.slug}" was changed by someone else while it was being restored — reload and try again`, { slug: before.slug });
+    await writeVersion(tx, id, next, restored, before.status, actor, opts.reason ?? `restored from v${version}`);
+    await audit(actor, "activity.restore_version", { type: "product", id }, { before: { version: before.version }, after: { version: next, restoredFrom: version }, reason: opts.reason }, tx);
+    return toRow(await tx.product.findUniqueOrThrow({ where: { id }, select: SELECT_ROW }));
+  },
+};
+
 export const activityService = {
   /* ------------------------------------------------------------- reads */
 
@@ -421,18 +484,7 @@ export const activityService = {
   async remove(actor: Actor, id: string, reason: string) {
     requirePermission(actor, "products.delete");
     if (!reason.trim()) throw Errors.validation({ reason: "A reason is required to delete an activity" });
-    const row = await prisma.$transaction(async (tx) => {
-      const before = await tx.product.findUnique({ where: { id } });
-      if (!before) throw Errors.notFound("Activity");
-      if (before.deletedAt) return toRow(before);
-      const inFlight = await tx.inquiryItem.count({ where: { productId: id, inquiry: { status: { in: ["new", "assigned", "contacted", "quoted", "negotiating", "payment_pending"] } } } });
-      const content = readContent(before);
-      const version = before.version + 1;
-      const after = await tx.product.update({ where: { id }, data: { deletedAt: new Date(), status: "archived", version }, select: SELECT_ROW });
-      await writeVersion(tx, id, version, content, "archived", actor, reason);
-      await audit(actor, "activity.delete", { type: "product", id }, { before: { status: before.status, deletedAt: null }, after: { status: "archived", deletedAt: after.deletedAt, openInquiries: inFlight }, reason }, tx);
-      return toRow(after);
-    }, TX_OPTIONS);
+    const row = await prisma.$transaction((tx) => productLifecycle.softDeleteInTx(tx, actor, id, reason), TX_OPTIONS);
     revalidateCatalog();
     return row;
   },
@@ -457,26 +509,7 @@ export const activityService = {
   /** Roll content back to an earlier version by writing a NEW version equal to it. */
   async restoreVersion(actor: Actor, id: string, version: number, reason?: string) {
     requirePermission(actor, "products.edit");
-    const row = await prisma.$transaction(async (tx) => {
-      const before = await tx.product.findUnique({ where: { id } });
-      if (!before || before.deletedAt) throw Errors.notFound("Activity");
-      const old = await tx.productVersion.findUnique({ where: { productId_version: { productId: id, version } } });
-      if (!old) throw Errors.notFound(`Version ${version}`);
-      const restored = { ...toActivity(old.content), fulfilmentMode: before.fulfilmentMode };
-      if (restored.slug !== before.slug) {
-        const clash = await tx.product.findUnique({ where: { slug: restored.slug }, select: { id: true } });
-        if (clash && clash.id !== id) throw Errors.conflict(`Slug "${restored.slug}" from version ${version} is now used by another activity`);
-      }
-      const next = before.version + 1;
-      const after = await tx.product.update({
-        where: { id },
-        data: { slug: restored.slug, ...projectActivity(restored), content: restored as unknown as Prisma.InputJsonValue, version: next },
-        select: SELECT_ROW,
-      });
-      await writeVersion(tx, id, next, restored, before.status, actor, reason ?? `restored from v${version}`);
-      await audit(actor, "activity.restore_version", { type: "product", id }, { before: { version: before.version }, after: { version: next, restoredFrom: version }, reason }, tx);
-      return toRow(after);
-    }, TX_OPTIONS);
+    const row = await prisma.$transaction((tx) => productLifecycle.restoreVersionInTx(tx, actor, id, version, { reason }), TX_OPTIONS);
     revalidateCatalog();
     return row;
   },

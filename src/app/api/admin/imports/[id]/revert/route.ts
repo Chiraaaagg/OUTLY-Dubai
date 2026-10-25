@@ -7,7 +7,12 @@ import { idSchema, importRevertSchema } from "@/server/schemas/catalog.schemas";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** POST /api/admin/imports/:id/revert — `{ reason? }`; created rows soft-deleted, updated rows restored to their pre-import version (`imports.run`, 20/hour). */
+/**
+ * POST /api/admin/imports/:id/revert — `{ reason? }`; created rows soft-deleted, updated rows restored to their
+ * pre-import version (`imports.run`, 20/hour). The service additionally requires `products.delete` when the batch
+ * created listings and `products.edit` when it updated any (403 before any write), and refuses with 409 when the
+ * batch is not applied (or already reverted) or any listing changed after the import.
+ */
 export const POST = handle<{ params: Promise<{ id: string }> }>(async (req: NextRequest, { params }) => {
   assertSameOrigin(req);
   const { actor } = await requireAdmin(req, "imports.run", RATE.adminHeavy);

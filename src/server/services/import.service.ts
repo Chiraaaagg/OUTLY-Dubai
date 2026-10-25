@@ -2,16 +2,19 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma, type Tx } from "../lib/db";
 import type { Actor } from "../lib/actor";
-import { requirePermission } from "../lib/actor";
+import { hasPermission, requirePermission } from "../lib/actor";
+import type { Permission } from "../lib/permissions";
 import { audit } from "../lib/audit";
 import { Errors } from "../lib/errors";
 import { uuidv7 } from "../lib/ids";
 import { log } from "../lib/logger";
 import { revalidateCatalog } from "../lib/catalog-cache";
-import { activityInputSchema, activitySchema, buildActivityContent, projectActivity, toActivity, type ActivityInput, type ImportField } from "../schemas/activity.schema";
+import { activityInputSchema, activitySchema, buildActivityContent, projectActivity, type ActivityInput, type ImportField } from "../schemas/activity.schema";
 import { completeNewActivity, currencyIn, matchHeader, mergeIntoExisting, parseCsv, parseDocToDraft, readRow, slugify, suggestMapping, toCsv, type Mapping, type RowRead, type RowWarning } from "../imports/parsers";
 import { resolveCategory } from "../imports/categories";
 import { googleExportUrl } from "../imports/google";
+import { fetchGoogleExport } from "../imports/fetch";
+import { productLifecycle } from "./activity.service";
 
 /**
  * Listing imports — CSV upload, Google Sheet link, Google Doc link/paste,
@@ -25,11 +28,15 @@ import { googleExportUrl } from "../imports/google";
  *            identical to a manual edit) and record before/after versions per
  *            row. All-or-nothing unless `partial`.
  *   revert   one transaction: created rows are soft-deleted, updated rows get
- *            a new version equal to `before_version`. Audited.
+ *            a new version equal to `before_version`. Needs the permissions
+ *            those operations need, and refuses when any listing changed
+ *            after the import. Audited.
  *
- * Google fetches are restricted to https://docs.google.com export URLs (SSRF)
- * with a 15s timeout and a 5 MB cap; the sheet/doc must be shared
- * "anyone with the link". No Google credentials are required.
+ * Google fetches start at a https://docs.google.com export URL and follow
+ * redirects by hand, each hop checked before it is connected to (SSRF —
+ * `imports/fetch.ts`), with one 15s deadline and a streamed 5 MB cap; the
+ * sheet/doc must be shared "anyone with the link". No Google credentials are
+ * required.
  */
 
 export type ImportSource = "csv" | "sheet" | "doc" | "bulk" | "manual";
@@ -77,54 +84,16 @@ export interface ImportPreview {
 }
 
 const IMPORT_TX = { maxWait: 15_000, timeout: 180_000 } as const;
-const FETCH_TIMEOUT_MS = 15_000;
-const FETCH_MAX_BYTES = 5 * 1024 * 1024;
 const MAX_ROWS = 500;
 
 /* ------------------------------------------------------------- google */
 
-async function fetchGoogle(exportUrl: string): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(exportUrl, { signal: controller.signal, redirect: "follow", cache: "no-store", headers: { accept: "text/csv,text/plain;q=0.9,*/*;q=0.1" } });
-    const finalHost = (() => {
-      try {
-        return new URL(res.url || exportUrl).hostname;
-      } catch {
-        return "";
-      }
-    })();
-    if (!/(^|\.)google\.com$|(^|\.)googleusercontent\.com$/.test(finalHost)) throw Errors.validation({ url: "Google redirected somewhere unexpected — check the link" });
-    if (res.status === 401 || res.status === 403 || /accounts\.google\.com/.test(res.url ?? "")) {
-      throw Errors.validation({ url: "Google refused access — share the file as “Anyone with the link → Viewer” and try again" });
-    }
-    if (res.status === 400) {
-      throw Errors.validation({ url: /gid=/.test(exportUrl) ? "Google returned 400 — the tab (gid) in this link does not exist in the sheet. Copy the link from the tab you want, or paste the link without #gid=…" : "Google returned 400 — this file cannot be exported. If it is an uploaded .xlsx, open it and use File → Save as Google Sheets, then share that" });
-    }
-    if (res.status === 404) throw Errors.validation({ url: "Google returned 404 — the file does not exist or is not shared with “Anyone with the link”" });
-    if (!res.ok) throw Errors.validation({ url: `Google returned ${res.status} — check the link is correct and shared` });
-    const len = Number(res.headers.get("content-length") ?? 0);
-    if (len > FETCH_MAX_BYTES) throw Errors.validation({ url: "File is larger than 5 MB" });
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.byteLength > FETCH_MAX_BYTES) throw Errors.validation({ url: "File is larger than 5 MB" });
-    const text = buf.toString("utf8").replace(/^\uFEFF/, "");
-    if (/<html/i.test(text.slice(0, 500))) throw Errors.validation({ url: "Google returned a web page instead of the file — it is probably not shared publicly" });
-    return text;
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw Errors.validation({ url: "Google took too long to respond — try again" });
-    throw error;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 export async function fetchGoogleSheetCsv(url: string): Promise<string> {
-  return fetchGoogle(googleExportUrl(url, "sheet"));
+  return fetchGoogleExport(googleExportUrl(url, "sheet"));
 }
 
 export async function fetchGoogleDocText(url: string): Promise<string> {
-  return fetchGoogle(googleExportUrl(url, "doc"));
+  return fetchGoogleExport(googleExportUrl(url, "doc"));
 }
 
 /* ------------------------------------------------------------ helpers */
@@ -387,6 +356,8 @@ export const importService = {
    */
   async apply(actor: Actor, batchId: string, opts: { partial?: boolean; publish?: boolean; reason?: string; createMissingCategories?: boolean } = {}) {
     requirePermission(actor, "imports.run");
+    // Apply creates and updates listings: it needs what a manual create/edit needs.
+    requirePermission(actor, "products.edit");
     if (opts.publish) requirePermission(actor, "products.publish");
     if (opts.createMissingCategories) requirePermission(actor, "categories.edit");
     const batch = await prisma.importBatch.findUnique({ where: { id: batchId } });
@@ -411,8 +382,12 @@ export const importService = {
       // waits on the row lock, finds it no longer "previewed" and stops without writing anything.
       const claimed = await tx.importBatch.updateMany({ where: { id: batchId, status: "previewed" }, data: { status: "applied", appliedAt: now } });
       if (claimed.count !== 1) throw Errors.conflict("This batch is being applied or was already applied");
-      // Re-parse: the preview was validated, but the stored JSON is re-checked against a tampered row.
+      // Re-parse: the preview was validated, but the stored JSON is re-checked against a tampered row —
+      // including that each row's recorded slug/action/baseVersion still describe the input it carries,
+      // since the version precondition below is keyed on them.
       const inputs = todo.map((r) => ({ row: r.row, input: activityInputSchema.parse(r.input) }));
+      const inconsistent = todo.find((r, i) => r.slug !== inputs[i].input.slug || (r.action !== "create" && r.action !== "update") || (r.action === "update") !== (r.baseVersion != null));
+      if (inconsistent) throw Errors.conflict(`Row ${inconsistent.row}: the stored preview does not match its row — preview the file again`);
       const heldSlugs: string[] = [];
 
       // Categories — create the missing ones as drafts when asked.
@@ -436,6 +411,8 @@ export const importService = {
       if (moved.length) throw Errors.conflict(`${moved.map((r) => `"${r.slug}"`).join(", ")} changed after this preview — preview the file again`, { slugs: moved.map((r) => r.slug) });
       const created = todo.find((r) => r.action === "create" && existing.has(r.slug));
       if (created) throw Errors.conflict(`Row ${created.row}: "${created.slug}" was created after this preview — preview the file again`);
+      const vanished = todo.find((r) => r.action === "update" && !existing.has(r.slug));
+      if (vanished) throw Errors.conflict(`Row ${vanished.row}: "${vanished.slug}" no longer exists — preview the file again`);
       // Rows with derived values a person must check stay drafts even when the batch is published.
       const held = new Set(opts.publish ? todo.filter((r) => r.review).map((r) => r.row) : []);
 
@@ -528,26 +505,63 @@ export const importService = {
     return { batchId, applied: result.items.length, created, updated: result.items.length - created, published: opts.publish ? result.items.length - result.heldForReview.length : 0, heldForReview: result.heldForReview, categoriesCreated: result.categoriesCreated, items: result.items };
   },
 
+  /**
+   * Roll an applied batch back: created listings are soft-deleted, updated
+   * listings get a new version equal to their pre-import version.
+   *
+   * Authorisation covers the operations, not just the import: a batch with a
+   * created row needs `products.delete`, one with an updated row needs
+   * `products.edit`, checked for the whole batch before anything is written
+   * (so a mixed batch never half-reverts). The policy is permission-based —
+   * any actor holding those permissions may roll back any batch, whoever ran it.
+   *
+   * Rollback never overwrites later work: every listing must still be at the
+   * version this import wrote (`afterVersion`) and not deleted, or the whole
+   * rollback is a 409 naming them. The writes themselves are version-guarded,
+   * so a save that lands between that check and the write is a 409 too. The
+   * batch is claimed (`applied` → `reverted`) as the transaction's first
+   * write, so a repeated or concurrent rollback conflicts instead of applying
+   * twice. Product rows, version rows, the batch status and the audit trail
+   * commit together or not at all. There is deliberately no override.
+   */
   async revert(actor: Actor, batchId: string, reason?: string) {
     requirePermission(actor, "imports.run");
     const batch = await prisma.importBatch.findUnique({ where: { id: batchId }, include: { items: true } });
     if (!batch) throw Errors.notFound("Import batch");
     if (batch.status !== "applied") throw Errors.conflict(`Only applied batches can be reverted (this one is ${batch.status})`);
+    requireRevertPermissions(actor, batch.items);
     const why = reason ?? `revert import ${batchId.slice(0, 8)}`;
-    await prisma.$transaction(async (tx: Tx) => {
-      for (const item of batch.items) {
-        if (item.action === "create") {
-          const p = await tx.product.findUnique({ where: { id: item.productId }, select: { deletedAt: true } });
-          if (p && !p.deletedAt) await removeInTx(tx, actor, item.productId, why);
-        } else if (item.beforeVersion != null) {
-          await restoreInTx(tx, actor, item.productId, item.beforeVersion, why);
-        }
+    const reverted = await prisma.$transaction(async (tx: Tx) => {
+      // Claim first: of two concurrent rollbacks only one gets past this line; the other waits on the
+      // row lock, finds the batch no longer "applied" and stops without writing anything.
+      const claimed = await tx.importBatch.updateMany({ where: { id: batchId, status: "applied" }, data: { status: "reverted", revertedAt: new Date() } });
+      if (claimed.count !== 1) throw Errors.conflict("This batch is being reverted or was already reverted");
+      // The items as committed, under the claim — the set written is the set authorised.
+      const items = await tx.importBatchItem.findMany({ where: { batchId }, orderBy: { slug: "asc" } });
+      requireRevertPermissions(actor, items);
+      const current = new Map((await tx.product.findMany({ where: { id: { in: items.map((i) => i.productId) } }, select: { id: true, version: true, deletedAt: true } })).map((p) => [p.id, p]));
+      const moved = items.filter((i) => {
+        const p = current.get(i.productId);
+        return !p || p.deletedAt !== null || p.version !== i.afterVersion;
+      });
+      if (moved.length) {
+        throw Errors.conflict(`${moved.map((i) => `"${i.slug}"`).join(", ")} changed after this import — rolling back would overwrite that work. Undo those listings one by one from their version history instead`, { slugs: moved.map((i) => i.slug) });
       }
-      await tx.importBatch.update({ where: { id: batchId }, data: { status: "reverted", revertedAt: new Date() } });
-      await audit(actor, "import.revert", { type: "import_batch", id: batchId }, { after: { reverted: batch.items.length }, reason: why }, tx);
+      const updates = items.filter((i) => i.action === "update");
+      if (updates.length) {
+        const have = new Set((await tx.productVersion.findMany({ where: { OR: updates.map((i) => ({ productId: i.productId, version: i.beforeVersion! })) }, select: { productId: true, version: true } })).map((v) => `${v.productId}:${v.version}`));
+        const missing = updates.filter((i) => !have.has(`${i.productId}:${i.beforeVersion}`));
+        if (missing.length) throw Errors.conflict(`The pre-import version of ${missing.map((i) => `"${i.slug}"`).join(", ")} is missing — cannot revert`, { slugs: missing.map((i) => i.slug) });
+      }
+      for (const item of items) {
+        if (item.action === "create") await productLifecycle.softDeleteInTx(tx, actor, item.productId, why, { expectedVersion: item.afterVersion });
+        else await productLifecycle.restoreVersionInTx(tx, actor, item.productId, item.beforeVersion!, { reason: why, expectedVersion: item.afterVersion });
+      }
+      await audit(actor, "import.revert", { type: "import_batch", id: batchId }, { after: { reverted: items.length, deleted: items.length - updates.length, restored: updates.length }, reason: why }, tx);
+      return items.length;
     }, IMPORT_TX);
     revalidateCatalog();
-    return { batchId, reverted: batch.items.length };
+    return { batchId, reverted };
   },
 
   async list(actor: Actor, page = 1) {
@@ -589,25 +603,19 @@ export const importService = {
   },
 };
 
-/* Revert helpers — the same rules as activityService.remove / restoreVersion, inside the caller's transaction. */
-
-async function removeInTx(tx: Tx, actor: Actor, id: string, reason: string) {
-  const before = await tx.product.findUnique({ where: { id } });
-  if (!before || before.deletedAt) return;
-  const version = before.version + 1;
-  await tx.product.update({ where: { id }, data: { deletedAt: new Date(), status: "archived", version } });
-  await tx.productVersion.create({ data: { id: uuidv7(), productId: id, version, content: before.content as Prisma.InputJsonValue, status: "archived", actorId: actor.id, reason } });
-  await audit(actor, "activity.delete", { type: "product", id }, { before: { status: before.status }, after: { status: "archived", deletedAt: true }, reason }, tx);
-}
-
-async function restoreInTx(tx: Tx, actor: Actor, id: string, version: number, reason: string) {
-  const before = await tx.product.findUnique({ where: { id } });
-  if (!before) return;
-  const old = await tx.productVersion.findUnique({ where: { productId_version: { productId: id, version } } });
-  if (!old) throw Errors.conflict(`Version ${version} of ${before.slug} is missing — cannot revert`);
-  const restored = { ...toActivity(old.content), fulfilmentMode: before.fulfilmentMode };
-  const next = before.version + 1;
-  await tx.product.update({ where: { id }, data: { slug: restored.slug, ...projectActivity(restored), content: restored as unknown as Prisma.InputJsonValue, version: next } });
-  await tx.productVersion.create({ data: { id: uuidv7(), productId: id, version: next, content: restored as unknown as Prisma.InputJsonValue, status: before.status, actorId: actor.id, reason } });
-  await audit(actor, "activity.restore_version", { type: "product", id }, { before: { version: before.version }, after: { version: next, restoredFrom: version }, reason }, tx);
+/**
+ * Every permission a rollback of these items needs, checked together before
+ * any write: deleting created listings needs `products.delete`, restoring
+ * updated ones needs `products.edit`. An item this code did not write (an
+ * unknown action, an update without its pre-import version) refuses the
+ * whole rollback rather than being skipped.
+ */
+function requireRevertPermissions(actor: Actor, items: { action: string; beforeVersion: number | null; slug: string }[]) {
+  const odd = items.find((i) => !(i.action === "create" || (i.action === "update" && i.beforeVersion != null)));
+  if (odd) throw Errors.conflict(`Row "${odd.slug}" of this batch cannot be reverted automatically`, { slug: odd.slug });
+  const needed: Permission[] = [];
+  if (items.some((i) => i.action === "create")) needed.push("products.delete");
+  if (items.some((i) => i.action === "update")) needed.push("products.edit");
+  const missing = needed.filter((p) => !hasPermission(actor, p));
+  if (missing.length) throw Errors.forbidden(missing.join(", "));
 }

@@ -183,9 +183,46 @@ export function parseCsv(input: string): CsvTable {
   return { headers, rows: body, notes };
 }
 
-function csvEscape(v: string): string {
-  // Text a spreadsheet would run as a formula (=HYPERLINK(…) in a supplier title) is prefixed with ' — readRow strips it again.
-  const safe = /^[=+\-@]/.test(v) && !/^-?\d/.test(v) ? `'${v}` : v;
+/*
+ * Spreadsheet formula guard (CSV injection). A cell a spreadsheet would read
+ * as a formula — text starting with = + - @ (ASCII or fullwidth ＝＋－＠),
+ * possibly after leading whitespace, or with a tab / CR / LF — is written
+ * with a leading ' so Excel / Sheets / LibreOffice show it as text. A strict
+ * number (-12, 3.5) is data, not a formula, and is written as is; so is any
+ * value the writer knows is numeric. `readRow` takes the ' off again.
+ *
+ * Round trip is exact: text that itself starts with apostrophes followed by
+ * formula-like text gets one more ', so the import strips exactly the one the
+ * export added and never eats an apostrophe the operator typed ("'hello" and
+ * "'-5" are left alone in both directions).
+ */
+const FORMULA_START = /^(?:[\t\r\n]|\s*[=+\-@\uFF1D\uFF0B\uFF0D\uFF20])/;
+const STRICT_NUMBER = /^-?\d+(?:\.\d+)?$/;
+
+function formulaLike(v: string): boolean {
+  return FORMULA_START.test(v) && !STRICT_NUMBER.test(v);
+}
+
+/** True when `v` is formula-like text behind one or more apostrophes — i.e. it carries (or must be given) an escape '. */
+function apostropheEscaped(v: string): boolean {
+  let k = 0;
+  while (v.charCodeAt(k) === 0x27) k++;
+  return k > 0 && formulaLike(v.slice(k));
+}
+
+/** The cell text a CSV writer should emit for `v` so no spreadsheet evaluates it. */
+export function guardFormula(v: string, opts: { numeric?: boolean } = {}): string {
+  if (opts.numeric) return v;
+  return formulaLike(v) || apostropheEscaped(v) ? `'${v}` : v;
+}
+
+/** Inverse of `guardFormula` for a cell read back from a CSV. */
+export function unguardFormula(v: string): string {
+  return apostropheEscaped(v) ? v.slice(1) : v;
+}
+
+function csvEscape(v: string, numeric = false): string {
+  const safe = guardFormula(v, { numeric });
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
@@ -956,8 +993,9 @@ export function readRow(headers: string[], row: string[], mapping: Mapping): Row
     if (!header) return "";
     const i = headers.indexOf(header);
     const v = i >= 0 ? (row[i] ?? "").trim() : "";
-    // The export prefixes text starting with = + - @ with ' so spreadsheets do not run it as a formula; take it off again.
-    return /^'[=+\-@]/.test(v) ? v.slice(1) : v;
+    // The export prefixes formula-like text with ' so spreadsheets do not run it (guardFormula); take it off again.
+    const u = unguardFormula(v);
+    return u === v ? v : u.trim();
   };
   const out: Record<string, unknown> = {};
   const mapped = IMPORT_FIELDS.filter((f) => Boolean(mapping[f] && headers.includes(mapping[f]!)));
@@ -1455,19 +1493,20 @@ function listCell(items: string[]): string {
 export function toCsv(items: ActivityInput[]): string {
   const lines = [CSV_TEMPLATE_HEADERS.join(",")];
   for (const a of items) {
-    const cells = CSV_TEMPLATE_HEADERS.map((f) => {
+    const cells = CSV_TEMPLATE_HEADERS.map((f): [string, boolean] => {
       const v = getPath(a, f);
-      if (v === undefined || v === null) return "";
+      if (v === undefined || v === null) return ["", false];
       if (Array.isArray(v)) {
-        if (v.length === 0) return "";
+        if (v.length === 0) return ["", false];
         // Structured lists go out as JSON: lossless whatever the text contains.
-        if (f === "faqs" || f === "itinerary" || f === "variants" || f === "addOns") return JSON.stringify(v);
-        return listCell(v as string[]);
+        if (f === "faqs" || f === "itinerary" || f === "variants" || f === "addOns") return [JSON.stringify(v), false];
+        return [listCell(v as string[]), false];
       }
-      if (typeof v === "object") return Object.keys(v).length ? JSON.stringify(v) : "";
-      return String(v);
+      if (typeof v === "object") return [Object.keys(v).length ? JSON.stringify(v) : "", false];
+      // A number field is data whatever its sign; only text is guarded against formulas.
+      return [String(v), typeof v === "number"];
     });
-    lines.push(cells.map(csvEscape).join(","));
+    lines.push(cells.map(([v, numeric]) => csvEscape(v, numeric)).join(","));
   }
   return lines.join("\r\n") + "\r\n";
 }

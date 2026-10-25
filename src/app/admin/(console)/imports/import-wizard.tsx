@@ -84,6 +84,7 @@ async function api<T>(path: string, init: RequestInit, timeoutMs = 240_000): Pro
   const data = (await res.json().catch(() => null)) as T | ApiError | null;
   if (!res.ok) {
     const e = data as ApiError | null;
+    if (e?.error?.code === "PAYLOAD_TOO_LARGE") throw new Error("The file or pasted data is too large for one import — split it into smaller files (CSV uploads are limited to 5 MB).");
     const fields = e?.error?.details?.fields;
     const detail = fields ? `, ${Object.entries(fields).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join("; ")}` : "";
     throw new Error((e?.error?.message ?? `Request failed (${res.status})`) + detail);

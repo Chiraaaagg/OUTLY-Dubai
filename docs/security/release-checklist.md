@@ -29,7 +29,7 @@ Nothing in this checklist has been done. Every step that touches production need
    - `NEXT_PUBLIC_SITE_URL` is either unset or `https://outlyy.com` / `https://www.outlyy.com`.
      - `https://outlyy.com`, `https://www.outlyy.com` and Vercel's production domain are always allowed (commit `c143a5d`), so an unset value no longer risks a 403 on every mutation.
      - If it is set to some *other* host, mutations from the real hosts still work, but the setting is wrong elsewhere too (for example, links in notifications).
-     - If preview deployments are used for staff testing, they need `APP_ALLOWED_ORIGINS` set to their own origin.
+     - Vercel preview deployments allow their own `VERCEL_URL` / `VERCEL_BRANCH_URL` automatically. Any other host (for example a custom staging domain) needs `APP_ALLOWED_ORIGINS`.
    - `WHATSAPP_WEBHOOK_SECRET` is set. Without it, Meta deliveries get 503 and Meta keeps retrying; nothing is stored.
    - `CRON_SECRET` is set (unchanged requirement).
 4. Backups: no schema change.
@@ -56,9 +56,10 @@ Nothing in this checklist has been done. Every step that touches production need
    - `curl -sI https://outlyy.com/` shows the security headers unchanged.
    - Fetch `/activities/<a published slug>` and `/dubai-activities-for-indians`, and confirm the `application/ld+json` bodies contain no raw `<`.
    - `GET /api/health` shows `status`, `db` and `warningCount`, and no `warnings` texts.
-9. Anonymous refusals, which create no state:
-   - `POST /api/inquiries/lookup` with `content-type: text/plain` → 415.
-   - The same request with `Origin: https://example.com` → 403.
+9. Anonymous refusals:
+   - `POST /api/inquiries/lookup` with `Origin: https://outlyy.com` and `content-type: text/plain` → 415.
+   - The same request with `Origin: https://example.com`, or without an Origin → 403.
+   - The 415 probe passes the origin check, so it uses one of that IP's lookup attempts (5 per 15 minutes) and writes a rate-limit counter row. It creates no business data.
 10. With approval only, staff smoke test using a designated account:
     - The console loads and an activity edit saves.
     - The import wizard previews a CSV.

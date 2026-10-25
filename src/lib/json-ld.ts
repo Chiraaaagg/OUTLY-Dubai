@@ -12,5 +12,6 @@
  * `dangerouslySetInnerHTML`.
  */
 export function serializeJsonLd(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, "\\u003c");
+  // JSON.stringify(undefined) is undefined, not a string; emit JSON null instead.
+  return (JSON.stringify(value) ?? "null").replace(/</g, "\\u003c");
 }

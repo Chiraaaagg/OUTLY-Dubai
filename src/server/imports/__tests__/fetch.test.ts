@@ -194,5 +194,8 @@ describe("export host allowlist and address classification", () => {
   it("classifies private, loopback, link-local and mapped addresses", () => {
     for (const a of ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "224.0.0.1", "::1", "::", "fe80::1", "fc00::1", "fd12::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe", "not-an-ip"]) expect(isPrivateAddress(a), a).toBe(true);
     for (const a of ["142.250.183.110", "8.8.8.8", "2607:f8b0:4004:c07::8a", "::ffff:8.8.8.8"]) expect(isPrivateAddress(a), a).toBe(false);
+    // Non-canonical IPv6 spellings and embeddings (independent review).
+    for (const a of ["::0:1", "0::1", "0:0:0:0:0:0:0:1", "::ffff:0:7f00:1", "0:0:0:0:0:ffff:7f00:1", "2002:7f00:1::1", "2002:a00:1::", "2001:0:4136:e378::1", "100::1", "64:ff9b::7f00:1", "fec0::1", "fe80::1%lo0", "192.88.99.1", "198.51.100.7", "203.0.113.9", "1::2::3", "12345::1"]) expect(isPrivateAddress(a), a).toBe(true);
+    for (const a of ["2002:808:808::1", "0:0:0:0:0:ffff:808:808", "2a00:1450:4001:82a::200e"]) expect(isPrivateAddress(a), a).toBe(false);
   });
 });

@@ -228,13 +228,17 @@ const CANONICAL_SITE = "https://outlyy.com";
 
 /**
  * Origins allowed to send cookie-authenticated browser mutations:
- *   - the configured site origin (`NEXT_PUBLIC_SITE_URL`);
- *   - the canonical site, so a deployment that never set
- *     `NEXT_PUBLIC_SITE_URL` (env() would then default to localhost) does not
- *     refuse its own pages;
- *   - on Vercel, the project's production domain from the platform-set
- *     `VERCEL_PROJECT_PRODUCTION_URL` (deployment config, not a request header);
- *   - the www/apex counterpart of each of the above (both hosts serve the app);
+ *   - `NEXT_PUBLIC_SITE_URL` when it is explicitly set; outside production its
+ *     localhost default too (local development);
+ *   - in production, the canonical site, so a deployment that never set
+ *     `NEXT_PUBLIC_SITE_URL` does not refuse its own pages (env() would
+ *     otherwise default it to localhost);
+ *   - on Vercel, the platform-set production domain
+ *     (`VERCEL_PROJECT_PRODUCTION_URL`) and this deployment's own URLs
+ *     (`VERCEL_URL`, `VERCEL_BRANCH_URL`) — deployment config, not request
+ *     headers — so preview deployments keep working;
+ *   - the www/apex counterpart of the site and production domains (both hosts
+ *     serve the app);
  *   - any extra origins listed in `APP_ALLOWED_ORIGINS` (e.g. a staging host).
  * Never derived from the request's Host or forwarded headers.
  */
@@ -257,10 +261,16 @@ export function allowedOrigins(): Set<string> {
       out.add(`${u.protocol}//${twin}${u.port ? `:${u.port}` : ""}`);
     }
   };
-  add(e.NEXT_PUBLIC_SITE_URL, true);
-  add(CANONICAL_SITE, true);
-  const vercelProd = process.env.VERCEL === "1" ? process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() : undefined;
-  if (vercelProd) add(`https://${vercelProd.replace(/^https?:\/\//, "")}`, true);
+  const production = e.isProduction || process.env.NODE_ENV === "production";
+  const explicitSite = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicitSite || !production) add(e.NEXT_PUBLIC_SITE_URL, true);
+  if (production) add(CANONICAL_SITE, true);
+  if (process.env.VERCEL === "1") {
+    const host = (v: string | undefined) => (v?.trim() ? `https://${v.trim().replace(/^https?:\/\//, "")}` : undefined);
+    add(host(process.env.VERCEL_PROJECT_PRODUCTION_URL), true);
+    add(host(process.env.VERCEL_URL), false);
+    add(host(process.env.VERCEL_BRANCH_URL), false);
+  }
   for (const o of e.APP_ALLOWED_ORIGINS) add(o, false);
   return out;
 }

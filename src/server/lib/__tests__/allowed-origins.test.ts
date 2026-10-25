@@ -27,27 +27,39 @@ afterEach(() => {
 });
 
 describe("allowedOrigins", () => {
-  it("allows the configured site, its www twin and the canonical site", () => {
-    withEnv({ NEXT_PUBLIC_SITE_URL: "https://outlyy.com", APP_ALLOWED_ORIGINS: undefined, VERCEL: undefined });
+  it("allows the configured site and its www twin", () => {
+    withEnv({ NEXT_PUBLIC_SITE_URL: "https://outlyy.com", APP_ENV: "production", APP_ALLOWED_ORIGINS: undefined, VERCEL: undefined });
     expect([...allowedOrigins()].sort()).toEqual(["https://outlyy.com", "https://www.outlyy.com"]);
   });
 
-  it("keeps working when NEXT_PUBLIC_SITE_URL was never set in production", () => {
-    withEnv({ NEXT_PUBLIC_SITE_URL: undefined, VERCEL: undefined });
+  it("in production without NEXT_PUBLIC_SITE_URL allows the canonical site, not the localhost default", () => {
+    withEnv({ NEXT_PUBLIC_SITE_URL: undefined, APP_ENV: "production", VERCEL: undefined });
     const set = allowedOrigins();
     expect(set.has("https://outlyy.com")).toBe(true);
     expect(set.has("https://www.outlyy.com")).toBe(true);
+    expect(set.has("http://localhost:3000")).toBe(false);
   });
 
-  it("adds Vercel's production domain only on Vercel, and extra origins without twins", () => {
-    withEnv({ NEXT_PUBLIC_SITE_URL: "http://localhost:3217", VERCEL: "1", VERCEL_PROJECT_PRODUCTION_URL: "outlyy.com", APP_ALLOWED_ORIGINS: "https://staging.outlyy.com, not a url" });
+  it("outside production does not allow the canonical site unless configured", () => {
+    withEnv({ NEXT_PUBLIC_SITE_URL: "https://staging.outlyy.com", APP_ENV: "staging", VERCEL: undefined });
+    const set = allowedOrigins();
+    expect(set.has("https://staging.outlyy.com")).toBe(true);
+    expect(set.has("https://outlyy.com")).toBe(false);
+  });
+
+  it("adds Vercel's production domain and this deployment's URLs only on Vercel, and extra origins without twins", () => {
+    withEnv({ NEXT_PUBLIC_SITE_URL: "http://localhost:3217", APP_ENV: "development", VERCEL: "1", VERCEL_PROJECT_PRODUCTION_URL: "outlyy.com", VERCEL_URL: "outly-abc123.vercel.app", APP_ALLOWED_ORIGINS: "https://staging.outlyy.com, not a url" });
     const set = allowedOrigins();
     expect(set.has("http://localhost:3217")).toBe(true);
     expect(set.has("http://www.localhost:3217")).toBe(false);
+    expect(set.has("https://outlyy.com")).toBe(true);
+    expect(set.has("https://outly-abc123.vercel.app")).toBe(true);
+    expect(set.has("https://www.outly-abc123.vercel.app")).toBe(false);
     expect(set.has("https://staging.outlyy.com")).toBe(true);
     expect(set.has("https://www.staging.outlyy.com")).toBe(false);
-    withEnv({ VERCEL: undefined, VERCEL_PROJECT_PRODUCTION_URL: "evil.example" });
+    withEnv({ VERCEL: undefined, VERCEL_PROJECT_PRODUCTION_URL: "evil.example", VERCEL_URL: "evil2.example" });
     expect(allowedOrigins().has("https://evil.example")).toBe(false);
+    expect(allowedOrigins().has("https://evil2.example")).toBe(false);
   });
 });
 

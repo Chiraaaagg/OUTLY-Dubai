@@ -59,34 +59,61 @@ export function isAllowedExportHost(hostname: string): boolean {
   return hostname === "docs.google.com" || EXPORT_HOST.test(hostname);
 }
 
-/** Loopback, private, link-local, CGNAT, unique-local, multicast, reserved — and IPv4 embedded in IPv6 of the same. Anything unparseable counts as private. */
+/** The eight 16-bit groups of an IPv6 address (any spelling: compressed, uncompressed, embedded dotted quad, zone id), or null. */
+function ipv6Groups(address: string): number[] | null {
+  let a = address.toLowerCase().replace(/%.*$/, "");
+  const dotted = /(\d+\.\d+\.\d+\.\d+)$/.exec(a);
+  if (dotted) {
+    if (isIP(dotted[1]) !== 4) return null;
+    const [w, x, y, z] = dotted[1].split(".").map(Number);
+    a = `${a.slice(0, -dotted[1].length)}${((w << 8) | x).toString(16)}:${((y << 8) | z).toString(16)}`;
+  }
+  const halves = a.split("::");
+  if (halves.length > 2) return null;
+  const parse = (part: string) => (part ? part.split(":").map((h) => (/^[0-9a-f]{1,4}$/.test(h) ? Number.parseInt(h, 16) : Number.NaN)) : []);
+  const head = parse(halves[0]);
+  const tail = halves.length === 2 ? parse(halves[1]) : [];
+  const fill = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  if (fill < 0 || (halves.length === 1 && head.length !== 8)) return null;
+  const groups = [...head, ...new Array<number>(fill).fill(0), ...tail];
+  return groups.length === 8 && groups.every((g) => Number.isInteger(g)) ? groups : null;
+}
+
+const v4FromGroups = (hi: number, lo: number) => `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+
+/**
+ * Loopback, private, link-local, CGNAT, unique-local, multicast, reserved and
+ * documentation ranges — and IPv4 embedded in IPv6 (mapped, compatible,
+ * translated, 6to4) checked as IPv4. IPv6 is normalised to its eight groups
+ * first, so non-canonical spellings cannot slip past. Anything unparseable
+ * counts as private.
+ */
 export function isPrivateAddress(address: string): boolean {
   const v = isIP(address);
   if (v === 4) {
-    const [a, b] = address.split(".").map(Number);
+    const [a, b, c] = address.split(".").map(Number);
     return (
       a === 0 || a === 10 || a === 127 || a >= 224 ||
       (a === 100 && b >= 64 && b <= 127) ||
       (a === 169 && b === 254) ||
       (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && (b === 168 || b === 0)) ||
-      (a === 198 && (b === 18 || b === 19))
+      (a === 192 && (b === 168 || b === 0 || (b === 88 && c === 99))) ||
+      (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
+      (a === 203 && b === 0 && c === 113)
     );
   }
   if (v === 6) {
-    const lower = address.toLowerCase();
-    if (lower === "::" || lower === "::1") return true;
-    // IPv4-mapped / -compatible: ::ffff:a.b.c.d, ::a.b.c.d, ::ffff:7f00:1
-    const dotted = /^::(?:ffff:)?(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
-    if (dotted) return isPrivateAddress(dotted[1]);
-    const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(lower);
-    if (hex) {
-      const hi = Number.parseInt(hex[1], 16);
-      const lo = Number.parseInt(hex[2], 16);
-      return isPrivateAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
-    }
-    const first = Number.parseInt(lower.split(":")[0] || "0", 16);
-    return (first & 0xfe00) === 0xfc00 || (first & 0xffc0) === 0xfe80 || (first & 0xff00) === 0xff00 || lower.startsWith("64:ff9b:") || lower.startsWith("2001:db8:");
+    const g = ipv6Groups(address);
+    if (!g) return true;
+    const zeros = (from: number, to: number) => g.slice(from, to).every((x) => x === 0);
+    if (zeros(0, 8) || (zeros(0, 7) && g[7] === 1)) return true; // :: and ::1
+    if (zeros(0, 5) && (g[5] === 0xffff || g[5] === 0)) return isPrivateAddress(v4FromGroups(g[6], g[7])); // mapped / compatible
+    if (zeros(0, 4) && g[4] === 0xffff && g[5] === 0) return isPrivateAddress(v4FromGroups(g[6], g[7])); // translated
+    if (g[0] === 0x2002) return isPrivateAddress(v4FromGroups(g[1], g[2])); // 6to4
+    if (g[0] === 0x2001 && (g[1] === 0 || g[1] === 0xdb8)) return true; // Teredo, documentation
+    if (g[0] === 0x64 && g[1] === 0xff9b) return true; // NAT64
+    if (g[0] === 0x100 && zeros(1, 4)) return true; // discard-only
+    return (g[0] & 0xfe00) === 0xfc00 || (g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xffc0) === 0xfec0 || (g[0] & 0xff00) === 0xff00;
   }
   return true;
 }

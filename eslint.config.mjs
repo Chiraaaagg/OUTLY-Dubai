@@ -25,13 +25,18 @@ export default [
     },
   },
   {
-    files: ["src/**/*.tsx"],
+    // Inline HTML/script bodies come only from reviewed producers: structured
+    // data through serializeJsonLd, and the two fixed bootstrap scripts. Any
+    // other value (a variable, a template literal, raw JSON.stringify) is an
+    // error, wherever the __html object is built.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["**/__tests__/**"],
     rules: {
       "no-restricted-syntax": [
         "error",
         {
-          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML'] CallExpression[callee.object.name='JSON'][callee.property.name='stringify']",
-          message: "JSON.stringify does not escape </script>. Use serializeJsonLd() from @/lib/json-ld.",
+          selector: "Property[key.name='__html'] > .value:not(CallExpression[callee.name=/^(serializeJsonLd|googleTagBootstrap)$/]):not(Identifier[name='CURRENCY_BOOTSTRAP_SCRIPT'])",
+          message: "Inline HTML must come from serializeJsonLd() (@/lib/json-ld) or a reviewed fixed script. JSON.stringify does not escape </script>.",
         },
       ],
     },

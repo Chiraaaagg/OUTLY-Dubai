@@ -31,6 +31,8 @@ Advisories checked on 25 October 2026 (Nova, read-only research). The upgrade wa
 | @neon/config, @neon/env | 1.4.2, 1.3.2 (dependencies) | unchanged versions, moved to **devDependencies** | only `neon.ts` (root Neon branch config) imports them; not runtime |
 | react, react-dom | 19.1.0 | unchanged | Next 16.4.3 peer `^19.0.0` satisfied |
 
+Other lockfile changes pulled in by the upgrade (no new packages; resolved from registry.npmjs.org with integrity, per the independent review): postcss 8.5.28 → 8.5.31 (prod, via next), nanoid 3.3.18 → 3.3.20, rolldown 1.2.8 → 1.2.15, chai, std-env, obug 2 → 3, why-is-node-running 2 → 3 (dev/test). Removed: siginfo, stackback and a nested tinyexec.
+
 `npm ls next sharp react react-dom zod --all`: one `next@16.4.3` (`@vercel/analytics` dedupes onto it), one `sharp@0.35.5`, one `zod@4.6.7`, no peer errors.
 
 `npm audit` after the upgrade: 3 entries, all one chain — `prisma` → `@prisma/config` → `deepmerge-ts` (high, build/CLI time).

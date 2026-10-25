@@ -60,13 +60,16 @@ function shouldRedact(key: string) {
  */
 export function scrubText(text: string): string {
   return text
-    .replace(/Failing row contains \([^)]*\)/g, "Failing row contains ([redacted])")
-    .replace(/(Key \([^)]*\)=)\([^)]*\)/g, "$1([redacted])")
+    // The whole row dump, to the end of its line: values may contain ")".
+    .replace(/Failing row contains \(.*$/gm, "Failing row contains ([redacted])")
+    .replace(/(Key \([^)]*\)=)\(.*?\)(?= already exists| is not present|\.|$)/gm, "$1([redacted])")
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
-    .replace(/\+?\d[\d\s-]{8,16}\d/g, "[number]");
+    // Phone-like runs: optional +, digits with spaces, dashes, dots or brackets
+    // (+971 (50) 123 4567, 971.50.123.4567). Dates and ISO times are left alone.
+    .replace(/(?<![\w.-])\+?\(?\d[\d\s().-]{7,18}\d(?![\w-])/g, (m) => (/^\d{4}-\d{2}-\d{2}/.test(m) || (m.replace(/\D/g, "").length < 9) ? m : "[number]"));
 }
 
-const ERROR_TEXT_KEYS = /(^|_)(error|message|reason|detail)s?$|error$/i;
+const ERROR_TEXT_KEYS = /(error|message|reason|detail|msg)s?$/i;
 
 export function redact<T>(value: T, depth = 0): T {
   if (depth > 6 || value === null || value === undefined) return value;

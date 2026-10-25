@@ -22,6 +22,9 @@ export type ErrorCode =
   | "VERIFICATION_REQUIRED"
   | "NOT_CONFIGURED"
   | "NOT_IMPLEMENTED"
+  | "UNSUPPORTED_MEDIA_TYPE"
+  | "PAYLOAD_TOO_LARGE"
+  | "UNAVAILABLE"
   | "error";
 
 export class AppError extends Error {
@@ -141,6 +144,29 @@ export const Errors = {
     }),
   notImplemented: (what: string) =>
     new AppError({ status: 501, code: "NOT_IMPLEMENTED", message: `${what} is not implemented yet` }),
+  /** A JSON API received a body that is not declared as JSON (form posts, `text/plain`). */
+  unsupportedMediaType: (expected = "application/json") =>
+    new AppError({
+      status: 415,
+      code: "UNSUPPORTED_MEDIA_TYPE",
+      message: `Send the request body as ${expected}`,
+      details: { expected },
+    }),
+  payloadTooLarge: (maxBytes: number) =>
+    new AppError({ status: 413, code: "PAYLOAD_TOO_LARGE", message: "Request body is too large", details: { maxBytes } }),
+  /**
+   * A protective dependency (the rate limiter's store) is down, so a
+   * security-sensitive action is refused rather than run without its limit.
+   */
+  unavailable: (retryAfterSeconds = 30) =>
+    new AppError({
+      status: 503,
+      code: "UNAVAILABLE",
+      message: "This is temporarily unavailable",
+      recovery: "Please try again in a minute — or message us on WhatsApp.",
+      retryable: true,
+      details: { retryAfterSeconds },
+    }),
   internal: (message = "Something went wrong at our end") =>
     new AppError({
       status: 500,

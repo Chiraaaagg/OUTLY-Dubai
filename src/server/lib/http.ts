@@ -52,7 +52,7 @@ export function errorResponse(err: unknown, requestId?: string): NextResponse {
   const app = normaliseError(err);
   const headers: Record<string, string> = {};
   if (requestId) headers["x-request-id"] = requestId;
-  if (app.code === "RATE_LIMITED" && app.details?.retryAfterSeconds) {
+  if ((app.code === "RATE_LIMITED" || app.code === "UNAVAILABLE") && app.details?.retryAfterSeconds) {
     headers["retry-after"] = String(app.details.retryAfterSeconds);
   }
   if (app.status >= 500) log.error("request.failed", { code: app.code, message: app.message, requestId, error: isAppError(err) ? undefined : err });
@@ -75,11 +75,76 @@ export function handle<Ctx = { params: Promise<Record<string, string>> }>(fn: Ha
   };
 }
 
-/** Parses + validates a JSON body; unknown keys are rejected by the schema (§12.13). */
-export async function parseJson<T>(req: NextRequest, schema: ZodType<T>): Promise<T> {
+/** Default ceiling for ordinary JSON API bodies. Routes that carry files or batches pass their own. */
+export const DEFAULT_JSON_MAX_BYTES = 1024 * 1024;
+
+const JSON_MEDIA_TYPE = /^application\/(?:json|[a-z0-9.+-]+\+json)\s*(?:;|$)/i;
+
+/** True when the request declares a JSON body (`application/json`, `application/*+json`). */
+export function isJsonRequest(req: Request): boolean {
+  return JSON_MEDIA_TYPE.test(req.headers.get("content-type") ?? "");
+}
+
+/**
+ * Read the request body as bytes, refusing anything over `maxBytes` (413).
+ *
+ * The limit is enforced while streaming, so a missing or false
+ * `Content-Length` cannot make the server buffer more than the ceiling; a
+ * declared length over the ceiling is refused before reading at all. A client
+ * that aborts mid-body gets a 400, never a half-read body.
+ */
+export async function readBodyBytes(req: Request, maxBytes: number): Promise<Uint8Array> {
+  const declared = req.headers.get("content-length");
+  if (declared !== null && declared.trim() !== "") {
+    const n = Number(declared);
+    if (Number.isFinite(n) && n > maxBytes) throw Errors.payloadTooLarge(maxBytes);
+  }
+  if (!req.body) return new Uint8Array(0);
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {});
+        throw Errors.payloadTooLarge(maxBytes);
+      }
+      chunks.push(value);
+    }
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw new AppError({ status: 400, code: "VALIDATION_FAILED", message: "Request body could not be read" });
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.byteLength;
+  }
+  return out;
+}
+
+/** `readBodyBytes` decoded as UTF-8 (invalid sequences become U+FFFD). */
+export async function readBodyText(req: Request, maxBytes: number): Promise<string> {
+  return new TextDecoder("utf-8").decode(await readBodyBytes(req, maxBytes));
+}
+
+/**
+ * Parses + validates a JSON body; unknown keys are rejected by the schema (§12.13).
+ *
+ * The body must be declared as JSON (415 otherwise — a `text/plain` or form
+ * post is a different request kind, and accepting it would let a cross-site
+ * "simple" request reach JSON handlers) and is read with a byte ceiling (413).
+ */
+export async function parseJson<T>(req: NextRequest, schema: ZodType<T>, opts: { maxBytes?: number } = {}): Promise<T> {
+  if (!isJsonRequest(req)) throw Errors.unsupportedMediaType();
+  const text = await readBodyText(req, opts.maxBytes ?? DEFAULT_JSON_MAX_BYTES);
   let raw: unknown;
   try {
-    raw = await req.json();
+    raw = JSON.parse(text);
   } catch {
     throw new AppError({ status: 400, code: "VALIDATION_FAILED", message: "Malformed JSON body" });
   }
@@ -109,11 +174,25 @@ export function parseQuery<T>(req: NextRequest, schema: ZodType<T>): T {
   return parseWith(schema, obj);
 }
 
-/** Client IP — Vercel/Netlify set x-forwarded-for; first hop is the client. */
+/**
+ * Client IP, under the deployment's proxy contract.
+ *
+ * Vercel overwrites `x-forwarded-for` / `x-real-ip` with the connecting
+ * client's address (client-supplied values are discarded), so on Vercel
+ * (`VERCEL=1` at runtime) they are trustworthy. Anywhere else nothing
+ * guarantees that, so the headers are ignored unless the operator states
+ * that a trusted proxy sets them (`TRUST_PROXY_IP_HEADERS=true`). Without a
+ * trusted source the caller gets `undefined` and falls back to its shared
+ * "no IP" bucket — never to an attacker-chosen value.
+ */
 export function clientIp(req: NextRequest): string | undefined {
+  const trusted = process.env.VERCEL === "1" || process.env.TRUST_PROXY_IP_HEADERS === "true";
+  if (!trusted) return undefined;
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real.slice(0, 64);
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]?.trim() || undefined;
-  return req.headers.get("x-real-ip") ?? undefined;
+  if (xff) return xff.split(",")[0]?.trim().slice(0, 64) || undefined;
+  return undefined;
 }
 
 export function userAgent(req: NextRequest): string | undefined {
@@ -139,13 +218,52 @@ export function requireCron(req: NextRequest) {
   }
 }
 
-/** Reject any origin that is not our own for browser-originated mutations. */
+/**
+ * Origins allowed to send cookie-authenticated browser mutations: the
+ * configured site origin, its www/apex counterpart (both hosts serve the
+ * app), and any extra origins listed in `APP_ALLOWED_ORIGINS`. Never derived
+ * from the request's Host or forwarded headers.
+ */
+export function allowedOrigins(): Set<string> {
+  const e = env();
+  const out = new Set<string>();
+  const add = (raw: string) => {
+    try {
+      const u = new URL(raw);
+      if (u.protocol === "https:" || u.protocol === "http:") out.add(u.origin);
+    } catch {
+      // ignore a malformed entry rather than widening anything
+    }
+  };
+  add(e.NEXT_PUBLIC_SITE_URL);
+  try {
+    const site = new URL(e.NEXT_PUBLIC_SITE_URL);
+    const isIp = /^[\d.]+$/.test(site.hostname) || site.hostname.includes(":");
+    if (!isIp && site.hostname.includes(".")) {
+      const twin = site.hostname.startsWith("www.") ? site.hostname.slice(4) : `www.${site.hostname}`;
+      add(`${site.protocol}//${twin}${site.port ? `:${site.port}` : ""}`);
+    }
+  } catch {
+    // NEXT_PUBLIC_SITE_URL is validated as a URL by env(); nothing to add
+  }
+  for (const o of e.APP_ALLOWED_ORIGINS) add(o);
+  return out;
+}
+
+/**
+ * CSRF defence for every cookie-authenticated mutation (and the public
+ * same-origin JSON endpoints that share it).
+ *
+ * Browsers attach `Origin` to every POST/PUT/PATCH/DELETE, so the request must
+ * carry one and it must be an allowed origin. A missing `Origin` and the opaque
+ * `null` origin (sandboxed frames, some redirects) are refused: neither proves
+ * the request came from our pages. `Sec-Fetch-Site: cross-site` is refused as
+ * a second signal. Server-to-server callers do not come through here — the
+ * webhook (signature) and cron jobs (secret) authenticate on their own.
+ */
 export function assertSameOrigin(req: NextRequest) {
   const origin = req.headers.get("origin");
-  if (!origin) return; // non-browser client (curl, server) — session cookie still required
-  const allowed = new URL(env().NEXT_PUBLIC_SITE_URL).origin;
-  const reqOrigin = req.nextUrl.origin;
-  if (origin !== allowed && origin !== reqOrigin) {
-    throw Errors.forbidden("cross-origin request");
-  }
+  if (!origin || origin === "null") throw Errors.forbidden("same-origin request");
+  if (!allowedOrigins().has(origin)) throw Errors.forbidden("same-origin request");
+  if (req.headers.get("sec-fetch-site") === "cross-site") throw Errors.forbidden("same-origin request");
 }

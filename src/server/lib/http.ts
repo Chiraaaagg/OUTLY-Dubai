@@ -223,35 +223,45 @@ export function requireCron(req: NextRequest) {
   }
 }
 
+/** The canonical public site (also the storefront's fallback in `src/lib/site-config.ts`). */
+const CANONICAL_SITE = "https://outlyy.com";
+
 /**
- * Origins allowed to send cookie-authenticated browser mutations: the
- * configured site origin, its www/apex counterpart (both hosts serve the
- * app), and any extra origins listed in `APP_ALLOWED_ORIGINS`. Never derived
- * from the request's Host or forwarded headers.
+ * Origins allowed to send cookie-authenticated browser mutations:
+ *   - the configured site origin (`NEXT_PUBLIC_SITE_URL`);
+ *   - the canonical site, so a deployment that never set
+ *     `NEXT_PUBLIC_SITE_URL` (env() would then default to localhost) does not
+ *     refuse its own pages;
+ *   - on Vercel, the project's production domain from the platform-set
+ *     `VERCEL_PROJECT_PRODUCTION_URL` (deployment config, not a request header);
+ *   - the www/apex counterpart of each of the above (both hosts serve the app);
+ *   - any extra origins listed in `APP_ALLOWED_ORIGINS` (e.g. a staging host).
+ * Never derived from the request's Host or forwarded headers.
  */
 export function allowedOrigins(): Set<string> {
   const e = env();
   const out = new Set<string>();
-  const add = (raw: string) => {
+  const add = (raw: string | undefined, withTwin: boolean) => {
+    if (!raw) return;
+    let u: URL;
     try {
-      const u = new URL(raw);
-      if (u.protocol === "https:" || u.protocol === "http:") out.add(u.origin);
+      u = new URL(raw);
     } catch {
-      // ignore a malformed entry rather than widening anything
+      return; // ignore a malformed entry rather than widening anything
+    }
+    if (u.protocol !== "https:" && u.protocol !== "http:") return;
+    out.add(u.origin);
+    const isIp = /^[\d.]+$/.test(u.hostname) || u.hostname.includes(":") || u.hostname.startsWith("[");
+    if (withTwin && !isIp && u.hostname.includes(".")) {
+      const twin = u.hostname.startsWith("www.") ? u.hostname.slice(4) : `www.${u.hostname}`;
+      out.add(`${u.protocol}//${twin}${u.port ? `:${u.port}` : ""}`);
     }
   };
-  add(e.NEXT_PUBLIC_SITE_URL);
-  try {
-    const site = new URL(e.NEXT_PUBLIC_SITE_URL);
-    const isIp = /^[\d.]+$/.test(site.hostname) || site.hostname.includes(":");
-    if (!isIp && site.hostname.includes(".")) {
-      const twin = site.hostname.startsWith("www.") ? site.hostname.slice(4) : `www.${site.hostname}`;
-      add(`${site.protocol}//${twin}${site.port ? `:${site.port}` : ""}`);
-    }
-  } catch {
-    // NEXT_PUBLIC_SITE_URL is validated as a URL by env(); nothing to add
-  }
-  for (const o of e.APP_ALLOWED_ORIGINS) add(o);
+  add(e.NEXT_PUBLIC_SITE_URL, true);
+  add(CANONICAL_SITE, true);
+  const vercelProd = process.env.VERCEL === "1" ? process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() : undefined;
+  if (vercelProd) add(`https://${vercelProd.replace(/^https?:\/\//, "")}`, true);
+  for (const o of e.APP_ALLOWED_ORIGINS) add(o, false);
   return out;
 }
 

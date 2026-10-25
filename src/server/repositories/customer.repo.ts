@@ -274,10 +274,14 @@ export const customerRepo = {
 
   /* ----------------------------------------------------------------- orders */
 
-  /** Orders by verified identity (`customer_id`) or by the verified phone — newest first. */
+  /**
+   * Orders by verified identity (`customer_id`) or by the verified phone when
+   * not yet linked to anyone — newest first. A row linked to another customer
+   * stays theirs even if the phone matches (see `linkByPhone`).
+   */
   async listOrders(customerId: string, phoneE164: string, db: Db = prisma): Promise<OrderCustomerView[]> {
     const rows = await db.order.findMany({
-      where: { OR: [{ customerId }, { leadPhone: phoneE164 }] },
+      where: { OR: [{ customerId }, { leadPhone: phoneE164, customerId: null }] },
       include: orderInclude,
       orderBy: { placedAt: "desc" },
       take: 200,

@@ -203,12 +203,18 @@ export const inquiryRepo = {
 
   /**
    * Signed-in customer's inquiries (impl/customer-auth-contract.md §3): linked by
-   * verified identity OR made with the verified phone; `spam` never shown.
-   * Newest first. Hydrated so the service can apply `toCustomerView`.
+   * verified identity OR made with the verified phone and not yet linked to
+   * anyone; `spam` never shown. Newest first. Hydrated so the service can apply
+   * `toCustomerView`.
+   *
+   * The phone match is limited to unlinked rows for the same reason
+   * `customerRepo.linkByPhone` never moves a linked row: a number can be
+   * re-issued, and the earlier owner's history must not surface in the new
+   * owner's account.
    */
   async listForCustomer(customerId: string, leadPhoneE164: string): Promise<InquiryDetail[]> {
     const rows = await prisma.inquiry.findMany({
-      where: { OR: [{ customerId }, { leadPhone: leadPhoneE164 }], status: { not: "spam" } },
+      where: { OR: [{ customerId }, { leadPhone: leadPhoneE164, customerId: null }], status: { not: "spam" } },
       include: detailInclude,
       orderBy: { createdAt: "desc" },
       take: 100,

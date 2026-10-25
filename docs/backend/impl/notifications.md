@@ -39,7 +39,7 @@ Files:
 | `notifications/whatsapp-webhook.ts` | Server. `ingestWhatsAppWebhook({ rawBody, signatureHeader })` — persist, dedup, apply receipts, STOP consent. |
 | `repositories/notifications.repo.ts` | `listForInquiry`, `recentFailures(limit)`, `dailyStats(from, to)`, `applyProviderStatus`, `insertWebhookEvent` (dedup on `(provider, providerEventId)`), `markWebhookProcessed`. Recipients are masked in read DTOs. |
 | `services/notification.service.ts` | Public API unchanged: `dispatch`, `onInquirySubmitted`, `onInquiryAssigned`, `onSlaBreach`, `onFollowupDue`, `onInquiryWon`, `resend`, `retryFailed`, `buildContext`. |
-| `app/api/webhooks/whatsapp/route.ts` | GET verification, POST ingest. Always 200 on POST. |
+| `app/api/webhooks/whatsapp/route.ts` | GET verification, POST ingest. Rejects unauthenticated POSTs (401/503/413) without storing them. |
 
 ## 2. Event → channel → template → recipient matrix
 
@@ -93,20 +93,21 @@ Every `dispatch` writes exactly one `notifications` row with `status ∈ {sent, 
 
 **GET** — Meta subscription handshake. Echoes `hub.challenge` (text/plain, 200) only when `hub.mode=subscribe` and `hub.verify_token` equals `WHATSAPP_WEBHOOK_VERIFY_TOKEN` (constant-time). 403 otherwise, including when the token is not configured.
 
-**POST** — reads the **raw** body (`req.text()`), calls `ingestWhatsAppWebhook`, logs the summary, returns `200 { received: true }` no matter what (§13.4: non-2xx causes provider retry storms). Processing errors are logged, never thrown to the provider.
+**POST** (changed 2026-10-25, security remediation F03) — nothing from an unauthenticated request is stored:
 
-Inside `ingestWhatsAppWebhook`:
-
-| Condition | Stored as | Processed? |
+| Condition | Response | Stored? |
 |---|---|---|
-| `WHATSAPP_WEBHOOK_SECRET` unset | `webhook_events` row, `provider_event_id = unverified:<sha256(body)[0:32]>`, `signature_valid=false`, `processing_error=secret_not_configured` | **No** |
-| Signature missing / wrong | same key scheme, `processing_error=invalid_signature` | **No** (logged `warn`) |
-| Body > 1 MB | not stored (logged) | No |
-| Invalid JSON | `unverified:` row, `processing_error=invalid_json` | No |
-| Valid, no recognisable items | one row `payload:<hash>` | marked processed |
-| Valid | one row per message (`msg:<wamid>`) and per status (`status:<wamid>:<status>`), `payload` = the provider's own object | Yes |
+| `WHATSAPP_WEBHOOK_SECRET` unset | 503 + `Retry-After: 300` (body not read; Meta retries until configured) | No |
+| Body > 1 MB (streamed cap, independent of `Content-Length`) | 413 | No |
+| Client aborts mid-body | 400 | No |
+| Signature missing / malformed / wrong (HMAC-SHA256 over the exact raw bytes) | 401 | No (sampled, redacted `warn`: reason, bytes, short hash) |
+| Too many rejected requests from one trusted IP (per instance) | 429 | No |
+| Valid signature, invalid JSON | 200 (a retry cannot fix it) | No (bounded log) |
+| Valid, no recognisable items | 200, one row `payload:<hash>` | marked processed |
+| Valid | 200, one row per message (`msg:<wamid>`) and per status (`status:<wamid>:<status>`), `payload` = the provider's own object | Yes |
+| Valid, storage failure | 500 (Meta redelivers; dedup makes it safe) | — |
 
-Duplicate `(provider, provider_event_id)` ⇒ P2002 ⇒ counted as `duplicates`, never reprocessed. Unverified rows are keyed by body hash on purpose: a later correctly-signed redelivery of the same message is not deduplicated against the rejected one.
+Duplicate `(provider, provider_event_id)` ⇒ P2002 ⇒ counted as `duplicates`, never reprocessed.
 
 Applied today:
 
@@ -145,4 +146,4 @@ Applied today:
 
 - **Backend Architect / env owner**: declare `WHATSAPP_TEMPLATE_INQUIRY_OPS_ALERT` (optional string, default `inquiry_ops_alert_v1`) in `src/server/lib/env.ts`, and align `.env.example` template names with the registry (`inquiry_ack_v1`, `inquiry_followup_v1`) or document the `outlyy_` prefix as the name to register with the BSP.
 - **Agent Console / Admin**: `notificationsRepo.listForInquiry`, `recentFailures`, `dailyStats` are ready for the inquiry detail "Notifications" panel and a health/ops tile. `recipientMasked` is what to show; the full recipient stays server-side.
-- **Security**: please include `POST /api/webhooks/whatsapp` with a forged `X-Hub-Signature-256` in the §13.11 #6 check — expected 200, `webhook_events.signature_valid=false`, no consent/notification change.
+- **Security**: please include `POST /api/webhooks/whatsapp` with a forged `X-Hub-Signature-256` in the §13.11 #6 check — expected 401, no `webhook_events` row, no consent/notification change.

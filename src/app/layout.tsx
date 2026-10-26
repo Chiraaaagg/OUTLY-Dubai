@@ -10,6 +10,7 @@ import { CookieBanner } from "@/components/layout/cookie-banner";
 import { StorefrontOnly } from "@/components/layout/storefront-only";
 import { CURRENCY_BOOTSTRAP_SCRIPT } from "@/lib/currency";
 import { googleTagBootstrap, googleTagSrc } from "@/lib/google-tag";
+import { Analytics } from "@vercel/analytics/next";
 
 /**
  * Type pairing:
@@ -104,6 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <GoogleAnalytics />
           </StorefrontOnly>
           <Toaster />
+          <Analytics />
         </AppProvider>
       </body>
     </html>
